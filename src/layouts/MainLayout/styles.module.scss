@@ -1,0 +1,11 @@
+.MainLayoutWrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+    background: #000000;
+    &_Content{
+        flex: 1;
+        height: 100%;
+    }
+}
