@@ -79,12 +79,14 @@ export class WebSocketConnection {
       console.log('Sending audio data, socket state:', this.#socket.readyState);
       
       const packet = {
-        speakerLang: 'ru',
-        allLangs: ['en', 'de'],
+        speakerLang: 'en',
+        allLangs: ['en', 'ru'],
         audio: base64Data,
         isStartStream: true,
         disableSentenceCutter: true,
         returnTranslatedSegments: true,
+        sameOutputThreshold: 3,
+        prompt: 'qa',
       };
       const jsonPacket = JSON.stringify(packet);
 
