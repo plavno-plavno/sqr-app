@@ -10,11 +10,18 @@ import s from './styles.module.scss';
 
 interface MicrophoneButtonProps {
   onTranscription: (response: ServerResponse) => void;
+  setIsSocketActive: (active: boolean) => void;
+  language: string;
+  prompt: string;
 }
 
-export const MicrophoneButton = ({ onTranscription }: MicrophoneButtonProps) => {
+export const MicrophoneButton = ({ 
+  onTranscription, 
+  setIsSocketActive,
+  language,
+  prompt 
+}: MicrophoneButtonProps) => {
   const [isRecording, setIsRecording] = useState(false);
-  const [, setAudioStream] = useState<MediaStream | null>(null);
   const [level, setLevel] = useState(0);
   const [loading, setLoading] = useState(false);
   const audioManagerRef = useRef<AudioWorkletManager | null>(null);
@@ -40,7 +47,6 @@ export const MicrophoneButton = ({ onTranscription }: MicrophoneButtonProps) => 
           echoCancellation: false
         }
       });
-      setAudioStream(stream);
 
       if (!audioManagerRef.current) {
         audioManagerRef.current = new AudioWorkletManager({
@@ -50,7 +56,6 @@ export const MicrophoneButton = ({ onTranscription }: MicrophoneButtonProps) => 
           onError: (error) => {
             console.error('Audio processing error:', error);
             setIsRecording(false);
-            setAudioStream(null);
           },
           onLevel: setLevel,
         });
@@ -68,20 +73,22 @@ export const MicrophoneButton = ({ onTranscription }: MicrophoneButtonProps) => 
     if (isRecording) {
       audioManagerRef.current?.stop();
       wsConnectionRef.current?.stopStreaming();
-      setAudioStream(null);
       setIsRecording(false);
+      setIsSocketActive(false);
     } else {
       try {
         const wsUrl = await getFreeMachine();
         if (!wsUrl) return;
 
         if (!wsConnectionRef.current) {
-          wsConnectionRef.current = new WebSocketConnection();
+          wsConnectionRef.current = new WebSocketConnection(language, prompt);
         }
         
         await wsConnectionRef.current.initSocket(wsUrl, startRecording, onTranscription);
+        setIsSocketActive(true);
       } catch (error) {
         console.error('Failed to start recording:', error);
+        setIsSocketActive(false);
       }
     }
   };
@@ -90,9 +97,9 @@ export const MicrophoneButton = ({ onTranscription }: MicrophoneButtonProps) => 
     return () => {
       audioManagerRef.current?.stop();
       wsConnectionRef.current?.closeConnection();
-      setAudioStream(null);
+      setIsSocketActive(false);
     };
-  }, []);
+  }, [setIsSocketActive]);
 
   return (
     <div className={s.container}>

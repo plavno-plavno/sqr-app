@@ -7,5 +7,26 @@
     &_Content{
         flex: 1;
         height: 100%;
+        overflow: auto;
+    }
+    &_Header{
+        padding: 20px 40px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        .languageSelector{
+            & > div {
+                background: #000000 !important;
+                color: white !important;
+                & > span > span {
+                    color: white !important;
+                }
+            }
+            & > span {
+                color: white !important;
+
+            }
+
+        }
     }
 }

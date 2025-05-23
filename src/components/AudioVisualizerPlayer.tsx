@@ -33,15 +33,15 @@ export const AudioVisualizerPlayer = ({
 
 			const centerX = width / 2;
 			const centerY = height / 2;
-			const minRadius = width * 0.32;
-			const maxBarLen = width * 0.18;
-			const waveRadius = width * 0.36;
-			phase += 0.04 + lastLevel.current * 0.08;
+			const minRadius = width * 0.0577; // 0.32 // радиус кружка внутри палочек
+			const maxBarLen = width * 0.8418; // 0.18 // динна палочек
+			const waveRadius = width * 0.19; // 0.36
+			phase += 0.004 + lastLevel.current * 0.11; // 0.08
 
 			// --- Bars ---
 			for (let i = 0; i < barsCount; i++) {
 				// имитируем спектр, но реагируем на общий level
-				const noise = 0.7 + 0.3 * Math.sin(phase * 2 + i * 2.3);
+				const noise = 0.9 + 0.3 * Math.sin(phase * 0.2 + i * 0.3);
 				const target = Math.pow(lastLevel.current, 1.2) * noise;
 				barLevels[i] += (target - barLevels[i]) * 0.18;
 
@@ -51,7 +51,7 @@ export const AudioVisualizerPlayer = ({
 				const x0 = centerX + Math.cos(angle) * minRadius;
 				const y0 = centerY + Math.sin(angle) * minRadius;
 				const x1 = centerX + Math.cos(angle) * (minRadius + barLen);
-				const y1 = centerY + Math.sin(angle) * (minRadius + barLen);
+				const y1 = centerY + Math.sin(angle) * (minRadius + barLen + 1);
 
 				ctx.save();
 				ctx.beginPath();
@@ -59,7 +59,7 @@ export const AudioVisualizerPlayer = ({
 				ctx.lineTo(x1, y1);
 				ctx.strokeStyle = 'white';
 				ctx.shadowColor = 'white';
-				ctx.shadowBlur = 8 + 24 * barLevels[i];
+				ctx.shadowBlur = 8 + 2 * barLevels[i];
 				ctx.lineWidth = 2.2;
 				ctx.stroke();
 				ctx.restore();
@@ -72,9 +72,7 @@ export const AudioVisualizerPlayer = ({
 				const t = i / wavePoints;
 				const angle = t * 2 * Math.PI - Math.PI / 2;
 				// волна по радиусу
-				const wave =
-					Math.sin(angle * barsCount / 8 + phase * 2.2) *
-					(10 + 32 * Math.pow(lastLevel.current, 1.5));
+				const wave = Math.sin(angle * barsCount / 8 + phase * 5.9) * (4 + 12 * Math.pow(lastLevel.current, 0.7));
 				const r = waveRadius + wave;
 				const x = centerX + Math.cos(angle) * r;
 				const y = centerY + Math.sin(angle) * r;
@@ -104,11 +102,9 @@ export const AudioVisualizerPlayer = ({
 			width={width}
 			height={height}
 			style={{
-				background: 'black',
-				display: 'block',
-				margin: '0 auto',
-				borderRadius: '50%',
-				boxShadow: '0 0 32px #000',
+				display: 'flex',
+				justifyContent: 'center',
+				alignItems: 'center',
 			}}
 		/>
 	);

@@ -17,3 +17,14 @@ h1, h2, h3, h4, h5, h6, p {
   margin: 0;
   padding: 0;
 }
+
+.languageItem{
+  color: #ffffff !important;
+}
+
+.ant-select-item-option-active, .ant-select-item-option-selected{
+  background: #434343 !important;
+}
+.ant-select-selector{
+  border-color: inherit !important;
+}

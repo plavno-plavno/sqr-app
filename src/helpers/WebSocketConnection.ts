@@ -6,6 +6,13 @@ export class WebSocketConnection {
   #isServerReady: boolean = false;
   #onServerReady: (() => void) | null = null;
   #onResponse: ((response: ServerResponse) => void) | null = null;
+  #language: string;
+  #prompt: string;
+
+  constructor(language: string, prompt: string) {
+    this.#language = language;
+    this.#prompt = prompt;
+  }
 
   async initSocket(url: string, onServerReady: () => void, onResponse: (response: ServerResponse) => void): Promise<void> {
     this.#onServerReady = onServerReady;
@@ -19,7 +26,7 @@ export class WebSocketConnection {
         // Отправляем инициализационные данные
         const initData = {
           uid: '35',
-          language: 'en',
+          language: this.#language,
           task: 'transcribe',
           model: 'large-v3',
           use_vad: true,
@@ -79,13 +86,13 @@ export class WebSocketConnection {
       console.log('Sending audio data, socket state:', this.#socket.readyState);
       
       const packet = {
-        speakerLang: 'en',
+        speakerLang: this.#language,
         audio: base64Data,
         isStartStream: true,
         disableSentenceCutter: true,
         returnTranslatedSegments: true,
-        sameOutputThreshold: 4,
-        prompt: 'qa',
+        sameOutputThreshold: 3,
+        prompt: this.#prompt,
       };
       const jsonPacket = JSON.stringify(packet);
 
