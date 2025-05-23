@@ -23,7 +23,7 @@ export class AudioWorkletManager {
       onError: () => {},
       onLevel: () => {},
       onVoiceActivity: () => {},
-      vadThreshold: 0.003, // Порог по умолчанию
+      vadThreshold: 0.004, // Порог по умолчанию
       vadSilenceFrames: 10, // 10 тихих фреймов для определения тишины
       ...options
     };
