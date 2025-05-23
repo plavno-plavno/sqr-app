@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { MicrophoneButton } from '../components';
-import { ServerResponse, Segment } from '../types/requests';
+import { ServerResponse, Segment, AudioResponse } from '../types/requests';
 import { MainLayout } from '../layouts';  
 import { Typography, Space } from 'antd';
 import s from './styles.module.scss';
+import { AudioQueueManager } from '../helpers/AudioQueueManager';
 
 const MAX_WORDS = 25;
 
@@ -11,46 +12,54 @@ export const App = () => {
   const [transcribedText, setTranscribedText] = useState<string>('');
   const [, setSegments] = useState<Segment[]>([]);
   const [translations, setTranslations] = useState<Record<string, string>>({});
+  const audioQueueRef = useRef<AudioQueueManager | null>(null);
 
   const handleTranscription = (response: ServerResponse) => {
-    if ('segments' in response && Array.isArray(response.segments)) {
-      // Обработка сегментов с текстом
-      setSegments(response.segments);
-      
-      // Получаем все слова с их временными метками
-      const wordsWithTimestamps = response.segments.flatMap(segment => {
-        const words = segment.text.trim().split(/\s+/);
-        return words.map(word => ({
-          word,
-          start: parseFloat(segment.start),
-          end: parseFloat(segment.end)
-        }));
-      });
+    if ('segments' in response) {
+      if (Array.isArray(response.segments)) {
+        // Обработка сегментов с текстом
+        setSegments(response.segments);
+        
+        const wordsWithTimestamps = response.segments.flatMap(segment => {
+          const words = segment.text.trim().split(/\s+/);
+          return words.map(word => ({
+            word,
+            start: parseFloat(segment.start),
+            end: parseFloat(segment.end)
+          }));
+        });
 
-      // Если слов больше MAX_WORDS, удаляем старые
-      if (wordsWithTimestamps.length > MAX_WORDS) {
-        const startTime = wordsWithTimestamps[wordsWithTimestamps.length - MAX_WORDS]?.start;
-        if (startTime !== undefined) {
-          const filteredSegments = response.segments.filter(segment => 
-            parseFloat(segment.start) >= startTime
-          );
-          
-          // Обновляем текст только из оставшихся сегментов
-          const text = filteredSegments
+        if (wordsWithTimestamps.length > MAX_WORDS) {
+          const startTime = wordsWithTimestamps[wordsWithTimestamps.length - MAX_WORDS]?.start;
+          if (startTime !== undefined) {
+            const filteredSegments = response.segments.filter(segment => 
+              parseFloat(segment.start) >= startTime
+            );
+            
+            const text = filteredSegments
+              .map(segment => segment.text.trim())
+              .join(' ');
+            setTranscribedText(text);
+          }
+        } else {
+          const text = response.segments
             .map(segment => segment.text.trim())
             .join(' ');
           setTranscribedText(text);
         }
-      } else {
-        // Если слов меньше MAX_WORDS, показываем все
-        const text = response.segments
-          .map(segment => segment.text.trim())
-          .join(' ');
-        setTranscribedText(text);
+      } else if (typeof response.segments === 'object' && !Array.isArray(response.segments)) {
+        if ('audio' in response.segments) {
+          // Обработка аудио ответа
+          const audioResponse = response as AudioResponse;
+          if (!audioQueueRef.current) {
+            audioQueueRef.current = new AudioQueueManager();
+          }
+          audioQueueRef.current.addToQueue(audioResponse.segments.audio);
+        } else {
+          // Обработка переводов
+          setTranslations(response.segments as Record<string, string>);
+        }
       }
-    } else if ('segments' in response && typeof response.segments === 'object' && !Array.isArray(response.segments)) {
-      // Обработка переводов
-      setTranslations(response.segments as Record<string, string>);
     }
   };
 

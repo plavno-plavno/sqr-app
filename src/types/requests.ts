@@ -12,19 +12,30 @@ export type GetFreeMachine = {
 }
 
 export interface Segment {
+  text: string;
   start: string;
   end: string;
-  text: string;
 }
 
-export interface SegmentsResponse {
-  uid: string;
+export interface TextResponse {
   segments: Segment[];
 }
 
-export interface TranslationsResponse {
-  uid: string;
+export interface TranslationResponse {
   segments: Record<string, string>;
 }
 
-export type ServerResponse = SegmentsResponse | TranslationsResponse;
+export interface AudioResponse {
+  segments: {
+    audio: string;
+  };
+}
+
+export type ServerResponse = TextResponse | TranslationResponse | AudioResponse;
+
+// {
+//   segemets:{
+//      "text": "ответ бота текстом",
+//      "audio":"здесь mp3 запакованный в base64 вначале распакуй потом проигрывай"
+//   }
+// }
