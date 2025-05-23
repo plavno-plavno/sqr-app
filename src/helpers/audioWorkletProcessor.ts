@@ -3,6 +3,9 @@ interface AudioProcessorOptions {
   onAudioData?: (data: string) => void; // Изменили тип на string для base64
   onError?: (error: Error) => void;
   onLevel?: (level: number) => void; // Новый колбэк
+  onVoiceActivity?: (isActive: boolean) => void; // Новый колбэк для VAD
+  vadThreshold?: number; // Порог для определения голоса
+  vadSilenceFrames?: number; // Количество тихих фреймов для определения тишины
 }
 
 export class AudioWorkletManager {
@@ -10,13 +13,18 @@ export class AudioWorkletManager {
   private workletNode: AudioWorkletNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private options: Required<AudioProcessorOptions>;
+  private silenceFrameCount: number = 0;
+  private isVoiceActive: boolean = false;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
       sampleRate: 16000,
       onAudioData: () => {},
       onError: () => {},
-      onLevel: () => {}, 
+      onLevel: () => {},
+      onVoiceActivity: () => {},
+      vadThreshold: 0.003, // Порог по умолчанию
+      vadSilenceFrames: 10, // 10 тихих фреймов для определения тишины
       ...options
     };
   }
@@ -33,12 +41,28 @@ export class AudioWorkletManager {
         const inputData = event.data;
         const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext!.sampleRate);
         const base64Data = this.float32ToBase64(audioData16kHz);
-        this.options.onAudioData(base64Data);
-
-
-        if (this.options.onLevel) {
-          this.options.onLevel(this.calculateLevel(audioData16kHz));
+        
+        // VAD обработка
+        const level = this.calculateLevel(audioData16kHz);
+        const isVoiceDetected = level > this.options.vadThreshold;
+        
+        if (isVoiceDetected) {
+          this.silenceFrameCount = 0;
+          if (!this.isVoiceActive) {
+            this.isVoiceActive = true;
+            this.options.onVoiceActivity(true);
+          }
+          // Отправляем аудио только когда есть голос
+          this.options.onAudioData(base64Data);
+        } else {
+          this.silenceFrameCount++;
+          if (this.silenceFrameCount >= this.options.vadSilenceFrames && this.isVoiceActive) {
+            this.isVoiceActive = false;
+            this.options.onVoiceActivity(false);
+          }
         }
+
+        this.options.onLevel(level);
       };
       
       this.source.connect(this.workletNode);
