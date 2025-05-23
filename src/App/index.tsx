@@ -17,6 +17,7 @@ export const App = () => {
   const [prompt, setPrompt] = useState<string>(defaultPrompt || 'qa');
   const [isSocketActive, setIsSocketActive] = useState(false);
   const [startPlayRandom, setStartPlayRandom] = useState(false);
+  const [level, setLevel] = useState(0);
 
   const handleTranscription = (response: ServerResponse) => {
     if ('segments' in response) {
@@ -65,20 +66,30 @@ export const App = () => {
               alignItems: 'center',
             }}
             >
-              <AudioVisualizerPlayer level={currentLevel} width={500} height={500} />
+              <AudioVisualizerPlayer
+                level={currentLevel}
+                width={500}
+                height={500}
+                micLevel={level}
+              >
+                <MicrophoneButton
+                  onTranscription={handleTranscription}
+                  setIsSocketActive={setIsSocketActive}
+                  language={language}
+                  prompt={prompt}
+                  setLevel={setLevel}
+                  level={level}
+                  audioQueue={audioQueueRef}
+                />
+              </AudioVisualizerPlayer>
               <Typography.Text className={s.App_Answer_Wrapper_Text}>
-                {audioText || 'Audio answer...'}
+                {audioText || ''}
               </Typography.Text>
             </div>
           </div>
         </div>
         <div>
-          <MicrophoneButton
-            onTranscription={handleTranscription}
-            setIsSocketActive={setIsSocketActive}
-            language={language}
-            prompt={prompt}
-          />
+          {/*<AudioVisualizer level={level} />*/}
           <Button
             size={'small'}
             style={{

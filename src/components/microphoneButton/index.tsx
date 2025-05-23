@@ -1,11 +1,10 @@
 import {Button} from 'antd';
 import {AudioOutlined, AudioMutedOutlined} from '@ant-design/icons';
 import {AudioWorkletManager} from "../../helpers/audioWorkletProcessor";
-import {useCallback, useEffect, useRef, useState} from "react";
+import {Dispatch, SetStateAction, useCallback, useEffect, useRef, useState} from "react";
 import {requests} from "../../axios";
 import {WebSocketConnection} from "../../helpers/WebSocketConnection";
 import { ServerResponse } from '../../types/requests';
-import AudioVisualizer from './AudioVisualizer';
 import s from './styles.module.scss';
 
 interface MicrophoneButtonProps {
@@ -13,16 +12,20 @@ interface MicrophoneButtonProps {
   setIsSocketActive: (active: boolean) => void;
   language: string;
   prompt: string;
+  setLevel: Dispatch<SetStateAction<number>>;
+  level: number;
+  audioQueue: any
 }
 
-export const MicrophoneButton = ({ 
-  onTranscription, 
+export const MicrophoneButton = ({
+  onTranscription,
   setIsSocketActive,
   language,
-  prompt 
+  prompt,
+  setLevel,
+  audioQueue,
 }: MicrophoneButtonProps) => {
   const [isRecording, setIsRecording] = useState(false);
-  const [level, setLevel] = useState(0);
   const [loading, setLoading] = useState(false);
   const audioManagerRef = useRef<AudioWorkletManager | null>(null);
   const wsConnectionRef = useRef<WebSocketConnection | null>(null);
@@ -58,6 +61,7 @@ export const MicrophoneButton = ({
             setIsRecording(false);
           },
           onLevel: setLevel,
+          audioQueue,
         });
       }
 
@@ -83,7 +87,7 @@ export const MicrophoneButton = ({
         if (!wsConnectionRef.current) {
           wsConnectionRef.current = new WebSocketConnection(language, prompt);
         }
-        
+        // startRecording()
         await wsConnectionRef.current.initSocket(wsUrl, startRecording, onTranscription);
         setIsSocketActive(true);
       } catch (error) {
@@ -103,7 +107,6 @@ export const MicrophoneButton = ({
 
   return (
     <div className={s.container}>
-      {isRecording && <AudioVisualizer level={level} />}
       <Button
         size='large'
         shape="circle"

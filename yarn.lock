@@ -1930,6 +1930,13 @@
   dependencies:
     onnxruntime-web "1.14.0"
 
+"@ricky0123/vad-web@^0.0.24":
+  version "0.0.24"
+  resolved "https://registry.yarnpkg.com/@ricky0123/vad-web/-/vad-web-0.0.24.tgz#e65053bce876b9fa778a5176216809420a0fedde"
+  integrity sha512-uv6GWW/kq8BkVErMQzXp3uwSyYMT3w/3QJiUerVaaKp7EwhOTIRY+96EoyFdG2WOFU5RkLk/2CVGbI7nDlxhEg==
+  dependencies:
+    onnxruntime-web "1.14.0"
+
 "@rollup/plugin-babel@^5.2.0":
   version "5.3.1"
   resolved "https://registry.npmjs.org/@rollup/plugin-babel/-/plugin-babel-5.3.1.tgz"

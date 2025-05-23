@@ -1,3 +1,5 @@
+import { MicVAD } from "@ricky0123/vad-web"
+
 interface AudioProcessorOptions {
   sampleRate?: number;
   onAudioData?: (data: string) => void; // Изменили тип на string для base64
@@ -6,6 +8,7 @@ interface AudioProcessorOptions {
   onVoiceActivity?: (isActive: boolean) => void; // Новый колбэк для VAD
   vadThreshold?: number; // Порог для определения голоса
   vadSilenceFrames?: number; // Количество тихих фреймов для определения тишины
+  audioQueue?: any;
 }
 
 export class AudioWorkletManager {
@@ -13,8 +16,8 @@ export class AudioWorkletManager {
   private workletNode: AudioWorkletNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private options: Required<AudioProcessorOptions>;
-  private silenceFrameCount: number = 0;
   private isVoiceActive: boolean = false;
+  private vad: MicVAD | null = null;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
@@ -25,6 +28,7 @@ export class AudioWorkletManager {
       onVoiceActivity: () => {},
       vadThreshold: 0.003, // Порог по умолчанию
       vadSilenceFrames: 10, // 10 тихих фреймов для определения тишины
+      audioQueue: {},
       ...options
     };
   }
@@ -34,6 +38,24 @@ export class AudioWorkletManager {
       this.audioContext = new AudioContext();
       await this.audioContext.audioWorklet.addModule('audio-processor.js');
       
+      // Initialize VAD
+      this.vad = await MicVAD.new({
+        onSpeechStart: () => {
+          this.isVoiceActive = true;
+          this.options.onVoiceActivity(true);
+          if (this.options.audioQueue?.current) {
+            this.options.audioQueue.current.stop();
+          }
+        },
+        onSpeechEnd: () => {
+          this.isVoiceActive = false;
+          this.options.onVoiceActivity(false);
+        }
+      });
+
+      // Start VAD
+      await this.vad.start();
+      
       this.source = this.audioContext.createMediaStreamSource(stream);
       this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
       
@@ -42,26 +64,12 @@ export class AudioWorkletManager {
         const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext!.sampleRate);
         const base64Data = this.float32ToBase64(audioData16kHz);
         
-        // VAD обработка
-        const level = this.calculateLevel(audioData16kHz);
-        const isVoiceDetected = level > this.options.vadThreshold;
-        
-        if (isVoiceDetected) {
-          this.silenceFrameCount = 0;
-          if (!this.isVoiceActive) {
-            this.isVoiceActive = true;
-            this.options.onVoiceActivity(true);
-          }
-          // Отправляем аудио только когда есть голос
+        // Отправляем аудио только когда есть голос
+        if (this.isVoiceActive) {
           this.options.onAudioData(base64Data);
-        } else {
-          this.silenceFrameCount++;
-          if (this.silenceFrameCount >= this.options.vadSilenceFrames && this.isVoiceActive) {
-            this.isVoiceActive = false;
-            this.options.onVoiceActivity(false);
-          }
         }
 
+        const level = this.calculateLevel(audioData16kHz);
         this.options.onLevel(level);
       };
       
@@ -125,11 +133,13 @@ export class AudioWorkletManager {
   }
 
   stop(): void {
+    this.vad?.pause();
     this.workletNode?.disconnect();
     this.source?.disconnect();
     this.audioContext?.close();
     this.audioContext = null;
     this.workletNode = null;
     this.source = null;
+    this.vad = null;
   }
 } 
