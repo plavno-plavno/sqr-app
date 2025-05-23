@@ -80,7 +80,6 @@ export class WebSocketConnection {
       
       const packet = {
         speakerLang: 'en',
-        allLangs: ['en', 'ru'],
         audio: base64Data,
         isStartStream: true,
         disableSentenceCutter: true,

@@ -2,8 +2,10 @@ export class AudioQueueManager {
   private audioQueue: string[] = [];
   private isPlaying: boolean = false;
   private audioContext: AudioContext | null = null;
+  private onLevel?: (level: number) => void;
 
-  constructor() {
+  constructor(onLevel?: (level: number) => void) {
+    this.onLevel = onLevel;
     this.audioContext = new AudioContext();
   }
 
@@ -32,7 +34,21 @@ export class AudioQueueManager {
       
       const source = this.audioContext.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(this.audioContext.destination);
+      
+      // --- анализатор уровня ---
+      const analyser = this.audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyser.connect(this.audioContext.destination);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const updateLevel = () => {
+        analyser.getByteTimeDomainData(dataArray);
+        const rms = Math.sqrt(dataArray.reduce((sum, v) => sum + Math.pow(v - 128, 2), 0) / dataArray.length) / 128;
+        if (this.onLevel) this.onLevel(rms);
+        if (this.isPlaying) requestAnimationFrame(updateLevel);
+      };
+      updateLevel();
+      // --- конец анализатора ---
       
       source.onended = () => {
         this.playNext();

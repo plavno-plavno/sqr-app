@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { MicrophoneButton } from '../components';
 import { ServerResponse, Segment, AudioResponse } from '../types/requests';
 import { MainLayout } from '../layouts';  
 import { Typography, Space } from 'antd';
 import s from './styles.module.scss';
 import { AudioQueueManager } from '../helpers/AudioQueueManager';
+import AudioVisualizerPlayer from '../components/AudioVisualizerPlayer';
 
 const MAX_WORDS = 25;
 
@@ -13,6 +14,8 @@ export const App = () => {
   const [, setSegments] = useState<Segment[]>([]);
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const audioQueueRef = useRef<AudioQueueManager | null>(null);
+  const [lastAudio, setLastAudio] = useState<string | null>(null);
+  const [currentLevel, setCurrentLevel] = useState(0);
 
   const handleTranscription = (response: ServerResponse) => {
     if ('segments' in response) {
@@ -52,9 +55,10 @@ export const App = () => {
           // Обработка аудио ответа
           const audioResponse = response as AudioResponse;
           if (!audioQueueRef.current) {
-            audioQueueRef.current = new AudioQueueManager();
+            audioQueueRef.current = new AudioQueueManager(setCurrentLevel);
           }
           audioQueueRef.current.addToQueue(audioResponse.segments.audio);
+          setLastAudio(audioResponse.segments.audio);
         } else {
           // Обработка переводов
           setTranslations(response.segments as Record<string, string>);
@@ -72,6 +76,7 @@ export const App = () => {
               <Typography.Text className={s.App_Answer_Wrapper_Text}>
                 {transcribedText ? transcribedText : 'Answer ...' }
               </Typography.Text>
+              <AudioVisualizerPlayer level={currentLevel} width={200} height={200} />
               
               {Object.entries(translations).map(([lang, text]) => (
                 <Typography.Text key={lang} className={s.App_Answer_Wrapper_Text}>

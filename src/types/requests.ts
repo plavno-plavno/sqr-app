@@ -32,10 +32,3 @@ export interface AudioResponse {
 }
 
 export type ServerResponse = TextResponse | TranslationResponse | AudioResponse;
-
-// {
-//   segemets:{
-//      "text": "ответ бота текстом",
-//      "audio":"здесь mp3 запакованный в base64 вначале распакуй потом проигрывай"
-//   }
-// }
