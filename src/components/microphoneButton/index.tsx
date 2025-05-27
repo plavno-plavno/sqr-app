@@ -51,8 +51,9 @@ export const MicrophoneButton = ({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          noiseSuppression: false,
-          echoCancellation: false
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
         }
       });
 
