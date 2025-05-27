@@ -44,7 +44,6 @@ export const MainLayout = ({
                 },
               }
             }}
-            disabled={isSocketActive}
           />
           <Select
             value={prompt}

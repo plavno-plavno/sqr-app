@@ -14,7 +14,10 @@ interface MicrophoneButtonProps {
   prompt: string;
   setLevel: Dispatch<SetStateAction<number>>;
   level: number;
-  audioQueue: any
+  audioQueue: any;
+  wsUrl: string;
+  setWsUrl: (url: string) => void;
+  wsConnectionRef: React.RefObject<WebSocketConnection | null>;
 }
 
 export const MicrophoneButton = ({
@@ -24,11 +27,13 @@ export const MicrophoneButton = ({
   prompt,
   setLevel,
   audioQueue,
+  wsUrl,
+  setWsUrl,
+  wsConnectionRef,
 }: MicrophoneButtonProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [loading, setLoading] = useState(false);
   const audioManagerRef = useRef<AudioWorkletManager | null>(null);
-  const wsConnectionRef = useRef<WebSocketConnection | null>(null);
 
   const getFreeMachine = useCallback(async ()=> {
     try {
@@ -81,14 +86,19 @@ export const MicrophoneButton = ({
       setIsSocketActive(false);
     } else {
       try {
-        const wsUrl = await getFreeMachine();
-        if (!wsUrl) return;
+        let url = wsUrl;
+        if (!url) {
+          const newUrl = await getFreeMachine();
+          if (!newUrl) return;
+          url = newUrl;
+          setWsUrl(newUrl);
+        }
 
         if (!wsConnectionRef.current) {
           wsConnectionRef.current = new WebSocketConnection(language, prompt);
         }
-        // startRecording()
-        await wsConnectionRef.current.initSocket(wsUrl, startRecording, onTranscription);
+        
+        await wsConnectionRef.current.initSocket(url, startRecording, onTranscription);
         setIsSocketActive(true);
       } catch (error) {
         console.error('Failed to start recording:', error);

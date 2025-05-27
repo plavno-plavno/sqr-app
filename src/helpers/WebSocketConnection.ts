@@ -8,22 +8,39 @@ export class WebSocketConnection {
   #onResponse: ((response: ServerResponse) => void) | null = null;
   #language: string;
   #prompt: string;
+  #url: string | null = null;
 
   constructor(language: string, prompt: string) {
     this.#language = language;
     this.#prompt = prompt;
   }
 
+  updateLanguage(language: string) {
+    this.#language = language;
+    if (this.#url) {
+      this.reconnect();
+    }
+  }
+
+  private reconnect() {
+    if (this.#socket) {
+      this.#socket.close();
+      this.#socket = null;
+    }
+    this.#isServerReady = false;
+    this.initSocket(this.#url!, this.#onServerReady!, this.#onResponse!);
+  }
+
   async initSocket(url: string, onServerReady: () => void, onResponse: (response: ServerResponse) => void): Promise<void> {
     this.#onServerReady = onServerReady;
     this.#onResponse = onResponse;
+    this.#url = url;
     
     return new Promise((resolve, reject) => {
       this.#socket = new WebSocket(url);
 
       this.#socket.onopen = () => {
         console.log('WebSocket connected');
-        // Отправляем инициализационные данные
         const initData = {
           uid: '35',
           language: this.#language,
