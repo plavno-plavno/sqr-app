@@ -55,7 +55,8 @@ export class AudioWorkletManager {
           this.isVoiceActive = false;
           this.options.onVoiceActivity(false);
         },
-        stream: stream // Передаем поток напрямую в VAD
+        stream: stream, // Передаем поток напрямую в VAD
+        positiveSpeechThreshold: 0.7,
       });
 
       // Start VAD
