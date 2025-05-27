@@ -5,8 +5,13 @@ export const promptOptions = [
     className: 'languageItem'
   },
   {
-    value: 'support',
+    value: 'ruya',
     label: 'Support',
+    className: 'languageItem'
+  },
+  {
+    value: 'um',
+    label: 'Umac',
     className: 'languageItem'
   },
 ];

@@ -2,7 +2,7 @@ import { MicVAD } from "@ricky0123/vad-web"
 
 interface AudioProcessorOptions {
   sampleRate?: number;
-  onAudioData?: (data: string) => void; // Изменили тип на string для base64
+  onAudioData?: (data: string, voicestop: boolean) => void; // Изменили тип на string для base64
   onError?: (error: Error) => void;
   onLevel?: (level: number) => void; // Новый колбэк
   onVoiceActivity?: (isActive: boolean) => void; // Новый колбэк для VAD
@@ -18,6 +18,7 @@ export class AudioWorkletManager {
   private options: Required<AudioProcessorOptions>;
   private isVoiceActive: boolean = false;
   private vad: MicVAD | null = null;
+  private voicestopFlag: boolean = false;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
@@ -41,16 +42,20 @@ export class AudioWorkletManager {
       // Initialize VAD
       this.vad = await MicVAD.new({
         onSpeechStart: () => {
+          console.log('Speech started');
           this.isVoiceActive = true;
           this.options.onVoiceActivity(true);
           if (this.options.audioQueue?.current) {
             this.options.audioQueue.current.stop();
+            this.voicestopFlag = true;
           }
         },
         onSpeechEnd: () => {
+          console.log('Speech ended');
           this.isVoiceActive = false;
           this.options.onVoiceActivity(false);
-        }
+        },
+        stream: stream // Передаем поток напрямую в VAD
       });
 
       // Start VAD
@@ -66,7 +71,8 @@ export class AudioWorkletManager {
         
         // Отправляем аудио только когда есть голос
         if (this.isVoiceActive) {
-          this.options.onAudioData(base64Data);
+          this.options.onAudioData(base64Data, this.voicestopFlag);
+          if (this.voicestopFlag) this.voicestopFlag = false;
         }
 
         const level = this.calculateLevel(audioData16kHz);

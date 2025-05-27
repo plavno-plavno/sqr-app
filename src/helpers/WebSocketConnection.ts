@@ -75,7 +75,7 @@ export class WebSocketConnection {
     });
   }
 
-  sendAudioData(base64Data: string) {
+  sendAudioData(base64Data: string, voicestop?: boolean) {
     console.log('this.#socket?.readyState', this.#socket?.readyState);
     if (!this.#isServerReady) {
       console.log('Waiting for server ready message...');
@@ -85,7 +85,7 @@ export class WebSocketConnection {
     if (this.#socket?.readyState === WebSocket.OPEN) {
       console.log('Sending audio data, socket state:', this.#socket.readyState);
       
-      const packet = {
+      const packet: any = {
         speakerLang: this.#language,
         audio: base64Data,
         isStartStream: true,
@@ -94,6 +94,7 @@ export class WebSocketConnection {
         sameOutputThreshold: 3,
         prompt: this.#prompt,
       };
+      if (voicestop === true) packet.voicestop = true;
       const jsonPacket = JSON.stringify(packet);
 
       this.#socket.send(jsonPacket);

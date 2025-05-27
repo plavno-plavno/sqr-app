@@ -10,6 +10,16 @@ export const languageOptions = [
     className: 'languageItem'
   },
   {
+    value: 'fl',
+    label: 'Filipino',
+    className: 'languageItem'
+  },
+  {
+    value: 'hi',
+    label: 'Hindi',
+    className: 'languageItem'
+  },
+  {
     value: 'ru',
     label: 'Russian',
     className: 'languageItem'
