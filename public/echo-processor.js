@@ -50,9 +50,12 @@ class EchoProcessor extends AudioWorkletProcessor {
     this.silenceCounter = 0;
     this.isVoiceActive = false;
     this.lastVoiceLevel = 0;
-    this.voiceLevelThreshold = 0.1; // Порог для определения голоса
-    this.voiceLevelHistory = new Float32Array(10); // История уровней голоса
+    this.voiceLevelThreshold = 0.1;
+    this.voiceLevelHistory = new Float32Array(10);
     this.voiceLevelIndex = 0;
+    this.playedAudioHistory = new Float32Array(10);
+    this.playedAudioIndex = 0;
+    this.lastPlayedAudioLevel = 0;
   }
 
   process(inputs, outputs, parameters) {
@@ -64,7 +67,6 @@ class EchoProcessor extends AudioWorkletProcessor {
     const inputChannel = input[0];
     const outputChannel = output[0];
     
-    // Получаем параметры
     const delayTime = parameters.delayTime[0];
     const feedback = parameters.feedback[0];
     const wetLevel = parameters.wetLevel[0];
@@ -78,7 +80,7 @@ class EchoProcessor extends AudioWorkletProcessor {
       maxLevel = Math.max(maxLevel, Math.abs(inputChannel[i]));
     }
 
-    // Обновляем историю уровней голоса
+    // Обновляем историю уровней
     this.voiceLevelHistory[this.voiceLevelIndex] = maxLevel;
     this.voiceLevelIndex = (this.voiceLevelIndex + 1) % this.voiceLevelHistory.length;
 
@@ -93,6 +95,8 @@ class EchoProcessor extends AudioWorkletProcessor {
     if (maxLevel > silenceThreshold) {
       this.silenceCounter = 0;
       this.isPlaying = true;
+      this.playedAudioHistory[this.playedAudioIndex] = maxLevel;
+      this.playedAudioIndex = (this.playedAudioIndex + 1) % this.playedAudioHistory.length;
     } else {
       this.silenceCounter++;
       if (this.silenceCounter >= silenceFrames) {
@@ -100,10 +104,18 @@ class EchoProcessor extends AudioWorkletProcessor {
       }
     }
 
+    // Вычисляем средний уровень воспроизводимого аудио
+    let avgPlayedAudioLevel = 0;
+    for (let i = 0; i < this.playedAudioHistory.length; i++) {
+      avgPlayedAudioLevel += this.playedAudioHistory[i];
+    }
+    avgPlayedAudioLevel /= this.playedAudioHistory.length;
+
     // Определяем, является ли вход микрофонным
     const isMicrophoneInput = this.isVoiceActive && 
                             avgVoiceLevel > this.voiceLevelThreshold && 
-                            !this.isPlaying;
+                            !this.isPlaying &&
+                            Math.abs(avgVoiceLevel - avgPlayedAudioLevel) > 0.05; // Разница между уровнями должна быть значительной
     
     for (let i = 0; i < inputChannel.length; i++) {
       if (this.isPlaying) {
