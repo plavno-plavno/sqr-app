@@ -41,7 +41,7 @@ export class AudioWorkletManager {
       await this.audioContext.audioWorklet.addModule('audio-processor.js');
       await this.audioContext.audioWorklet.addModule('echo-processor.js');
       
-      // Настройки аудио с максимальным шумоподавлением
+      // Настройки аудио с шумоподавлением
       const audioConstraints = {
         echoCancellation: true,
         noiseSuppression: true,
@@ -49,10 +49,10 @@ export class AudioWorkletManager {
         googEchoCancellation: true,
         googNoiseSuppression: true,
         googAutoGainControl: true,
-        volume: 0.05, // Минимальная чувствительность микрофона
+        volume: 0.3, // Увеличиваем чувствительность микрофона
         sampleRate: 16000,
         channelCount: 1,
-        latency: 0.1 // Минимальная задержка
+        latency: 0.1
       };
 
       const processedStream = stream.clone();
@@ -66,40 +66,40 @@ export class AudioWorkletManager {
 
       // Добавляем анализатор для определения уровня шума
       const analyser = this.audioContext.createAnalyser();
-      analyser.fftSize = 4096; // Увеличиваем размер FFT
-      analyser.smoothingTimeConstant = 0.9; // Увеличиваем сглаживание
+      analyser.fftSize = 2048; // Уменьшаем размер FFT для более быстрой реакции
+      analyser.smoothingTimeConstant = 0.7; // Уменьшаем сглаживание
 
       // Добавляем фильтр для шумоподавления
       const noiseGate = this.audioContext.createDynamicsCompressor();
-      noiseGate.threshold.value = -20; // Максимально высокий порог
-      noiseGate.knee.value = 25;
-      noiseGate.ratio.value = 40; // Максимальное соотношение
+      noiseGate.threshold.value = -40; // Понижаем порог
+      noiseGate.knee.value = 15;
+      noiseGate.ratio.value = 20; // Уменьшаем соотношение
       noiseGate.attack.value = 0;
       noiseGate.release.value = 0.25;
 
       // Добавляем фильтр для подавления низкочастотного шума
       const lowpassFilter = this.audioContext.createBiquadFilter();
       lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.value = 2000; // Еще ниже частота
+      lowpassFilter.frequency.value = 3000; // Повышаем частоту
       lowpassFilter.Q.value = 0.7;
 
       // Добавляем фильтр высоких частот
       const highpassFilter = this.audioContext.createBiquadFilter();
       highpassFilter.type = 'highpass';
-      highpassFilter.frequency.value = 400; // Повышаем нижнюю частоту
+      highpassFilter.frequency.value = 200; // Понижаем частоту
       highpassFilter.Q.value = 0.7;
 
       // Добавляем полосовой фильтр для голоса
       const bandpassFilter = this.audioContext.createBiquadFilter();
       bandpassFilter.type = 'bandpass';
       bandpassFilter.frequency.value = 2000;
-      bandpassFilter.Q.value = 1;
+      bandpassFilter.Q.value = 0.7; // Уменьшаем Q для более широкой полосы
 
       // Добавляем контроль громкости
       const gainNode = this.audioContext.createGain();
       gainNode.gain.value = 0.05;
 
-      // Initialize VAD с максимально высокими порогами
+      // Initialize VAD с более низкими порогами
       this.vad = await MicVAD.new({
         onSpeechStart: () => {
           console.log('Speech started');
@@ -118,10 +118,10 @@ export class AudioWorkletManager {
           this.echoNode?.port.postMessage({ isVoiceActive: false });
         },
         stream: processedStream,
-        positiveSpeechThreshold: 0.98, // Максимально высокий порог начала речи
-        negativeSpeechThreshold: 0.95, // Максимально высокий порог окончания речи
-        redemptionFrames: 20, // Максимальное количество фреймов
-        preSpeechPadFrames: 5
+        positiveSpeechThreshold: 0.7, // Понижаем порог начала речи
+        negativeSpeechThreshold: 0.6, // Понижаем порог окончания речи
+        redemptionFrames: 8, // Уменьшаем количество фреймов
+        preSpeechPadFrames: 2
       });
 
       await this.vad.start();
@@ -132,11 +132,11 @@ export class AudioWorkletManager {
       this.echoNode = new AudioWorkletNode(this.audioContext, 'echo-processor', {
         parameterData: {
           delayTime: 0.1,
-          feedback: 0.1, // Минимальная обратная связь
-          wetLevel: 0.1, // Минимальный уровень эффекта
-          dryLevel: 0.9, // Максимальный уровень прямого сигнала
-          silenceThreshold: 0.025, // Максимальный порог тишины
-          silenceFrames: 25 // Максимальное количество фреймов тишины
+          feedback: 0.2, // Увеличиваем обратную связь
+          wetLevel: 0.2, // Увеличиваем уровень эффекта
+          dryLevel: 0.8, // Уменьшаем уровень прямого сигнала
+          silenceThreshold: 0.015, // Понижаем порог тишины
+          silenceFrames: 15 // Уменьшаем количество фреймов тишины
         }
       });
 
