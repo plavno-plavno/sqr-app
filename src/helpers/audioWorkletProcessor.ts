@@ -51,21 +51,19 @@ export class AudioWorkletManager {
             this.options.audioQueue.current.stop();
             this.voicestopFlag = true;
           }
-          // Передаем состояние VAD в echo-processor
           this.echoNode?.port.postMessage({ isVoiceActive: true });
         },
         onSpeechEnd: () => {
           console.log('Speech ended');
           this.isVoiceActive = false;
           this.options.onVoiceActivity(false);
-          // Передаем состояние VAD в echo-processor
           this.echoNode?.port.postMessage({ isVoiceActive: false });
         },
         stream: stream,
-        positiveSpeechThreshold: 0.85, // Повышаем порог для более точного определения речи
-        negativeSpeechThreshold: 0.65, // Добавляем порог для определения окончания речи
-        redemptionFrames: 8, // Увеличиваем количество фреймов для подтверждения
-        preSpeechPadFrames: 2 // Добавляем небольшой буфер перед речью
+        positiveSpeechThreshold: 0.92, // Повышенный порог для более точного определения речи
+        negativeSpeechThreshold: 0.75, // Повышенный порог для определения окончания речи
+        redemptionFrames: 12, // Увеличенное количество фреймов для подтверждения
+        preSpeechPadFrames: 3 // Увеличенный буфер перед речью
       });
 
       await this.vad.start();
