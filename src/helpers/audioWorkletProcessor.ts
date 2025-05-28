@@ -14,6 +14,7 @@ interface AudioProcessorOptions {
 export class AudioWorkletManager {
   private audioContext: AudioContext | null = null;
   private workletNode: AudioWorkletNode | null = null;
+  private echoNode: AudioWorkletNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private options: Required<AudioProcessorOptions>;
   private isVoiceActive: boolean = false;
@@ -38,6 +39,7 @@ export class AudioWorkletManager {
     try {
       this.audioContext = new AudioContext();
       await this.audioContext.audioWorklet.addModule('audio-processor.js');
+      await this.audioContext.audioWorklet.addModule('echo-processor.js');
       
       // Initialize VAD
       this.vad = await MicVAD.new({
@@ -64,6 +66,7 @@ export class AudioWorkletManager {
       
       this.source = this.audioContext.createMediaStreamSource(stream);
       this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
+      this.echoNode = new AudioWorkletNode(this.audioContext, 'echo-processor');
       
       this.workletNode.port.onmessage = (event) => {
         const inputData = event.data;
@@ -80,8 +83,10 @@ export class AudioWorkletManager {
         this.options.onLevel(level);
       };
       
+      // Подключаем цепочку: source -> worklet -> echo -> destination
       this.source.connect(this.workletNode);
-      this.workletNode.connect(this.audioContext.destination);
+      this.workletNode.connect(this.echoNode);
+      this.echoNode.connect(this.audioContext.destination);
     } catch (error) {
       this.options.onError(error as Error);
       throw error;
@@ -142,10 +147,12 @@ export class AudioWorkletManager {
   stop(): void {
     this.vad?.pause();
     this.workletNode?.disconnect();
+    this.echoNode?.disconnect();
     this.source?.disconnect();
     this.audioContext?.close();
     this.audioContext = null;
     this.workletNode = null;
+    this.echoNode = null;
     this.source = null;
     this.vad = null;
   }

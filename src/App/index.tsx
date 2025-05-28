@@ -44,7 +44,10 @@ export const App = () => {
             audioQueueRef.current = new AudioQueueManager(setCurrentLevel);
           }
           audioQueueRef.current.addToQueue(audioResponse.segments.audio);
-          setAudioText((audioResponse.segments as any).text || '');
+        }
+        if ('text' in response.segments) {
+          // Обработка текстового ответа
+          setAudioText(response.segments['text'] || '');
         }
       }
     }
