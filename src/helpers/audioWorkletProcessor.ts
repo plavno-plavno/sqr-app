@@ -48,7 +48,8 @@ export class AudioWorkletManager {
         autoGainControl: true,
         googEchoCancellation: true,
         googNoiseSuppression: true,
-        googAutoGainControl: true
+        googAutoGainControl: true,
+        volume: 0.3 // Уменьшаем чувствительность микрофона
       };
 
       const processedStream = stream.clone();
@@ -67,23 +68,23 @@ export class AudioWorkletManager {
 
       // Добавляем фильтр для шумоподавления
       const noiseGate = this.audioContext.createDynamicsCompressor();
-      noiseGate.threshold.value = -50;
-      noiseGate.knee.value = 10;
-      noiseGate.ratio.value = 20;
+      noiseGate.threshold.value = -40; // Повышаем порог
+      noiseGate.knee.value = 15;
+      noiseGate.ratio.value = 25; // Увеличиваем соотношение
       noiseGate.attack.value = 0;
       noiseGate.release.value = 0.25;
 
       // Добавляем фильтр для подавления низкочастотного шума
       const lowpassFilter = this.audioContext.createBiquadFilter();
       lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.value = 4000;
+      lowpassFilter.frequency.value = 3000; // Понижаем частоту
       lowpassFilter.Q.value = 0.7;
 
       // Добавляем контроль громкости
       const gainNode = this.audioContext.createGain();
-      gainNode.gain.value = 0.1; // Уменьшаем громкость в 2 раза
+      gainNode.gain.value = 0.05; // Уменьшаем громкость в 20 раз
 
-      // Initialize VAD
+      // Initialize VAD с более высокими порогами
       this.vad = await MicVAD.new({
         onSpeechStart: () => {
           console.log('Speech started');
@@ -102,10 +103,10 @@ export class AudioWorkletManager {
           this.echoNode?.port.postMessage({ isVoiceActive: false });
         },
         stream: processedStream,
-        positiveSpeechThreshold: 0.8,
-        negativeSpeechThreshold: 0.7,
-        redemptionFrames: 8,
-        preSpeechPadFrames: 2
+        positiveSpeechThreshold: 0.9, // Повышаем порог начала речи
+        negativeSpeechThreshold: 0.85, // Повышаем порог окончания речи
+        redemptionFrames: 12, // Увеличиваем количество фреймов
+        preSpeechPadFrames: 3
       });
 
       await this.vad.start();
@@ -116,11 +117,11 @@ export class AudioWorkletManager {
       this.echoNode = new AudioWorkletNode(this.audioContext, 'echo-processor', {
         parameterData: {
           delayTime: 0.1,
-          feedback: 0.3,
-          wetLevel: 0.3,
-          dryLevel: 0.7,
-          silenceThreshold: 0.01,
-          silenceFrames: 10
+          feedback: 0.2, // Уменьшаем обратную связь
+          wetLevel: 0.2, // Уменьшаем уровень эффекта
+          dryLevel: 0.8, // Увеличиваем уровень прямого сигнала
+          silenceThreshold: 0.015, // Повышаем порог тишины
+          silenceFrames: 15 // Увеличиваем количество фреймов тишины
         }
       });
 
