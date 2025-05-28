@@ -41,11 +41,14 @@ export class AudioWorkletManager {
       await this.audioContext.audioWorklet.addModule('audio-processor.js');
       await this.audioContext.audioWorklet.addModule('echo-processor.js');
       
-      // Базовые настройки аудио
+      // Настройки аудио с шумоподавлением
       const audioConstraints = {
         echoCancellation: true,
         noiseSuppression: true,
-        autoGainControl: true
+        autoGainControl: true,
+        googEchoCancellation: true,
+        googNoiseSuppression: true,
+        googAutoGainControl: true
       };
 
       const processedStream = stream.clone();
@@ -53,6 +56,28 @@ export class AudioWorkletManager {
       audioTracks.forEach(track => {
         track.applyConstraints(audioConstraints);
       });
+
+      // Создаем цепочку обработки аудио
+      this.source = this.audioContext.createMediaStreamSource(processedStream);
+
+      // Добавляем анализатор для определения уровня шума
+      const analyser = this.audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.8;
+
+      // Добавляем фильтр для шумоподавления
+      const noiseGate = this.audioContext.createDynamicsCompressor();
+      noiseGate.threshold.value = -50;
+      noiseGate.knee.value = 10;
+      noiseGate.ratio.value = 20;
+      noiseGate.attack.value = 0;
+      noiseGate.release.value = 0.25;
+
+      // Добавляем фильтр для подавления низкочастотного шума
+      const lowpassFilter = this.audioContext.createBiquadFilter();
+      lowpassFilter.type = 'lowpass';
+      lowpassFilter.frequency.value = 4000;
+      lowpassFilter.Q.value = 0.7;
 
       // Initialize VAD
       this.vad = await MicVAD.new({
@@ -81,7 +106,6 @@ export class AudioWorkletManager {
 
       await this.vad.start();
       
-      this.source = this.audioContext.createMediaStreamSource(processedStream);
       this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
       
       // Базовые настройки echo-processor
@@ -96,8 +120,13 @@ export class AudioWorkletManager {
         }
       });
 
-      // Простая цепочка обработки
-      this.source.connect(this.workletNode);
+      // Собираем цепочку обработки
+      this.source
+        .connect(analyser)
+        .connect(noiseGate)
+        .connect(lowpassFilter)
+        .connect(this.workletNode);
+      
       this.workletNode.connect(this.echoNode);
       this.echoNode.connect(this.audioContext.destination);
 
