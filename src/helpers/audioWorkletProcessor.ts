@@ -23,11 +23,16 @@ export class AudioWorkletManager {
   private gainNode: GainNode | null = null;
   private analyserNode: AnalyserNode | null = null;
   private isUserSpeaking: boolean = false;
-  private silenceThreshold: number = 0.01;
-  private speechThreshold: number = 0.05;
+  private silenceThreshold: number = 0.015;
+  private speechThreshold: number = 0.03;
   private lastLevel: number = 0;
   private silenceFrames: number = 0;
   private readonly SILENCE_FRAMES_THRESHOLD = 10;
+  private playbackBuffer: Float32Array | null = null;
+  private micBuffer: Float32Array | null = null;
+  private readonly BUFFER_SIZE = 1024;
+  private readonly ECHO_THRESHOLD = 0.85; // Порог схожести для определения эха
+  private readonly CROSS_CORRELATION_WINDOW = 100; // Окно для поиска задержки
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
@@ -57,7 +62,7 @@ export class AudioWorkletManager {
         googEchoCancellation: true,
         googNoiseSuppression: true,
         googAutoGainControl: true,
-        volume: 0.3,
+        volume: 1.0,
         sampleRate: 16000,
         channelCount: 1,
         latency: 0.1
@@ -74,12 +79,12 @@ export class AudioWorkletManager {
 
       // Создаем анализатор для определения уровня звука
       this.analyserNode = this.audioContext.createAnalyser();
-      this.analyserNode.fftSize = 1024;
+      this.analyserNode.fftSize = this.BUFFER_SIZE;
       this.analyserNode.smoothingTimeConstant = 0.3;
 
       // Создаем узел усиления для адаптивной чувствительности
       this.gainNode = this.audioContext.createGain();
-      this.gainNode.gain.value = 0.05; // Начальное значение - низкая чувствительность
+      this.gainNode.gain.value = 1.0;
 
       // Добавляем фильтр для шумоподавления
       const noiseGate = this.audioContext.createDynamicsCompressor();
@@ -157,6 +162,19 @@ export class AudioWorkletManager {
       // Добавляем обработчик сообщений
       this.workletNode.port.onmessage = (event) => {
         const inputData = event.data;
+        this.micBuffer = new Float32Array(inputData);
+        
+        if (this.playbackBuffer && this.micBuffer) {
+          const similarity = this.compareBuffers(this.playbackBuffer, this.micBuffer);
+          if (similarity > this.ECHO_THRESHOLD) {
+            // Это эхо, подавляем сигнал
+            this.gainNode!.gain.setTargetAtTime(0.1, this.audioContext!.currentTime, 0.01);
+          } else {
+            // Это не эхо, возвращаем нормальную чувствительность
+            this.gainNode!.gain.setTargetAtTime(1.0, this.audioContext!.currentTime, 0.01);
+          }
+        }
+
         const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext!.sampleRate);
         const base64Data = this.float32ToBase64(audioData16kHz);
         
@@ -196,13 +214,13 @@ export class AudioWorkletManager {
         // Пользователь начал говорить
         this.isUserSpeaking = true;
         this.silenceFrames = 0;
-        this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.01); // Быстрое включение
+        this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.01);
       } else if (rms < this.silenceThreshold) {
         // Возможно тишина
         this.silenceFrames++;
         if (this.silenceFrames > this.SILENCE_FRAMES_THRESHOLD) {
           this.isUserSpeaking = false;
-          this.gainNode.gain.setTargetAtTime(0.05, this.audioContext.currentTime, 0.1); // Плавное выключение
+          this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.1);
         }
       } else {
         // Промежуточный уровень
@@ -282,5 +300,57 @@ export class AudioWorkletManager {
     this.vad = null;
     this.gainNode = null;
     this.analyserNode = null;
+  }
+
+  private compareBuffers(playback: Float32Array, mic: Float32Array): number {
+    // Находим задержку между буферами
+    const delay = this.findDelay(playback, mic);
+    
+    // Сравниваем буферы с учетом задержки
+    let sumSquaredDiff = 0;
+    let sumSquaredPlayback = 0;
+    
+    for (let i = 0; i < mic.length; i++) {
+      const playbackIndex = i + delay;
+      if (playbackIndex < playback.length) {
+        const diff = mic[i]! - playback[playbackIndex]!;
+        sumSquaredDiff += diff * diff;
+        sumSquaredPlayback += playback[playbackIndex]! * playback[playbackIndex]!;
+      }
+    }
+    
+    // Вычисляем коэффициент схожести (1 - нормализованная разница)
+    const similarity = 1 - Math.sqrt(sumSquaredDiff / sumSquaredPlayback);
+    return similarity;
+  }
+
+  private findDelay(playback: Float32Array, mic: Float32Array): number {
+    let maxCorrelation = -1;
+    let bestDelay = 0;
+    
+    // Ищем задержку в пределах окна
+    for (let delay = 0; delay < this.CROSS_CORRELATION_WINDOW; delay++) {
+      let correlation = 0;
+      let count = 0;
+      
+      for (let i = 0; i < mic.length - delay; i++) {
+        correlation += mic[i]! * playback[i + delay]!;
+        count++;
+      }
+      
+      correlation /= count;
+      
+      if (correlation > maxCorrelation) {
+        maxCorrelation = correlation;
+        bestDelay = delay;
+      }
+    }
+    
+    return bestDelay;
+  }
+
+  // Метод для обновления буфера воспроизведения
+  public updatePlaybackBuffer(buffer: Float32Array) {
+    this.playbackBuffer = buffer;
   }
 } 

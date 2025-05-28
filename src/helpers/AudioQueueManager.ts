@@ -7,12 +7,14 @@ export class AudioQueueManager {
   private currentSourceNode: AudioBufferSourceNode | null = null;
   private currentGainNode: GainNode | null = null;
   private currentAnalyserNode: AnalyserNode | null = null;
+  private audioWorkletManager: any = null;
 
   private fadeDuration: number = 0.7;
   private isStopping: boolean = false;
 
-  constructor(onLevel?: (level: number) => void) {
+  constructor(onLevel?: (level: number) => void, audioWorkletManager?: any) {
     this.onLevel = onLevel;
+    this.audioWorkletManager = audioWorkletManager;
     if (typeof AudioContext !== 'undefined') {
       this.audioContext = new AudioContext();
       this.audioContext.onstatechange = () => {
@@ -113,8 +115,18 @@ export class AudioQueueManager {
       this.currentGainNode = gainNode;
       this.currentAnalyserNode = analyser;
 
+      const scriptNode = this.audioContext!.createScriptProcessor(1024, 1, 1);
+      scriptNode.onaudioprocess = (e) => {
+        const inputBuffer = e.inputBuffer.getChannelData(0);
+        if (this.audioWorkletManager) {
+          this.audioWorkletManager.updatePlaybackBuffer(new Float32Array(inputBuffer));
+        }
+      };
+
       source.connect(gainNode);
       gainNode.connect(analyser);
+      gainNode.connect(scriptNode);
+      scriptNode.connect(this.audioContext!.destination);
       analyser.connect(this.audioContext!.destination);
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -143,6 +155,7 @@ export class AudioQueueManager {
 
       source.onended = () => {
         console.log("Current source ended.");
+        scriptNode.disconnect();
         if (!this.isStopping) {
           this.disconnectAndClearNodes();
           this.playNext();
