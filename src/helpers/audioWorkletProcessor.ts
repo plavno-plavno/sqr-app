@@ -51,29 +51,42 @@ export class AudioWorkletManager {
             this.options.audioQueue.current.stop();
             this.voicestopFlag = true;
           }
+          // Передаем состояние VAD в echo-processor
+          this.echoNode?.port.postMessage({ isVoiceActive: true });
         },
         onSpeechEnd: () => {
           console.log('Speech ended');
           this.isVoiceActive = false;
           this.options.onVoiceActivity(false);
+          // Передаем состояние VAD в echo-processor
+          this.echoNode?.port.postMessage({ isVoiceActive: false });
         },
-        stream: stream, // Передаем поток напрямую в VAD
+        stream: stream,
         positiveSpeechThreshold: 0.7,
       });
 
-      // Start VAD
       await this.vad.start();
       
       this.source = this.audioContext.createMediaStreamSource(stream);
       this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
-      this.echoNode = new AudioWorkletNode(this.audioContext, 'echo-processor');
+      
+      // Создаем echo-processor с параметрами
+      this.echoNode = new AudioWorkletNode(this.audioContext, 'echo-processor', {
+        parameterData: {
+          delayTime: 0.1,
+          feedback: 0.3,
+          wetLevel: 0.3,
+          dryLevel: 0.7,
+          silenceThreshold: 0.01,
+          silenceFrames: 10
+        }
+      });
       
       this.workletNode.port.onmessage = (event) => {
         const inputData = event.data;
         const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext!.sampleRate);
         const base64Data = this.float32ToBase64(audioData16kHz);
         
-        // Отправляем аудио только когда есть голос
         if (this.isVoiceActive) {
           this.options.onAudioData(base64Data, this.voicestopFlag);
           if (this.voicestopFlag) this.voicestopFlag = false;
