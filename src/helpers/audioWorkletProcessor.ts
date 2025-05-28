@@ -62,7 +62,10 @@ export class AudioWorkletManager {
           this.echoNode?.port.postMessage({ isVoiceActive: false });
         },
         stream: stream,
-        positiveSpeechThreshold: 0.7,
+        positiveSpeechThreshold: 0.85, // Повышаем порог для более точного определения речи
+        negativeSpeechThreshold: 0.65, // Добавляем порог для определения окончания речи
+        redemptionFrames: 8, // Увеличиваем количество фреймов для подтверждения
+        preSpeechPadFrames: 2 // Добавляем небольшой буфер перед речью
       });
 
       await this.vad.start();
