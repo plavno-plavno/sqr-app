@@ -166,21 +166,27 @@ export class AudioWorkletManager {
 
       // Добавляем обработчик сообщений
       this.workletNode.port.onmessage = (event) => {
-        const inputData = event.data;
+        const inputData = event.data.input;
+        if (!inputData || !Array.isArray(inputData)) {
+          console.warn('Invalid input data format');
+          return;
+        }
+
         this.micBuffer = new Float32Array(inputData);
         
         if (this.playbackBuffer && this.micBuffer) {
           const similarity = this.compareBuffers(this.playbackBuffer, this.micBuffer);
+          console.log('Buffer similarity:', similarity); // Для отладки
+          
           if (similarity > this.ECHO_THRESHOLD) {
-            // Это эхо, подавляем сигнал
+            console.log('Echo detected, suppressing'); // Для отладки
             this.gainNode!.gain.setTargetAtTime(0.1, this.audioContext!.currentTime, 0.01);
           } else {
-            // Это не эхо, возвращаем нормальную чувствительность
             this.gainNode!.gain.setTargetAtTime(1.0, this.audioContext!.currentTime, 0.01);
           }
         }
 
-        const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext!.sampleRate);
+        const audioData16kHz = this.resampleTo16kHz(this.micBuffer, this.audioContext!.sampleRate);
         const base64Data = this.float32ToBase64(audioData16kHz);
         
         if (this.isVoiceActive) {
@@ -308,24 +314,36 @@ export class AudioWorkletManager {
   }
 
   private compareBuffers(playback: Float32Array, mic: Float32Array): number {
+    // Проверяем размеры буферов
+    if (playback.length !== mic.length) {
+      console.warn('Buffer size mismatch:', playback.length, mic.length);
+      return 0;
+    }
+
     // Проверяем амплитуду
     const playbackAmplitude = this.getAmplitude(playback);
     const micAmplitude = this.getAmplitude(mic);
     
+    console.log('Amplitudes:', playbackAmplitude, micAmplitude); // Для отладки
+    
     if (playbackAmplitude < this.MIN_AMPLITUDE_THRESHOLD || micAmplitude < this.MIN_AMPLITUDE_THRESHOLD) {
-      return 0; // Слишком тихий сигнал для сравнения
+      return 0;
     }
 
     // Проверяем соотношение амплитуд
     const amplitudeRatio = Math.min(playbackAmplitude, micAmplitude) / Math.max(playbackAmplitude, micAmplitude);
-    if (amplitudeRatio < 0.5) { // Если амплитуды сильно различаются
+    console.log('Amplitude ratio:', amplitudeRatio); // Для отладки
+    
+    if (amplitudeRatio < 0.5) {
       return 0;
     }
 
     // Находим задержку между буферами
     const delay = this.findDelay(playback, mic);
+    console.log('Delay:', delay); // Для отладки
+    
     if (delay > this.MAX_DELAY) {
-      return 0; // Задержка слишком большая
+      return 0;
     }
     
     // Сравниваем буферы с учетом задержки
@@ -344,11 +362,13 @@ export class AudioWorkletManager {
     }
     
     if (validSamples < this.BUFFER_SIZE * 0.5) {
-      return 0; // Недостаточно валидных сэмплов
+      console.warn('Not enough valid samples:', validSamples); // Для отладки
+      return 0;
     }
 
     // Вычисляем коэффициент схожести
     const similarity = 1 - Math.sqrt(sumSquaredDiff / sumSquaredPlayback);
+    console.log('Similarity:', similarity); // Для отладки
     
     // Проверяем длительность схожести
     const currentTime = this.audioContext?.currentTime ?? 0;
@@ -362,7 +382,6 @@ export class AudioWorkletManager {
       this.similarityCounter = 0;
     }
 
-    // Возвращаем схожесть только если она держится достаточно долго
     if (currentTime - this.lastSimilarityTime >= this.MIN_SIMILARITY_DURATION) {
       return similarity;
     }
@@ -382,13 +401,17 @@ export class AudioWorkletManager {
     let maxCorrelation = -1;
     let bestDelay = 0;
     
+    // Нормализуем буферы
+    const normalizedPlayback = this.normalizeBuffer(playback);
+    const normalizedMic = this.normalizeBuffer(mic);
+    
     // Ищем задержку в пределах окна
     for (let delay = 0; delay < this.CROSS_CORRELATION_WINDOW; delay++) {
       let correlation = 0;
       let count = 0;
       
-      for (let i = 0; i < mic.length - delay; i++) {
-        correlation += mic[i]! * playback[i + delay]!;
+      for (let i = 0; i < normalizedMic.length - delay; i++) {
+        correlation += normalizedMic[i]! * normalizedPlayback[i + delay]!;
         count++;
       }
       
@@ -400,12 +423,19 @@ export class AudioWorkletManager {
       }
     }
     
-    // Проверяем качество корреляции
-    if (maxCorrelation < 0.3) { // Если корреляция слишком слабая
-      return this.MAX_DELAY + 1; // Возвращаем значение, которое будет отфильтровано
+    console.log('Max correlation:', maxCorrelation); // Для отладки
+    
+    if (maxCorrelation < 0.3) {
+      return this.MAX_DELAY + 1;
     }
     
     return bestDelay;
+  }
+
+  private normalizeBuffer(buffer: Float32Array): Float32Array {
+    const max = Math.max(...buffer.map(Math.abs));
+    if (max === 0) return buffer;
+    return buffer.map(x => x / max);
   }
 
   // Метод для обновления буфера воспроизведения

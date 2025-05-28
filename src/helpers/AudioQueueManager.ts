@@ -119,7 +119,9 @@ export class AudioQueueManager {
       scriptNode.onaudioprocess = (e) => {
         const inputBuffer = e.inputBuffer.getChannelData(0);
         if (this.audioWorkletManager) {
-          this.audioWorkletManager.updatePlaybackBuffer(new Float32Array(inputBuffer));
+          const bufferCopy = new Float32Array(inputBuffer.length);
+          bufferCopy.set(inputBuffer);
+          this.audioWorkletManager.updatePlaybackBuffer(bufferCopy);
         }
       };
 
