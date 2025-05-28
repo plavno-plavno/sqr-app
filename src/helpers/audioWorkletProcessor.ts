@@ -31,16 +31,19 @@ export class AudioWorkletManager {
   private playbackBuffer: Float32Array | null = null;
   private micBuffer: Float32Array | null = null;
   private readonly BUFFER_SIZE = 1024;
-  private readonly ECHO_THRESHOLD = 0.7; // Снижаем порог
-  private readonly CROSS_CORRELATION_WINDOW = 500; // Увеличиваем окно поиска
-  private readonly MIN_AMPLITUDE_THRESHOLD = 0.01;
-  private readonly MAX_DELAY = 1000; // Увеличиваем максимальную задержку
-  private readonly MIN_SIMILARITY_DURATION = 0.1;
+  private readonly ECHO_THRESHOLD = 0.85; // Повышаем порог схожести
+  private readonly CROSS_CORRELATION_WINDOW = 500;
+  private readonly MIN_AMPLITUDE_THRESHOLD = 0.02; // Повышаем порог амплитуды
+  private readonly MAX_DELAY = 1000;
+  private readonly MIN_SIMILARITY_DURATION = 0.2; // Увеличиваем время проверки
   private similarityCounter: number = 0;
   private lastSimilarityTime: number = 0;
   private isPlaying: boolean = false;
-  private playbackHistory: Float32Array[] = []; // История буферов воспроизведения
-  private readonly HISTORY_SIZE = 10; // Храним последние 10 буферов
+  private playbackHistory: Float32Array[] = [];
+  private readonly HISTORY_SIZE = 10;
+  private readonly MIN_ECHO_DURATION = 0.1; // Минимальная длительность эха
+  private echoStartTime: number = 0;
+  private isEchoDetected: boolean = false;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
@@ -328,6 +331,14 @@ export class AudioWorkletManager {
     const micAmplitude = this.getAmplitude(normalizedMic);
     
     if (playbackAmplitude < this.MIN_AMPLITUDE_THRESHOLD || micAmplitude < this.MIN_AMPLITUDE_THRESHOLD) {
+      this.resetEchoDetection();
+      return 0;
+    }
+
+    // Проверяем соотношение амплитуд
+    const amplitudeRatio = Math.min(playbackAmplitude, micAmplitude) / Math.max(playbackAmplitude, micAmplitude);
+    if (amplitudeRatio < 0.3) { // Если амплитуды сильно различаются, это не эхо
+      this.resetEchoDetection();
       return 0;
     }
 
@@ -350,8 +361,30 @@ export class AudioWorkletManager {
       }
     }
 
-    console.log('Best similarity:', maxSimilarity, 'Delay:', bestDelay);
-    return maxSimilarity;
+    const currentTime = this.audioContext?.currentTime ?? 0;
+
+    // Проверяем длительность эха
+    if (maxSimilarity > this.ECHO_THRESHOLD) {
+      if (!this.isEchoDetected) {
+        this.echoStartTime = currentTime;
+        this.isEchoDetected = true;
+      }
+      
+      // Проверяем, прошло ли достаточно времени
+      if (currentTime - this.echoStartTime >= this.MIN_ECHO_DURATION) {
+        console.log('Echo detected:', maxSimilarity, 'Delay:', bestDelay);
+        return maxSimilarity;
+      }
+    } else {
+      this.resetEchoDetection();
+    }
+
+    return 0;
+  }
+
+  private resetEchoDetection() {
+    this.isEchoDetected = false;
+    this.echoStartTime = 0;
   }
 
   private findDelayAndSimilarity(playback: Float32Array, mic: Float32Array): { delay: number, similarity: number } {
@@ -377,7 +410,7 @@ export class AudioWorkletManager {
     }
 
     // Если корреляция слишком слабая, считаем что это не эхо
-    if (maxCorrelation < 0.3) {
+    if (maxCorrelation < 0.4) { // Повышаем порог корреляции
       return { delay: 0, similarity: 0 };
     }
 
@@ -426,6 +459,7 @@ export class AudioWorkletManager {
   public stopPlayback() {
     this.isPlaying = false;
     this.playbackBuffer = null;
-    this.playbackHistory = []; // Очищаем историю
+    this.playbackHistory = [];
+    this.resetEchoDetection();
   }
 } 
