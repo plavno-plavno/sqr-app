@@ -49,7 +49,9 @@ class EchoProcessor extends AudioWorkletProcessor {
     this.isPlaying = false;
     this.silenceCounter = 0;
     this.isVoiceActive = false;
-    this.lastProcessTime = 0;
+    this.isMicrophoneInput = false;
+    this.lastVoiceTime = 0;
+    this.voiceTimeout = 0.5; // 500ms timeout for voice detection
   }
 
   process(inputs, outputs, parameters) {
@@ -85,18 +87,30 @@ class EchoProcessor extends AudioWorkletProcessor {
         this.isPlaying = false;
       }
     }
+
+    // Определяем, является ли вход микрофонным
+    // Если есть голос и нет воспроизведения - это микрофон
+    if (this.isVoiceActive && !this.isPlaying) {
+      this.isMicrophoneInput = true;
+      this.lastVoiceTime = currentTime;
+    } else if (currentTime - this.lastVoiceTime > this.voiceTimeout) {
+      this.isMicrophoneInput = false;
+    }
     
     for (let i = 0; i < inputChannel.length; i++) {
-      if (this.isPlaying && !this.isVoiceActive) {
-        // Если воспроизводится аудио и нет голоса, пропускаем сигнал
+      if (this.isPlaying && !this.isMicrophoneInput) {
+        // Если воспроизводится аудио и это не микрофонный вход, пропускаем сигнал
         outputChannel[i] = inputChannel[i];
-      } else {
-        // Применяем эхо-компенсацию
+      } else if (this.isMicrophoneInput) {
+        // Применяем эхо-компенсацию только к микрофонному входу
         const readIndex = (this.writeIndex - Math.floor(delayTime * this.sampleRate) + this.bufferSize) % this.bufferSize;
         const delayedSample = this.delayBuffer[readIndex];
         const echoSample = inputChannel[i] + delayedSample * feedback;
         this.delayBuffer[this.writeIndex] = echoSample;
         outputChannel[i] = inputChannel[i] * dryLevel - echoSample * wetLevel;
+      } else {
+        // Для всех остальных случаев просто пропускаем сигнал
+        outputChannel[i] = inputChannel[i];
       }
       this.writeIndex = (this.writeIndex + 1) % this.bufferSize;
     }
