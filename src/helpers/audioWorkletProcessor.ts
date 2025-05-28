@@ -31,8 +31,13 @@ export class AudioWorkletManager {
   private playbackBuffer: Float32Array | null = null;
   private micBuffer: Float32Array | null = null;
   private readonly BUFFER_SIZE = 1024;
-  private readonly ECHO_THRESHOLD = 0.85; // Порог схожести для определения эха
-  private readonly CROSS_CORRELATION_WINDOW = 100; // Окно для поиска задержки
+  private readonly ECHO_THRESHOLD = 0.95; // Увеличиваем порог схожести
+  private readonly CROSS_CORRELATION_WINDOW = 100;
+  private readonly MIN_AMPLITUDE_THRESHOLD = 0.01; // Минимальная амплитуда для сравнения
+  private readonly MAX_DELAY = 500; // Максимальная задержка в сэмплах
+  private readonly MIN_SIMILARITY_DURATION = 0.1; // Минимальная длительность схожести в секундах
+  private similarityCounter: number = 0;
+  private lastSimilarityTime: number = 0;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
@@ -303,12 +308,30 @@ export class AudioWorkletManager {
   }
 
   private compareBuffers(playback: Float32Array, mic: Float32Array): number {
+    // Проверяем амплитуду
+    const playbackAmplitude = this.getAmplitude(playback);
+    const micAmplitude = this.getAmplitude(mic);
+    
+    if (playbackAmplitude < this.MIN_AMPLITUDE_THRESHOLD || micAmplitude < this.MIN_AMPLITUDE_THRESHOLD) {
+      return 0; // Слишком тихий сигнал для сравнения
+    }
+
+    // Проверяем соотношение амплитуд
+    const amplitudeRatio = Math.min(playbackAmplitude, micAmplitude) / Math.max(playbackAmplitude, micAmplitude);
+    if (amplitudeRatio < 0.5) { // Если амплитуды сильно различаются
+      return 0;
+    }
+
     // Находим задержку между буферами
     const delay = this.findDelay(playback, mic);
+    if (delay > this.MAX_DELAY) {
+      return 0; // Задержка слишком большая
+    }
     
     // Сравниваем буферы с учетом задержки
     let sumSquaredDiff = 0;
     let sumSquaredPlayback = 0;
+    let validSamples = 0;
     
     for (let i = 0; i < mic.length; i++) {
       const playbackIndex = i + delay;
@@ -316,12 +339,43 @@ export class AudioWorkletManager {
         const diff = mic[i]! - playback[playbackIndex]!;
         sumSquaredDiff += diff * diff;
         sumSquaredPlayback += playback[playbackIndex]! * playback[playbackIndex]!;
+        validSamples++;
       }
     }
     
-    // Вычисляем коэффициент схожести (1 - нормализованная разница)
+    if (validSamples < this.BUFFER_SIZE * 0.5) {
+      return 0; // Недостаточно валидных сэмплов
+    }
+
+    // Вычисляем коэффициент схожести
     const similarity = 1 - Math.sqrt(sumSquaredDiff / sumSquaredPlayback);
-    return similarity;
+    
+    // Проверяем длительность схожести
+    const currentTime = this.audioContext?.currentTime ?? 0;
+    if (similarity > this.ECHO_THRESHOLD) {
+      if (this.lastSimilarityTime === 0) {
+        this.lastSimilarityTime = currentTime;
+      }
+      this.similarityCounter++;
+    } else {
+      this.lastSimilarityTime = 0;
+      this.similarityCounter = 0;
+    }
+
+    // Возвращаем схожесть только если она держится достаточно долго
+    if (currentTime - this.lastSimilarityTime >= this.MIN_SIMILARITY_DURATION) {
+      return similarity;
+    }
+    
+    return 0;
+  }
+
+  private getAmplitude(buffer: Float32Array): number {
+    let sum = 0;
+    for (let i = 0; i < buffer.length; i++) {
+      sum += Math.abs(buffer[i]!);
+    }
+    return sum / buffer.length;
   }
 
   private findDelay(playback: Float32Array, mic: Float32Array): number {
@@ -344,6 +398,11 @@ export class AudioWorkletManager {
         maxCorrelation = correlation;
         bestDelay = delay;
       }
+    }
+    
+    // Проверяем качество корреляции
+    if (maxCorrelation < 0.3) { // Если корреляция слишком слабая
+      return this.MAX_DELAY + 1; // Возвращаем значение, которое будет отфильтровано
     }
     
     return bestDelay;
