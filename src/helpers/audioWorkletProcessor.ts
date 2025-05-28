@@ -41,6 +41,24 @@ export class AudioWorkletManager {
       await this.audioContext.audioWorklet.addModule('audio-processor.js');
       await this.audioContext.audioWorklet.addModule('echo-processor.js');
       
+      // Добавляем обработку аудио для мобильных устройств
+      const audioConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        googEchoCancellation: true,
+        googAutoGainControl: true,
+        googNoiseSuppression: true,
+        googHighpassFilter: true
+      };
+
+      // Применяем ограничения к потоку
+      const processedStream = stream.clone();
+      const audioTracks = processedStream.getAudioTracks();
+      audioTracks.forEach(track => {
+        track.applyConstraints(audioConstraints);
+      });
+
       // Initialize VAD
       this.vad = await MicVAD.new({
         onSpeechStart: () => {
@@ -59,27 +77,27 @@ export class AudioWorkletManager {
           this.options.onVoiceActivity(false);
           this.echoNode?.port.postMessage({ isVoiceActive: false });
         },
-        stream: stream,
-        positiveSpeechThreshold: 0.92, // Повышенный порог для более точного определения речи
-        negativeSpeechThreshold: 0.75, // Повышенный порог для определения окончания речи
-        redemptionFrames: 12, // Увеличенное количество фреймов для подтверждения
-        preSpeechPadFrames: 3 // Увеличенный буфер перед речью
+        stream: processedStream,
+        positiveSpeechThreshold: 0.95, // Повышаем порог для игнорирования фонового звука
+        negativeSpeechThreshold: 0.85, // Повышаем порог для определения окончания речи
+        redemptionFrames: 15, // Увеличиваем количество фреймов для подтверждения
+        preSpeechPadFrames: 4 // Увеличиваем буфер перед речью
       });
 
       await this.vad.start();
       
-      this.source = this.audioContext.createMediaStreamSource(stream);
+      this.source = this.audioContext.createMediaStreamSource(processedStream);
       this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
       
-      // Создаем echo-processor с параметрами
+      // Улучшаем параметры echo-processor
       this.echoNode = new AudioWorkletNode(this.audioContext, 'echo-processor', {
         parameterData: {
-          delayTime: 0.1,
-          feedback: 0.3,
-          wetLevel: 0.3,
-          dryLevel: 0.7,
-          silenceThreshold: 0.01,
-          silenceFrames: 10
+          delayTime: 0.05, // Уменьшаем задержку
+          feedback: 0.2, // Уменьшаем обратную связь
+          wetLevel: 0.2, // Уменьшаем уровень эффекта
+          dryLevel: 0.8, // Увеличиваем уровень прямого сигнала
+          silenceThreshold: 0.015, // Повышаем порог тишины
+          silenceFrames: 15 // Увеличиваем количество фреймов тишины
         }
       });
       
