@@ -20,6 +20,14 @@ export class AudioWorkletManager {
   private isVoiceActive: boolean = false;
   private vad: MicVAD | null = null;
   private voicestopFlag: boolean = false;
+  private gainNode: GainNode | null = null;
+  private analyserNode: AnalyserNode | null = null;
+  private isUserSpeaking: boolean = false;
+  private silenceThreshold: number = 0.01;
+  private speechThreshold: number = 0.05;
+  private lastLevel: number = 0;
+  private silenceFrames: number = 0;
+  private readonly SILENCE_FRAMES_THRESHOLD = 10;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
@@ -28,8 +36,8 @@ export class AudioWorkletManager {
       onError: () => {},
       onLevel: () => {},
       onVoiceActivity: () => {},
-      vadThreshold: 0.003, // Порог по умолчанию
-      vadSilenceFrames: 10, // 10 тихих фреймов для определения тишины
+      vadThreshold: 0.003,
+      vadSilenceFrames: 10,
       audioQueue: {},
       ...options
     };
@@ -49,7 +57,7 @@ export class AudioWorkletManager {
         googEchoCancellation: true,
         googNoiseSuppression: true,
         googAutoGainControl: true,
-        volume: 0.3, // Увеличиваем чувствительность микрофона
+        volume: 0.3,
         sampleRate: 16000,
         channelCount: 1,
         latency: 0.1
@@ -64,42 +72,36 @@ export class AudioWorkletManager {
       // Создаем цепочку обработки аудио
       this.source = this.audioContext.createMediaStreamSource(processedStream);
 
-      // Добавляем анализатор для определения уровня шума
-      const analyser = this.audioContext.createAnalyser();
-      analyser.fftSize = 2048; // Уменьшаем размер FFT для более быстрой реакции
-      analyser.smoothingTimeConstant = 0.7; // Уменьшаем сглаживание
+      // Создаем анализатор для определения уровня звука
+      this.analyserNode = this.audioContext.createAnalyser();
+      this.analyserNode.fftSize = 1024;
+      this.analyserNode.smoothingTimeConstant = 0.3;
+
+      // Создаем узел усиления для адаптивной чувствительности
+      this.gainNode = this.audioContext.createGain();
+      this.gainNode.gain.value = 0.05; // Начальное значение - низкая чувствительность
 
       // Добавляем фильтр для шумоподавления
       const noiseGate = this.audioContext.createDynamicsCompressor();
-      noiseGate.threshold.value = -40; // Понижаем порог
+      noiseGate.threshold.value = -40;
       noiseGate.knee.value = 15;
-      noiseGate.ratio.value = 20; // Уменьшаем соотношение
+      noiseGate.ratio.value = 20;
       noiseGate.attack.value = 0;
       noiseGate.release.value = 0.25;
 
       // Добавляем фильтр для подавления низкочастотного шума
       const lowpassFilter = this.audioContext.createBiquadFilter();
       lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.value = 3000; // Повышаем частоту
+      lowpassFilter.frequency.value = 3000;
       lowpassFilter.Q.value = 0.7;
 
       // Добавляем фильтр высоких частот
       const highpassFilter = this.audioContext.createBiquadFilter();
       highpassFilter.type = 'highpass';
-      highpassFilter.frequency.value = 200; // Понижаем частоту
+      highpassFilter.frequency.value = 200;
       highpassFilter.Q.value = 0.7;
 
-      // Добавляем полосовой фильтр для голоса
-      const bandpassFilter = this.audioContext.createBiquadFilter();
-      bandpassFilter.type = 'bandpass';
-      bandpassFilter.frequency.value = 2000;
-      bandpassFilter.Q.value = 0.7; // Уменьшаем Q для более широкой полосы
-
-      // Добавляем контроль громкости
-      const gainNode = this.audioContext.createGain();
-      gainNode.gain.value = 0.05;
-
-      // Initialize VAD с более низкими порогами
+      // Initialize VAD
       this.vad = await MicVAD.new({
         onSpeechStart: () => {
           console.log('Speech started');
@@ -118,9 +120,9 @@ export class AudioWorkletManager {
           this.echoNode?.port.postMessage({ isVoiceActive: false });
         },
         stream: processedStream,
-        positiveSpeechThreshold: 0.7, // Понижаем порог начала речи
-        negativeSpeechThreshold: 0.6, // Понижаем порог окончания речи
-        redemptionFrames: 8, // Уменьшаем количество фреймов
+        positiveSpeechThreshold: 0.7,
+        negativeSpeechThreshold: 0.6,
+        redemptionFrames: 8,
         preSpeechPadFrames: 2
       });
 
@@ -132,22 +134,21 @@ export class AudioWorkletManager {
       this.echoNode = new AudioWorkletNode(this.audioContext, 'echo-processor', {
         parameterData: {
           delayTime: 0.1,
-          feedback: 0.2, // Увеличиваем обратную связь
-          wetLevel: 0.2, // Увеличиваем уровень эффекта
-          dryLevel: 0.8, // Уменьшаем уровень прямого сигнала
-          silenceThreshold: 0.015, // Понижаем порог тишины
-          silenceFrames: 15 // Уменьшаем количество фреймов тишины
+          feedback: 0.2,
+          wetLevel: 0.2,
+          dryLevel: 0.8,
+          silenceThreshold: 0.015,
+          silenceFrames: 15
         }
       });
 
       // Собираем цепочку обработки
       this.source
-        .connect(analyser)
+        .connect(this.analyserNode)
         .connect(noiseGate)
         .connect(highpassFilter)
-        .connect(bandpassFilter)
         .connect(lowpassFilter)
-        .connect(gainNode)
+        .connect(this.gainNode)
         .connect(this.workletNode);
       
       this.workletNode.connect(this.echoNode);
@@ -163,14 +164,56 @@ export class AudioWorkletManager {
           this.options.onAudioData(base64Data, this.voicestopFlag);
           if (this.voicestopFlag) this.voicestopFlag = false;
         }
-
-        const level = this.calculateLevel(audioData16kHz);
-        this.options.onLevel(level);
       };
+
+      // Запускаем мониторинг уровня звука
+      this.startLevelMonitoring();
+
     } catch (error) {
       this.options.onError(error as Error);
       throw error;
     }
+  }
+
+  private startLevelMonitoring() {
+    if (!this.analyserNode || !this.gainNode || !this.audioContext) return;
+
+    const dataArray = new Uint8Array(this.analyserNode.frequencyBinCount);
+    const updateLevel = () => {
+      if (!this.analyserNode || !this.gainNode || !this.audioContext) return;
+
+      this.analyserNode.getByteTimeDomainData(dataArray);
+      let sumSquares = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const sample = (dataArray[i]! - 128) / 128;
+        sumSquares += sample * sample;
+      }
+      const rms = Math.sqrt(sumSquares / dataArray.length);
+      this.lastLevel = rms;
+
+      // Адаптивная чувствительность
+      if (rms > this.speechThreshold) {
+        // Пользователь начал говорить
+        this.isUserSpeaking = true;
+        this.silenceFrames = 0;
+        this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.01); // Быстрое включение
+      } else if (rms < this.silenceThreshold) {
+        // Возможно тишина
+        this.silenceFrames++;
+        if (this.silenceFrames > this.SILENCE_FRAMES_THRESHOLD) {
+          this.isUserSpeaking = false;
+          this.gainNode.gain.setTargetAtTime(0.05, this.audioContext.currentTime, 0.1); // Плавное выключение
+        }
+      } else {
+        // Промежуточный уровень
+        this.silenceFrames = 0;
+      }
+
+      this.options.onLevel(rms);
+      requestAnimationFrame(updateLevel);
+    };
+
+    requestAnimationFrame(updateLevel);
   }
 
   private float32ToBase64(audioData: Float32Array): string {
@@ -229,11 +272,15 @@ export class AudioWorkletManager {
     this.workletNode?.disconnect();
     this.echoNode?.disconnect();
     this.source?.disconnect();
+    this.gainNode?.disconnect();
+    this.analyserNode?.disconnect();
     this.audioContext?.close();
     this.audioContext = null;
     this.workletNode = null;
     this.echoNode = null;
     this.source = null;
     this.vad = null;
+    this.gainNode = null;
+    this.analyserNode = null;
   }
 } 
