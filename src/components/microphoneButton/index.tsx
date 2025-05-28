@@ -53,7 +53,9 @@ export const MicrophoneButton = ({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          channelCount: 1, // Используем только один канал
+          sampleRate: 16000 // Устанавливаем частоту дискретизации
         }
       });
 
