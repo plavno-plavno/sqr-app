@@ -41,18 +41,13 @@ export class AudioWorkletManager {
       await this.audioContext.audioWorklet.addModule('audio-processor.js');
       await this.audioContext.audioWorklet.addModule('echo-processor.js');
       
-      // Добавляем обработку аудио для мобильных устройств
+      // Базовые настройки аудио
       const audioConstraints = {
         echoCancellation: true,
         noiseSuppression: true,
-        autoGainControl: true,
-        googEchoCancellation: true,
-        googAutoGainControl: true,
-        googNoiseSuppression: true,
-        googHighpassFilter: true
+        autoGainControl: true
       };
 
-      // Применяем ограничения к потоку
       const processedStream = stream.clone();
       const audioTracks = processedStream.getAudioTracks();
       audioTracks.forEach(track => {
@@ -78,10 +73,10 @@ export class AudioWorkletManager {
           this.echoNode?.port.postMessage({ isVoiceActive: false });
         },
         stream: processedStream,
-        positiveSpeechThreshold: 0.95, // Повышаем порог для игнорирования фонового звука
-        negativeSpeechThreshold: 0.85, // Повышаем порог для определения окончания речи
-        redemptionFrames: 15, // Увеличиваем количество фреймов для подтверждения
-        preSpeechPadFrames: 4 // Увеличиваем буфер перед речью
+        positiveSpeechThreshold: 0.8,
+        negativeSpeechThreshold: 0.7,
+        redemptionFrames: 8,
+        preSpeechPadFrames: 2
       });
 
       await this.vad.start();
@@ -89,18 +84,24 @@ export class AudioWorkletManager {
       this.source = this.audioContext.createMediaStreamSource(processedStream);
       this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
       
-      // Улучшаем параметры echo-processor
+      // Базовые настройки echo-processor
       this.echoNode = new AudioWorkletNode(this.audioContext, 'echo-processor', {
         parameterData: {
-          delayTime: 0.05, // Уменьшаем задержку
-          feedback: 0.2, // Уменьшаем обратную связь
-          wetLevel: 0.2, // Уменьшаем уровень эффекта
-          dryLevel: 0.8, // Увеличиваем уровень прямого сигнала
-          silenceThreshold: 0.015, // Повышаем порог тишины
-          silenceFrames: 15 // Увеличиваем количество фреймов тишины
+          delayTime: 0.1,
+          feedback: 0.3,
+          wetLevel: 0.3,
+          dryLevel: 0.7,
+          silenceThreshold: 0.01,
+          silenceFrames: 10
         }
       });
-      
+
+      // Простая цепочка обработки
+      this.source.connect(this.workletNode);
+      this.workletNode.connect(this.echoNode);
+      this.echoNode.connect(this.audioContext.destination);
+
+      // Добавляем обработчик сообщений
       this.workletNode.port.onmessage = (event) => {
         const inputData = event.data;
         const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext!.sampleRate);
@@ -114,11 +115,6 @@ export class AudioWorkletManager {
         const level = this.calculateLevel(audioData16kHz);
         this.options.onLevel(level);
       };
-      
-      // Подключаем цепочку: source -> worklet -> echo -> destination
-      this.source.connect(this.workletNode);
-      this.workletNode.connect(this.echoNode);
-      this.echoNode.connect(this.audioContext.destination);
     } catch (error) {
       this.options.onError(error as Error);
       throw error;
