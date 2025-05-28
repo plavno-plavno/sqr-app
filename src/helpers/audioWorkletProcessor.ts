@@ -81,7 +81,7 @@ export class AudioWorkletManager {
 
       // Добавляем контроль громкости
       const gainNode = this.audioContext.createGain();
-      gainNode.gain.value = 0.5; // Уменьшаем громкость в 2 раза
+      gainNode.gain.value = 0.1; // Уменьшаем громкость в 2 раза
 
       // Initialize VAD
       this.vad = await MicVAD.new({
