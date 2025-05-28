@@ -79,6 +79,10 @@ export class AudioWorkletManager {
       lowpassFilter.frequency.value = 4000;
       lowpassFilter.Q.value = 0.7;
 
+      // Добавляем контроль громкости
+      const gainNode = this.audioContext.createGain();
+      gainNode.gain.value = 0.5; // Уменьшаем громкость в 2 раза
+
       // Initialize VAD
       this.vad = await MicVAD.new({
         onSpeechStart: () => {
@@ -125,6 +129,7 @@ export class AudioWorkletManager {
         .connect(analyser)
         .connect(noiseGate)
         .connect(lowpassFilter)
+        .connect(gainNode)
         .connect(this.workletNode);
       
       this.workletNode.connect(this.echoNode);
