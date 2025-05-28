@@ -49,9 +49,10 @@ class EchoProcessor extends AudioWorkletProcessor {
     this.isPlaying = false;
     this.silenceCounter = 0;
     this.isVoiceActive = false;
-    this.isMicrophoneInput = false;
-    this.lastVoiceTime = 0;
-    this.voiceTimeout = 0.5; // 500ms timeout for voice detection
+    this.lastVoiceLevel = 0;
+    this.voiceLevelThreshold = 0.1; // Порог для определения голоса
+    this.voiceLevelHistory = new Float32Array(10); // История уровней голоса
+    this.voiceLevelIndex = 0;
   }
 
   process(inputs, outputs, parameters) {
@@ -77,6 +78,17 @@ class EchoProcessor extends AudioWorkletProcessor {
       maxLevel = Math.max(maxLevel, Math.abs(inputChannel[i]));
     }
 
+    // Обновляем историю уровней голоса
+    this.voiceLevelHistory[this.voiceLevelIndex] = maxLevel;
+    this.voiceLevelIndex = (this.voiceLevelIndex + 1) % this.voiceLevelHistory.length;
+
+    // Вычисляем средний уровень голоса
+    let avgVoiceLevel = 0;
+    for (let i = 0; i < this.voiceLevelHistory.length; i++) {
+      avgVoiceLevel += this.voiceLevelHistory[i];
+    }
+    avgVoiceLevel /= this.voiceLevelHistory.length;
+
     // Определяем, воспроизводится ли сейчас аудио
     if (maxLevel > silenceThreshold) {
       this.silenceCounter = 0;
@@ -89,19 +101,15 @@ class EchoProcessor extends AudioWorkletProcessor {
     }
 
     // Определяем, является ли вход микрофонным
-    // Если есть голос и нет воспроизведения - это микрофон
-    if (this.isVoiceActive && !this.isPlaying) {
-      this.isMicrophoneInput = true;
-      this.lastVoiceTime = currentTime;
-    } else if (currentTime - this.lastVoiceTime > this.voiceTimeout) {
-      this.isMicrophoneInput = false;
-    }
+    const isMicrophoneInput = this.isVoiceActive && 
+                            avgVoiceLevel > this.voiceLevelThreshold && 
+                            !this.isPlaying;
     
     for (let i = 0; i < inputChannel.length; i++) {
-      if (this.isPlaying && !this.isMicrophoneInput) {
-        // Если воспроизводится аудио и это не микрофонный вход, пропускаем сигнал
+      if (this.isPlaying) {
+        // Если воспроизводится аудио, пропускаем сигнал
         outputChannel[i] = inputChannel[i];
-      } else if (this.isMicrophoneInput) {
+      } else if (isMicrophoneInput) {
         // Применяем эхо-компенсацию только к микрофонному входу
         const readIndex = (this.writeIndex - Math.floor(delayTime * this.sampleRate) + this.bufferSize) % this.bufferSize;
         const delayedSample = this.delayBuffer[readIndex];
