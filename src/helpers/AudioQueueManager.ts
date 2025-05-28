@@ -104,7 +104,7 @@ export class AudioQueueManager {
       source.buffer = audioBuffer;
 
       const gainNode = this.audioContext!.createGain();
-      gainNode.gain.setValueAtTime(1, this.audioContext!.currentTime);
+      gainNode.gain.setValueAtTime(0.1, this.audioContext!.currentTime);
 
       const analyser = this.audioContext!.createAnalyser();
       analyser.fftSize = 256;
