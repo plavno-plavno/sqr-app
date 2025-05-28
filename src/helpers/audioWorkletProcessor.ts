@@ -38,6 +38,7 @@ export class AudioWorkletManager {
   private readonly MIN_SIMILARITY_DURATION = 0.1; // Минимальная длительность схожести в секундах
   private similarityCounter: number = 0;
   private lastSimilarityTime: number = 0;
+  private isPlaying: boolean = false;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
@@ -166,32 +167,24 @@ export class AudioWorkletManager {
 
       // Добавляем обработчик сообщений
       this.workletNode.port.onmessage = (event) => {
-        const inputData = event.data.input;
-        if (!inputData || !Array.isArray(inputData)) {
-          console.warn('Invalid input data format');
-          return;
-        }
-
-        this.micBuffer = new Float32Array(inputData);
-        
-        if (this.playbackBuffer && this.micBuffer) {
-          const similarity = this.compareBuffers(this.playbackBuffer, this.micBuffer);
-          console.log('Buffer similarity:', similarity); // Для отладки
-          
-          if (similarity > this.ECHO_THRESHOLD) {
-            console.log('Echo detected, suppressing'); // Для отладки
-            this.gainNode!.gain.setTargetAtTime(0.1, this.audioContext!.currentTime, 0.01);
-          } else {
-            this.gainNode!.gain.setTargetAtTime(1.0, this.audioContext!.currentTime, 0.01);
-          }
-        }
-
-        const audioData16kHz = this.resampleTo16kHz(this.micBuffer, this.audioContext!.sampleRate);
+        const inputData = event.data;
+        const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext!.sampleRate);
         const base64Data = this.float32ToBase64(audioData16kHz);
         
         if (this.isVoiceActive) {
           this.options.onAudioData(base64Data, this.voicestopFlag);
           if (this.voicestopFlag) this.voicestopFlag = false;
+        }
+
+        // Обработка эха только если есть воспроизведение
+        if (this.isPlaying && this.playbackBuffer) {
+          this.micBuffer = new Float32Array(inputData);
+          const similarity = this.compareBuffers(this.playbackBuffer, this.micBuffer);
+          if (similarity > this.ECHO_THRESHOLD) {
+            this.gainNode!.gain.setTargetAtTime(0.1, this.audioContext!.currentTime, 0.01);
+          } else {
+            this.gainNode!.gain.setTargetAtTime(1.0, this.audioContext!.currentTime, 0.01);
+          }
         }
       };
 
@@ -246,39 +239,49 @@ export class AudioWorkletManager {
   }
 
   private float32ToBase64(audioData: Float32Array): string {
-    const uint8Array = new Uint8Array(audioData.buffer);
-    let binaryString = '';
-    
-    for (let i = 0; i < uint8Array.length; i++) {
-      const byte = uint8Array[i];
-      if (byte !== undefined) {
-        binaryString += String.fromCharCode(byte);
+    try {
+      const uint8Array = new Uint8Array(audioData.buffer);
+      let binaryString = '';
+      
+      for (let i = 0; i < uint8Array.length; i++) {
+        const byte = uint8Array[i];
+        if (byte !== undefined) {
+          binaryString += String.fromCharCode(byte);
+        }
       }
+      
+      return btoa(binaryString);
+    } catch (error) {
+      console.error('Error converting to base64:', error);
+      return '';
     }
-    
-    return btoa(binaryString);
   }
 
   private resampleTo16kHz(audioData: Float32Array, origSampleRate: number): Float32Array {
-    const targetLength = Math.round(audioData.length * (this.options.sampleRate / origSampleRate));
-    const resampledData = new Float32Array(targetLength);
-    
-    const springFactor = (audioData.length - 1) / (targetLength - 1);
-    resampledData[0] = audioData[0] ?? 0;
-    resampledData[targetLength - 1] = audioData[audioData.length - 1] ?? 0;
-    
-    for (let i = 1; i < targetLength - 1; i++) {
-      const index = i * springFactor;
-      const leftIndex = Math.floor(index);
-      const rightIndex = Math.ceil(index);
-      const fraction = index - leftIndex;
+    try {
+      const targetLength = Math.round(audioData.length * (this.options.sampleRate / origSampleRate));
+      const resampledData = new Float32Array(targetLength);
       
-      const leftValue = audioData[leftIndex] ?? 0;
-      const rightValue = audioData[rightIndex] ?? 0;
-      resampledData[i] = leftValue + (rightValue - leftValue) * fraction;
+      const springFactor = (audioData.length - 1) / (targetLength - 1);
+      resampledData[0] = audioData[0] ?? 0;
+      resampledData[targetLength - 1] = audioData[audioData.length - 1] ?? 0;
+      
+      for (let i = 1; i < targetLength - 1; i++) {
+        const index = i * springFactor;
+        const leftIndex = Math.floor(index);
+        const rightIndex = Math.ceil(index);
+        const fraction = index - leftIndex;
+        
+        const leftValue = audioData[leftIndex] ?? 0;
+        const rightValue = audioData[rightIndex] ?? 0;
+        resampledData[i] = leftValue + (rightValue - leftValue) * fraction;
+      }
+      
+      return resampledData;
+    } catch (error) {
+      console.error('Error resampling audio:', error);
+      return new Float32Array(0);
     }
-    
-    return resampledData;
   }
 
   private calculateLevel(audioData?: Float32Array): number {
@@ -441,5 +444,11 @@ export class AudioWorkletManager {
   // Метод для обновления буфера воспроизведения
   public updatePlaybackBuffer(buffer: Float32Array) {
     this.playbackBuffer = buffer;
+    this.isPlaying = true;
+  }
+
+  public stopPlayback() {
+    this.isPlaying = false;
+    this.playbackBuffer = null;
   }
 } 

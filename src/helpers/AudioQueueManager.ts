@@ -158,6 +158,9 @@ export class AudioQueueManager {
       source.onended = () => {
         console.log("Current source ended.");
         scriptNode.disconnect();
+        if (this.audioWorkletManager) {
+          this.audioWorkletManager.stopPlayback();
+        }
         if (!this.isStopping) {
           this.disconnectAndClearNodes();
           this.playNext();
