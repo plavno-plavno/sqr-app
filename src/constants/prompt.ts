@@ -14,6 +14,11 @@ export const promptOptions = [
     label: 'Umac',
     className: 'languageItem'
   },
+  // {
+  //   value: 'angry',
+  //   label: 'Angry',
+  //   className: 'languageItem'
+  // },
 ];
 
 export const defaultPrompt = promptOptions[0]?.value;

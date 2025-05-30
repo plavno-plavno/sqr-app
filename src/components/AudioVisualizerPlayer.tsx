@@ -29,8 +29,6 @@ export const AudioVisualizerPlayer = ({
     lastMicLevel.current = micLevel;
   }, [micLevel]);
 
-  console.log(lastMicLevel.current)
-
   useEffect(() => {
     let running = true;
     let phase = 0;

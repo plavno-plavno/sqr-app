@@ -10,10 +10,12 @@ import { defaultLanguage } from '../constants/languages';
 import { defaultPrompt } from '../constants/prompt';
 import {testAudio} from "../constants/internal";
 import { WebSocketConnection } from '../helpers/WebSocketConnection';
+import { AudioWorkletManager } from '../helpers/audioWorkletProcessor';
 
 export const App = () => {
   const audioQueueRef = useRef<AudioQueueManager | null>(null);
   const wsConnectionRef = useRef<WebSocketConnection | null>(null);
+  const audioManagerRef = useRef<AudioWorkletManager | null>(null);
   const [currentLevel, setCurrentLevel] = useState(0);
   const [audioText, setAudioText] = useState<string>('');
   const [language, setLanguage] = useState<string>(defaultLanguage || 'en');
@@ -69,7 +71,6 @@ export const App = () => {
     <MainLayout
       language={language}
       prompt={prompt}
-      isSocketActive={isSocketActive}
       onLanguageChange={handleLanguageChange}
       onPromptChange={setPrompt}
     >
@@ -101,6 +102,7 @@ export const App = () => {
                   wsUrl={wsUrl}
                   setWsUrl={setWsUrl}
                   wsConnectionRef={wsConnectionRef}
+                  audioManagerRef={audioManagerRef}
                 />
               </AudioVisualizerPlayer>
               <Typography.Text className={s.App_Answer_Wrapper_Text}>

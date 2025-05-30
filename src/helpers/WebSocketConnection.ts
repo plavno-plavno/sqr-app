@@ -1,4 +1,5 @@
 import { ServerResponse } from '../types/requests';
+import { quadraticRank } from './quadroAudioFoo';
 
 export class WebSocketConnection {
   #socket: WebSocket | null = null;
@@ -9,6 +10,7 @@ export class WebSocketConnection {
   #language: string;
   #prompt: string;
   #url: string | null = null;
+  #speechDuration: string | null = null;
 
   constructor(language: string, prompt: string) {
     this.#language = language;
@@ -92,7 +94,7 @@ export class WebSocketConnection {
     });
   }
 
-  sendAudioData(base64Data: string, voicestop?: boolean) {
+  sendAudioData(base64Data: string, voicestop?: boolean, speechDuration?: number, isUserFinished?: boolean | null) {
     console.log('this.#socket?.readyState', this.#socket?.readyState);
     if (!this.#isServerReady) {
       console.log('Waiting for server ready message...');
@@ -101,16 +103,19 @@ export class WebSocketConnection {
 
     if (this.#socket?.readyState === WebSocket.OPEN) {
       console.log('Sending audio data, socket state:', this.#socket.readyState);
-      
+
+      const rank = quadraticRank(speechDuration || 0);
+      // console.log('rank__________________________', rank);
       const packet: any = {
         speakerLang: this.#language,
         audio: base64Data,
         isStartStream: true,
         disableSentenceCutter: true,
         returnTranslatedSegments: true,
-        sameOutputThreshold: 3,
+        sameOutputThreshold: 3 + rank,
         prompt: this.#prompt,
       };
+      
       if (voicestop === true) packet.voicestop = true;
       const jsonPacket = JSON.stringify(packet);
 

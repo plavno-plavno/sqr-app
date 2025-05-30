@@ -17,12 +17,11 @@ export class AudioWorkletManager {
   private echoNode: AudioWorkletNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private options: Required<AudioProcessorOptions>;
-  private isVoiceActive: boolean = false;
+  public isVoiceActive: boolean = false;
   private vad: MicVAD | null = null;
   private voicestopFlag: boolean = false;
   private gainNode: GainNode | null = null;
   private analyserNode: AnalyserNode | null = null;
-  private isUserSpeaking: boolean = false;
   private silenceThreshold: number = 0.015;
   private speechThreshold: number = 0.03;
   private lastLevel: number = 0;
@@ -44,6 +43,10 @@ export class AudioWorkletManager {
   private readonly MIN_ECHO_DURATION = 0.1; // Минимальная длительность эха
   private echoStartTime: number = 0;
   private isEchoDetected: boolean = false;
+  private speechStartTime: number = 0;
+  public speechDuration: number = 0;
+  public isUserFinished: boolean | null = null;
+  private speechTimer: NodeJS.Timer | null = null;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
@@ -122,6 +125,12 @@ export class AudioWorkletManager {
         onSpeechStart: () => {
           console.log('Speech started');
           this.isVoiceActive = true;
+          this.speechStartTime = Date.now();
+          this.speechDuration = 0;
+          this.isUserFinished = null;
+          this.speechTimer = setInterval(() => {
+            this.speechDuration = (Date.now() - this.speechStartTime) / 1000;
+          }, 100);
           this.options.onVoiceActivity(true);
           if (this.options.audioQueue?.current) {
             this.options.audioQueue.current.stop();
@@ -132,14 +141,21 @@ export class AudioWorkletManager {
         onSpeechEnd: () => {
           console.log('Speech ended');
           this.isVoiceActive = false;
+          this.isUserFinished = true;
+          if (this.speechTimer) {
+            clearInterval(this.speechTimer);
+            this.speechTimer = null;
+            this.speechDuration = 0;
+          }
+          console.log(`Speech duration: ${this.speechDuration.toFixed(1)}s`);
           this.options.onVoiceActivity(false);
           this.echoNode?.port.postMessage({ isVoiceActive: false });
         },
         stream: processedStream,
-        positiveSpeechThreshold: 0.7,
+        positiveSpeechThreshold: 0.8,
         negativeSpeechThreshold: 0.6,
         redemptionFrames: 8,
-        preSpeechPadFrames: 2
+        preSpeechPadFrames: 4,
       });
 
       await this.vad.start();
@@ -176,6 +192,7 @@ export class AudioWorkletManager {
         const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext!.sampleRate);
         const base64Data = this.float32ToBase64(audioData16kHz);
         
+        // Отправляем данные только если пользователь активно говорит
         if (this.isVoiceActive) {
           this.options.onAudioData(base64Data, this.voicestopFlag);
           if (this.voicestopFlag) this.voicestopFlag = false;
@@ -221,14 +238,14 @@ export class AudioWorkletManager {
       // Адаптивная чувствительность
       if (rms > this.speechThreshold) {
         // Пользователь начал говорить
-        this.isUserSpeaking = true;
+        // this.isUserSpeaking = true;
         this.silenceFrames = 0;
         this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.01);
       } else if (rms < this.silenceThreshold) {
         // Возможно тишина
         this.silenceFrames++;
         if (this.silenceFrames > this.SILENCE_FRAMES_THRESHOLD) {
-          this.isUserSpeaking = false;
+          // this.isUserSpeaking = false;
           this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.1);
         }
       } else {
@@ -305,6 +322,9 @@ export class AudioWorkletManager {
   }
 
   stop(): void {
+    if (this.speechTimer) {
+      clearInterval(this.speechTimer);
+    }
     this.vad?.pause();
     this.workletNode?.disconnect();
     this.echoNode?.disconnect();

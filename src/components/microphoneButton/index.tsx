@@ -1,7 +1,7 @@
 import {Button} from 'antd';
 import {AudioOutlined, AudioMutedOutlined} from '@ant-design/icons';
 import {AudioWorkletManager} from "../../helpers/audioWorkletProcessor";
-import {Dispatch, SetStateAction, useCallback, useEffect, useRef, useState} from "react";
+import {Dispatch, SetStateAction, useCallback, useEffect, useState, RefObject} from "react";
 import {requests} from "../../axios";
 import {WebSocketConnection} from "../../helpers/WebSocketConnection";
 import { ServerResponse } from '../../types/requests';
@@ -17,7 +17,8 @@ interface MicrophoneButtonProps {
   audioQueue: any;
   wsUrl: string;
   setWsUrl: (url: string) => void;
-  wsConnectionRef: React.RefObject<WebSocketConnection | null>;
+  wsConnectionRef: RefObject<WebSocketConnection | null>;
+  audioManagerRef: RefObject<AudioWorkletManager | null>;
 }
 
 export const MicrophoneButton = ({
@@ -30,10 +31,10 @@ export const MicrophoneButton = ({
   wsUrl,
   setWsUrl,
   wsConnectionRef,
+  audioManagerRef,
 }: MicrophoneButtonProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [loading, setLoading] = useState(false);
-  const audioManagerRef = useRef<AudioWorkletManager | null>(null);
 
   const getFreeMachine = useCallback(async ()=> {
     try {
@@ -62,7 +63,12 @@ export const MicrophoneButton = ({
       if (!audioManagerRef.current) {
         audioManagerRef.current = new AudioWorkletManager({
           onAudioData: (base64Data, voicestop) => {
-            wsConnectionRef.current?.sendAudioData(base64Data, voicestop);
+            wsConnectionRef.current?.sendAudioData(
+              base64Data, 
+              voicestop, 
+              audioManagerRef.current?.speechDuration,
+              audioManagerRef?.current?.isVoiceActive
+            );
           },
           onError: (error) => {
             console.error('Audio processing error:', error);
@@ -120,6 +126,8 @@ export const MicrophoneButton = ({
 
   return (
     <div className={s.container}>
+      {/* {`${audioManagerRef?.current?.speechDuration}`} */}
+      {/* {audioManagerRef?.current?.isVoiceActive ? <h1>Voice is active</h1> : <h1>Voice is not active</h1>} */}
       <Button
         size='large'
         shape="circle"

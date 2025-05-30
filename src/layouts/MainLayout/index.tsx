@@ -7,7 +7,6 @@ import s from './styles.module.scss';
 interface MainLayoutProps {
   language: string;
   prompt: string;
-  isSocketActive: boolean;
   onLanguageChange: (lang: string) => void;
   onPromptChange: (prompt: string) => void;
 }
@@ -16,7 +15,6 @@ export const MainLayout = ({
   children,
   language,
   prompt,
-  isSocketActive,
   onLanguageChange,
   onPromptChange,
 }: PropsWithChildren<MainLayoutProps>) => {
