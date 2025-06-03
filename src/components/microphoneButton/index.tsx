@@ -65,9 +65,7 @@ export const MicrophoneButton = ({
           onAudioData: (base64Data, voicestop) => {
             wsConnectionRef.current?.sendAudioData(
               base64Data, 
-              voicestop, 
-              audioManagerRef.current?.speechDuration,
-              audioManagerRef?.current?.isVoiceActive
+              voicestop,
             );
           },
           onError: (error) => {
