@@ -1,11 +1,18 @@
-import {Button} from 'antd';
-import {AudioOutlined, AudioMutedOutlined} from '@ant-design/icons';
-import {AudioWorkletManager} from "../../helpers/audioWorkletProcessor";
-import {Dispatch, SetStateAction, useCallback, useEffect, useState, RefObject} from "react";
-import {requests} from "../../axios";
-import {WebSocketConnection} from "../../helpers/WebSocketConnection";
-import { ServerResponse } from '../../types/requests';
-import s from './styles.module.scss';
+import { Button } from "antd";
+import { AudioOutlined, AudioMutedOutlined } from "@ant-design/icons";
+import { AudioWorkletManager } from "../../features/audio/audio-worklet-processor";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+  RefObject,
+} from "react";
+import { requests } from "@/shared/api";
+import { WebSocketConnection } from "@/features/websocket/websocket-connection";
+import { ServerResponse } from "@/shared/models/requests";
+import s from "./styles.module.scss";
 
 interface MicrophoneButtonProps {
   onTranscription: (response: ServerResponse) => void;
@@ -36,7 +43,7 @@ export const MicrophoneButton = ({
   const [isRecording, setIsRecording] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const getFreeMachine = useCallback(async ()=> {
+  const getFreeMachine = useCallback(async () => {
     try {
       const req = await requests.getFreeMachine();
       setLoading(true);
@@ -56,22 +63,22 @@ export const MicrophoneButton = ({
           noiseSuppression: true,
           autoGainControl: false,
           channelCount: 1, // Используем только один канал
-          sampleRate: 16000 // Устанавливаем частоту дискретизации
-        }
+          sampleRate: 16000, // Устанавливаем частоту дискретизации
+        },
       });
 
       if (!audioManagerRef.current) {
         audioManagerRef.current = new AudioWorkletManager({
           onAudioData: (base64Data, voicestop) => {
             wsConnectionRef.current?.sendAudioData(
-              base64Data, 
-              voicestop, 
+              base64Data,
+              voicestop,
               audioManagerRef.current?.speechDuration,
               audioManagerRef?.current?.isVoiceActive
             );
           },
           onError: (error) => {
-            console.error('Audio processing error:', error);
+            console.error("Audio processing error:", error);
             setIsRecording(false);
           },
           onLevel: setLevel,
@@ -83,7 +90,7 @@ export const MicrophoneButton = ({
       await audioManagerRef.current.start();
       setIsRecording(true);
     } catch (error) {
-      console.error('Failed to start recording:', error);
+      console.error("Failed to start recording:", error);
     }
   };
 
@@ -106,11 +113,15 @@ export const MicrophoneButton = ({
         if (!wsConnectionRef.current) {
           wsConnectionRef.current = new WebSocketConnection(language, prompt);
         }
-        
-        await wsConnectionRef.current.initSocket(url, startRecording, onTranscription);
+
+        await wsConnectionRef.current.initSocket(
+          url,
+          startRecording,
+          onTranscription
+        );
         setIsSocketActive(true);
       } catch (error) {
-        console.error('Failed to start recording:', error);
+        console.error("Failed to start recording:", error);
         setIsSocketActive(false);
       }
     }
@@ -129,15 +140,15 @@ export const MicrophoneButton = ({
       {/* {`${audioManagerRef?.current?.speechDuration}`} */}
       {/* {audioManagerRef?.current?.isVoiceActive ? <h1>Voice is active</h1> : <h1>Voice is not active</h1>} */}
       <Button
-        size='large'
+        size="large"
         shape="circle"
         className={isRecording ? s.mic_button_recording : s.mic_button_mute}
         onClick={handleClick}
         type={isRecording ? "primary" : "default"}
         danger={isRecording}
-        icon={isRecording ? <AudioOutlined/> : <AudioMutedOutlined/>}
+        icon={isRecording ? <AudioOutlined /> : <AudioMutedOutlined />}
         loading={loading}
       />
     </div>
-  )
-}
+  );
+};

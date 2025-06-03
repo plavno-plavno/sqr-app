@@ -7,7 +7,7 @@ import { DefaultEventsMap } from '@socket.io/component-emitter';
 
 export type EventsEnums = 'initial' | 'streaming' | 'closed';
 
-export const useSocked = ({ socketBaseUrl }: {socketBaseUrl: string | undefined}) => {
+export const useSocket = ({ socketBaseUrl }: {socketBaseUrl: string | undefined}) => {
   const [isSocketConnected, setIsSocketConnected] = useState<boolean>(false);
 
   const { current } = useRef<{socket: Socket<DefaultEventsMap, DefaultEventsMap> | null }>({ socket: null });

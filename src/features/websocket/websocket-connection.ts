@@ -1,5 +1,5 @@
-import { ServerResponse } from '../types/requests';
-import { quadraticRank } from './quadroAudioFoo';
+import { ServerResponse } from '../../shared/models/requests';
+import { quadraticRank } from '../audio/quadro-audio-foo';
 
 export class WebSocketConnection {
   #socket: WebSocket | null = null;

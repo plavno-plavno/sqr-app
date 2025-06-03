@@ -1,3 +1,5 @@
+const path = require("path");
+
 module.exports = {
   webpack: {
     configure: {
@@ -10,6 +12,11 @@ module.exports = {
             exclude: /node_modules/,
           },
         ],
+      },
+      resolve: {
+        alias: {
+          "@": path.resolve(__dirname, "src"),
+        },
       },
     },
   },

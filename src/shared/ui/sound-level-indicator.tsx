@@ -6,7 +6,7 @@ type Props = {
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-export const SoundLevelIndicator: React.FC<Props> = ({ level }) => {
+const SoundLevelIndicator: React.FC<Props> = ({ level }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -95,4 +95,6 @@ export const SoundLevelIndicator: React.FC<Props> = ({ level }) => {
       style={{ width: '100%', height: 120}}
     />
   );
-} 
+}
+
+export { SoundLevelIndicator };

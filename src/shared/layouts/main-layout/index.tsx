@@ -1,7 +1,7 @@
 import { PropsWithChildren } from "react"
 import {Select} from "antd";
-import {languageOptions} from "../../constants/languages";
-import {promptOptions} from "../../constants/prompt";
+import {languageOptions} from "../../config/languages";
+import {promptOptions} from "../../config/prompt";
 import s from './styles.module.scss';
 
 interface MainLayoutProps {
