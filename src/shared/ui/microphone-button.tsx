@@ -1,6 +1,6 @@
-import { AudioMutedOutlined, AudioOutlined } from "@ant-design/icons";
-import { Button } from "antd";
-import s from "./styles.module.scss";
+import { Landmark, Mic, MicOff } from "lucide-react";
+import { Button } from "./kit/button";
+import { cn } from "../lib/css";
 
 interface MicrophoneButtonProps {
   isRecording: boolean;
@@ -13,20 +13,25 @@ export const MicrophoneButton = ({
   isLoading,
   handleClick,
 }: MicrophoneButtonProps) => {
+
   return (
-    <div className={s.container}>
+    <div className="flex flex-col justify-center items-center">
       {/* {`${audioManagerRef?.current?.speechDuration}`} */}
       {/* {audioManagerRef?.current?.isVoiceActive ? <h1>Voice is active</h1> : <h1>Voice is not active</h1>} */}
       <Button
-        size="large"
-        shape="circle"
-        className={isRecording ? s.mic_button_recording : s.mic_button_mute}
+        size="lg"
+        className={cn(
+          "border-1 border-white rounded-full cursor-pointer hover:border-blue-500 w-10 h-10 !p-0",
+          isRecording
+            ? "!border !border-red-500 !bg-transparent !text-red-500"
+            : "!bg-transparent !text-white"
+        )}
         onClick={handleClick}
-        type={isRecording ? "primary" : "default"}
-        danger={isRecording}
-        icon={isRecording ? <AudioOutlined /> : <AudioMutedOutlined />}
-        loading={isLoading}
-      />
+        variant={isRecording ? "destructive" : "default"}
+        // loading={isLoading}
+      >
+        {isRecording ? <Mic className="size-4" /> : <MicOff className="size-4" />}
+      </Button>
     </div>
   );
 };

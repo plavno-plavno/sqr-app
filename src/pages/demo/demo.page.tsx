@@ -1,17 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Button, Typography } from "antd";
-import s from "./styles.module.scss";
 import { AudioQueueManager, AudioWorkletManager } from "@/features/audio";
-import { defaultPrompt } from "@/shared/config/prompt";
+import { defaultPrompt } from "@/shared/mock/prompt";
 import { WebSocketConnection } from "@/features/websocket";
-import { defaultLanguage } from "@/shared/config/languages";
-import { AudioResponse } from "@/shared/models/requests";
-import { ServerResponse } from "@/shared/models/requests";
+import { defaultLanguage } from "@/shared/mock/languages";
+import type { AudioResponse, ServerResponse } from "@/shared/models/requests";
 import { MainLayout } from "@/shared/layouts/main-layout";
-import { testAudio } from "@/shared/config/internal";
+import { testAudio } from "@/shared/mock/internal";
 import { MicrophoneButton } from "@/shared/ui/microphone-button";
 import { AudioVisualizerPlayer } from "@/shared/ui/audio-visualizer-player";
 import { requests } from "@/shared/api";
+import { Button } from "@/shared/ui/kit/button";
+import { ThemeProvider } from "@/shared/ui/theme-provider";
 
 const DemoPage = () => {
   const audioQueueRef = useRef<AudioQueueManager | null>(null);
@@ -28,8 +27,6 @@ const DemoPage = () => {
 
   const [isRecording, setIsRecording] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  console.log(isSocketActive);
 
   const getFreeMachine = useCallback(async () => {
     try {
@@ -58,10 +55,7 @@ const DemoPage = () => {
       if (!audioManagerRef.current) {
         audioManagerRef.current = new AudioWorkletManager({
           onAudioData: (base64Data, voicestop) => {
-            wsConnectionRef.current?.sendAudioData(
-              base64Data, 
-              voicestop,
-            );
+            wsConnectionRef.current?.sendAudioData(base64Data, voicestop);
           },
           onError: (error) => {
             console.error("Audio processing error:", error);
@@ -171,52 +165,54 @@ const DemoPage = () => {
   }, [startPlayRandom]);
 
   return (
-    <MainLayout
-      language={language}
-      prompt={prompt}
-      onLanguageChange={handleLanguageChange}
-      onPromptChange={setPrompt}
-    >
-      <div className={s.App}>
-        <div className={s.App_Answer}>
-          <div className={s.App_Answer_Wrapper}>
-            <div
-              style={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <AudioVisualizerPlayer
-                level={currentLevel}
-                width={500}
-                height={500}
-                micLevel={level}
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <MainLayout
+        language={language}
+        prompt={prompt}
+        onLanguageChange={handleLanguageChange}
+        onPromptChange={setPrompt}
+      >
+        <div className="w-full h-full flex flex-col [&>div]:text-white">
+          <div className="h-full flex-1 flex justify-center items-center">
+            <div className="w-[95%]">
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
               >
-                <MicrophoneButton
-                  isRecording={isRecording}
-                  isLoading={loading}
-                  handleClick={handleMicButtonClick}
-                />
-              </AudioVisualizerPlayer>
-              <Typography.Text className={s.App_Answer_Wrapper_Text}>
-                {audioText || ""}
-              </Typography.Text>
+                <AudioVisualizerPlayer
+                  level={currentLevel}
+                  width={500}
+                  height={500}
+                  micLevel={level}
+                >
+                  <MicrophoneButton
+                    isRecording={isRecording}
+                    isLoading={loading}
+                    handleClick={handleMicButtonClick}
+                  />
+                </AudioVisualizerPlayer>
+                <p className="block text-white text-center text-lg">
+                  {audioText || ""}
+                </p>
+              </div>
             </div>
           </div>
+          <div>
+            {/*<AudioVisualizer level={level} />*/}
+            <Button
+              className="opacity-0 cursor-pointer"
+              size="sm"
+              onClick={() => setStartPlayRandom((prev) => !prev)}
+            />
+          </div>
         </div>
-        <div>
-          {/*<AudioVisualizer level={level} />*/}
-          <Button
-            size={"small"}
-            onClick={() => setStartPlayRandom((prev) => !prev)}
-          />
-          {startPlayRandom.toString()}
-        </div>
-      </div>
-    </MainLayout>
+      </MainLayout>
+    </ThemeProvider>
   );
 };
 

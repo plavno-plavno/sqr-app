@@ -1,4 +1,4 @@
-import { ServerResponse } from '@/shared/models/requests';
+import type { ServerResponse } from '@/shared/models/requests';
 
 export class WebSocketConnection {
   #socket: WebSocket | null = null;

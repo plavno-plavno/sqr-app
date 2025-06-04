@@ -1,7 +1,8 @@
-import axios, { Method, ResponseType } from 'axios';
+import axios, { type Method, type ResponseType } from 'axios';
+import { CONFIG } from '../models/config';
 
 export const instance = () => axios.create({
-  baseURL: process.env['REACT_APP_BASE_URL'],
+  baseURL: CONFIG.API_BASE_URL,
 });
 
 export const api = <T>(method: Method, urlPoint: string, params?: T, token?: string, responseType: ResponseType = 'json') => instance()

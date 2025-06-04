@@ -1,6 +1,6 @@
-import { GetFreeMachine } from "@/shared/models/requests";
+import type { GetFreeMachine } from "@/shared/models/requests";
 import { api } from "@/shared/api/instance";
-import { AxiosPromise } from "axios";
+import type { AxiosPromise } from "axios";
 
 export const requests = {
   getFreeMachine: async (): AxiosPromise<GetFreeMachine> =>
