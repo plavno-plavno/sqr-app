@@ -1,5 +1,5 @@
-import { GetFreeMachine } from "../models/requests";
-import { api } from "./instance";
+import { GetFreeMachine } from "@/shared/models/requests";
+import { api } from "@/shared/api/instance";
 import { AxiosPromise } from "axios";
 
 export const requests = {

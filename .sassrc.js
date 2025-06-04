@@ -1,5 +1,5 @@
-module.exports = {
-  implementation: require('sass'),
+export default {
+  implementation: import('sass'),
   sassOptions: {
     fiber: false,
   },

@@ -12,7 +12,7 @@ export const useSocket = ({ socketBaseUrl }: {socketBaseUrl: string | undefined}
 
   const { current } = useRef<{socket: Socket<DefaultEventsMap, DefaultEventsMap> | null }>({ socket: null });
 
-  const eventHandlers: RefObject<Record<string, any>> = useRef({});
+  const eventHandlers: RefObject<Record<string, (...args: unknown[]) => void>> = useRef({});
 
   // socket initialization
   useEffect(() => {
@@ -34,23 +34,23 @@ export const useSocket = ({ socketBaseUrl }: {socketBaseUrl: string | undefined}
         });
       }
     };
-  }, [socketBaseUrl]);
+  }, [current, socketBaseUrl]);
 
-  const emitEvent = useCallback((event: EventsEnums, data: any) => {
+  const emitEvent = useCallback((event: EventsEnums, data: unknown) => {
     current.socket?.emit(event, data);
-  }, []);
+  }, [current.socket]);
 
-  const subscribeToEvents = useCallback((event: EventsEnums, cb: (...args: any) => void) => {
+  const subscribeToEvents = useCallback((event: EventsEnums, cb: (...args: unknown[]) => void) => {
     eventHandlers.current[event] = cb;
     current.socket?.on(event, cb);
-  }, []);
+  }, [current.socket]);
 
   const unsubscribeToEvents = useCallback((event: EventsEnums) => {
     if (eventHandlers.current[event]) {
       current.socket?.off(event, eventHandlers.current[event]);
       delete eventHandlers.current[event];
     }
-  }, []);
+  }, [current.socket]);
 
   return {
     isSocketConnected,

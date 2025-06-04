@@ -1,3 +1,5 @@
+import { AudioWorkletManager } from ".";
+
 export class AudioQueueManager {
   private audioQueue: string[] = [];
   private isPlaying: boolean = false;
@@ -7,14 +9,14 @@ export class AudioQueueManager {
   private currentSourceNode: AudioBufferSourceNode | null = null;
   private currentGainNode: GainNode | null = null;
   private currentAnalyserNode: AnalyserNode | null = null;
-  private audioWorkletManager: any = null;
+  private audioWorkletManager: AudioWorkletManager | null = null;
 
   private fadeDuration: number = 0.7;
   private isStopping: boolean = false;
 
-  constructor(onLevel?: (level: number) => void, audioWorkletManager?: any) {
+  constructor(onLevel?: (level: number) => void, audioWorkletManager?: AudioWorkletManager) {
     this.onLevel = onLevel;
-    this.audioWorkletManager = audioWorkletManager;
+    this.audioWorkletManager = audioWorkletManager || null;
     if (typeof AudioContext !== 'undefined') {
       this.audioContext = new AudioContext();
       this.audioContext.onstatechange = () => {

@@ -2,14 +2,12 @@ import { ServerResponse } from '@/shared/models/requests';
 
 export class WebSocketConnection {
   #socket: WebSocket | null = null;
-  #isReconnecting: boolean = false;
   #isServerReady: boolean = false;
   #onServerReady: (() => void) | null = null;
   #onResponse: ((response: ServerResponse) => void) | null = null;
   #language: string;
   #prompt: string;
   #url: string | null = null;
-  #speechDuration: string | null = null;
 
   constructor(language: string, prompt: string) {
     this.#language = language;
@@ -72,8 +70,9 @@ export class WebSocketConnection {
             // Это ответ с транскрипцией
             this.#onResponse?.(data as ServerResponse);
           }
-        } catch (e) {
+        } catch (error: unknown) {
           console.log('Raw message:', event.data);
+          console.error('WebSocket error:', error);
         }
       };
 
@@ -104,6 +103,7 @@ export class WebSocketConnection {
       console.log('Sending audio data, socket state:', this.#socket.readyState);
 
       // console.log('rank__________________________', rank);
+      // eslint-disable-next-line
       const packet: any = {
         speakerLang: this.#language,
         audio: base64Data,
@@ -126,7 +126,7 @@ export class WebSocketConnection {
   stopStreaming() {
     if (this.#socket) {
       console.log('Stopping stream');
-      this.#isReconnecting = true;
+      // this.#isReconnecting = true;
       this.#isServerReady = false;
       this.#socket.close(1000, 'Stream stopped by user');
       this.#socket = null;

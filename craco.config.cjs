@@ -7,8 +7,8 @@ module.exports = {
         rules: [
           {
             test: /\.js$/,
-            enforce: 'pre',
-            use: ['source-map-loader'],
+            enforce: "pre",
+            use: ["source-map-loader"],
             exclude: /node_modules/,
           },
         ],
@@ -20,4 +20,4 @@ module.exports = {
       },
     },
   },
-}; 
+};

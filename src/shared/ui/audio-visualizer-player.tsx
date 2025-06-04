@@ -18,8 +18,8 @@ const AudioVisualizerPlayer = ({
   micLevel,
 }: PropsWithChildren<AudioVisualizerPlayerProps>) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const lastLevel = useRef<any>(level);
-  const lastMicLevel = useRef<any>(micLevel);
+  const lastLevel = useRef<number>(level);
+  const lastMicLevel = useRef<number>(micLevel);
 
   useEffect(() => {
     lastLevel.current = level;
@@ -160,7 +160,6 @@ const AudioVisualizerPlayer = ({
     return () => {
       running = false;
     };
-    // eslint-disable-next-line
   }, [width, height]);
 
   return (

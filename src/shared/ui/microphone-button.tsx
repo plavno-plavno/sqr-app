@@ -1,138 +1,18 @@
+import { AudioMutedOutlined, AudioOutlined } from "@ant-design/icons";
 import { Button } from "antd";
-import { AudioOutlined, AudioMutedOutlined } from "@ant-design/icons";
-import { AudioWorkletManager } from "../../features/audio/audio-worklet-processor";
-import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useState,
-  RefObject,
-} from "react";
-import { requests } from "@/shared/api";
-import { WebSocketConnection } from "@/features/websocket/websocket-connection";
-import { ServerResponse } from "@/shared/models/requests";
 import s from "./styles.module.scss";
 
 interface MicrophoneButtonProps {
-  onTranscription: (response: ServerResponse) => void;
-  setIsSocketActive: (active: boolean) => void;
-  language: string;
-  prompt: string;
-  setLevel: Dispatch<SetStateAction<number>>;
-  level: number;
-  audioQueue: any;
-  wsUrl: string;
-  setWsUrl: (url: string) => void;
-  wsConnectionRef: RefObject<WebSocketConnection | null>;
-  audioManagerRef: RefObject<AudioWorkletManager | null>;
+  isRecording: boolean;
+  isLoading: boolean;
+  handleClick: () => void;
 }
 
 export const MicrophoneButton = ({
-  onTranscription,
-  setIsSocketActive,
-  language,
-  prompt,
-  setLevel,
-  audioQueue,
-  wsUrl,
-  setWsUrl,
-  wsConnectionRef,
-  audioManagerRef,
+  isRecording,
+  isLoading,
+  handleClick,
 }: MicrophoneButtonProps) => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const getFreeMachine = useCallback(async () => {
-    try {
-      const req = await requests.getFreeMachine();
-      setLoading(true);
-      return `wss://${req.data.dns}:${req.data.port}`;
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: false,
-          channelCount: 1, // Используем только один канал
-          sampleRate: 16000, // Устанавливаем частоту дискретизации
-        },
-      });
-
-      if (!audioManagerRef.current) {
-        audioManagerRef.current = new AudioWorkletManager({
-          onAudioData: (base64Data, voicestop) => {
-            wsConnectionRef.current?.sendAudioData(
-              base64Data, 
-              voicestop,
-            );
-          },
-          onError: (error) => {
-            console.error("Audio processing error:", error);
-            setIsRecording(false);
-          },
-          onLevel: setLevel,
-          audioQueue,
-        });
-      }
-
-      await audioManagerRef.current.initialize(stream);
-      await audioManagerRef.current.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Failed to start recording:", error);
-    }
-  };
-
-  const handleClick = async () => {
-    if (isRecording) {
-      audioManagerRef.current?.stop();
-      wsConnectionRef.current?.stopStreaming();
-      setIsRecording(false);
-      setIsSocketActive(false);
-    } else {
-      try {
-        let url = wsUrl;
-        if (!url) {
-          const newUrl = await getFreeMachine();
-          if (!newUrl) return;
-          url = newUrl;
-          setWsUrl(newUrl);
-        }
-
-        if (!wsConnectionRef.current) {
-          wsConnectionRef.current = new WebSocketConnection(language, prompt);
-        }
-
-        await wsConnectionRef.current.initSocket(
-          url,
-          startRecording,
-          onTranscription
-        );
-        setIsSocketActive(true);
-      } catch (error) {
-        console.error("Failed to start recording:", error);
-        setIsSocketActive(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      audioManagerRef.current?.stop();
-      wsConnectionRef.current?.closeConnection();
-      setIsSocketActive(false);
-    };
-  }, [setIsSocketActive]);
-
   return (
     <div className={s.container}>
       {/* {`${audioManagerRef?.current?.speechDuration}`} */}
@@ -145,7 +25,7 @@ export const MicrophoneButton = ({
         type={isRecording ? "primary" : "default"}
         danger={isRecording}
         icon={isRecording ? <AudioOutlined /> : <AudioMutedOutlined />}
-        loading={loading}
+        loading={isLoading}
       />
     </div>
   );

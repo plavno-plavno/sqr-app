@@ -8,9 +8,9 @@ interface AudioProcessorOptions {
   onVoiceActivity?: (isActive: boolean) => void; // Новый колбэк для VAD
   vadThreshold?: number; // Порог для определения голоса
   vadSilenceFrames?: number; // Количество тихих фреймов для определения тишины
+  // eslint-disable-next-line
   audioQueue?: any;
 }
-
 export class AudioWorkletManager {
   private audioContext: AudioContext | null = null;
   private workletNode: AudioWorkletNode | null = null;
