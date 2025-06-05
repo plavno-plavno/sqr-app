@@ -1,4 +1,4 @@
-import { PropsWithChildren, useEffect, useRef } from "react";
+import { type PropsWithChildren, useEffect, useRef } from "react";
 
 interface AudioVisualizerPlayerProps {
   level: number; // 0..1

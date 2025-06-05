@@ -41,6 +41,7 @@ const DemoPage = () => {
   }, []);
 
   const startRecording = async () => {
+    console.log(isSocketActive)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {

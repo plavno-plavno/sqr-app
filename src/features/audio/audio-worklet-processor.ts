@@ -24,7 +24,7 @@ export class AudioWorkletManager {
   private analyserNode: AnalyserNode | null = null;
   private silenceThreshold: number = 0.015;
   private speechThreshold: number = 0.03;
-  private lastLevel: number = 0;
+  // private lastLevel: number = 0;
   private silenceFrames: number = 0;
   private readonly SILENCE_FRAMES_THRESHOLD = 10;
   private playbackBuffer: Float32Array | null = null;
@@ -33,10 +33,10 @@ export class AudioWorkletManager {
   private readonly ECHO_THRESHOLD = 0.85; // Повышаем порог схожести
   private readonly CROSS_CORRELATION_WINDOW = 500;
   private readonly MIN_AMPLITUDE_THRESHOLD = 0.02; // Повышаем порог амплитуды
-  private readonly MAX_DELAY = 1000;
-  private readonly MIN_SIMILARITY_DURATION = 0.2; // Увеличиваем время проверки
-  private similarityCounter: number = 0;
-  private lastSimilarityTime: number = 0;
+  // private readonly MAX_DELAY = 1000;
+  // private readonly MIN_SIMILARITY_DURATION = 0.2; // Увеличиваем время проверки
+  // private similarityCounter: number = 0;
+  // private lastSimilarityTime: number = 0;
   private isPlaying: boolean = false;
   private playbackHistory: Float32Array[] = [];
   private readonly HISTORY_SIZE = 10;
@@ -46,7 +46,7 @@ export class AudioWorkletManager {
   private speechStartTime: number = 0;
   public speechDuration: number = 0;
   public isUserFinished: boolean | null = null;
-  private speechTimer: NodeJS.Timer | null = null;
+  private speechTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
@@ -233,7 +233,7 @@ export class AudioWorkletManager {
         sumSquares += sample * sample;
       }
       const rms = Math.sqrt(sumSquares / dataArray.length);
-      this.lastLevel = rms;
+      // this.lastLevel = rms;
 
       // Адаптивная чувствительность
       if (rms > this.speechThreshold) {
@@ -306,14 +306,14 @@ export class AudioWorkletManager {
     }
   }
 
-  private calculateLevel(audioData?: Float32Array): number {
-    if (typeof audioData === 'undefined') return 0;
-    let sum = 0;
-    for (let i = 0; i < audioData.length; i++) {
-      sum += audioData[i]! * audioData[i]!;
-    }
-    return Math.sqrt(sum / audioData.length); // RMS
-  }
+  // private calculateLevel(audioData?: Float32Array): number {
+  //   if (typeof audioData === 'undefined') return 0;
+  //   let sum = 0;
+  //   for (let i = 0; i < audioData.length; i++) {
+  //     sum += audioData[i]! * audioData[i]!;
+  //   }
+  //   return Math.sqrt(sum / audioData.length); // RMS
+  // }
 
   async start(): Promise<void> {
     if (this.audioContext?.state === 'suspended') {

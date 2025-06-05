@@ -1,4 +1,4 @@
-import { Landmark, Mic, MicOff } from "lucide-react";
+import { Mic, MicOff } from "lucide-react";
 import { Button } from "./kit/button";
 import { cn } from "../lib/css";
 
@@ -28,7 +28,7 @@ export const MicrophoneButton = ({
         )}
         onClick={handleClick}
         variant={isRecording ? "destructive" : "default"}
-        // loading={isLoading}
+        loading={isLoading}
       >
         {isRecording ? <Mic className="size-4" /> : <MicOff className="size-4" />}
       </Button>

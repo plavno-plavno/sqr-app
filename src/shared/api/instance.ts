@@ -5,7 +5,7 @@ export const instance = () => axios.create({
   baseURL: CONFIG.API_BASE_URL,
 });
 
-export const api = <T>(method: Method, urlPoint: string, params?: T, token?: string, responseType: ResponseType = 'json') => instance()
+export const api = <T>(method: Method, urlPoint: string, params?: T, _token?: string, responseType: ResponseType = 'json') => instance()
   .request({
     method,
     url: urlPoint,
