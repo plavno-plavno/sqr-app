@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React + TS</title>
+    <link rel="modulepreload" href="/audio-processor.js" />
+    <link rel="modulepreload" href="/echo-processor.js" />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort-wasm-simd.wasm"
+      as="fetch"
+      type="application/wasm"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@latest/dist/silero_vad_legacy.onnx"
+      as="fetch"
+      type="application/wasm"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="src/app/main.tsx"></script>
+  </body>
+</html>
