@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/ui/kit/select";
+import {Checkbox} from "@/shared/ui/kit/checkbox";
 
 
 interface MainLayoutProps {
@@ -50,7 +51,12 @@ export const MainLayout = ({
             }}
             onClick={onHandleShowSubtitles}
           >
-            <input type={'checkbox'} checked={isShowSubtitles}/>
+            <Checkbox
+              checked={isShowSubtitles}
+              style={{
+                border: "1px solid white",
+              }}
+            />
             <label>Show subtitles</label>
           </div>
 
