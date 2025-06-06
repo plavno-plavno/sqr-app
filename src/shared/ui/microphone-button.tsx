@@ -1,6 +1,6 @@
 import { Mic, MicOff } from "lucide-react";
 import { Button } from "./kit/button";
-import { cn } from "../lib/css";
+import { cn } from "@/shared/lib/css/tailwind";
 
 interface MicrophoneButtonProps {
   isRecording: boolean;
@@ -21,7 +21,7 @@ export const MicrophoneButton = ({
       <Button
         size="lg"
         className={cn(
-          "border-1 border-white rounded-full cursor-pointer hover:border-blue-500 w-10 h-10 !p-0",
+          "border-1 border-white rounded-full hover:border-blue-500 w-10 h-10 !p-0",
           isRecording
             ? "!border !border-red-500 !bg-transparent !text-red-500"
             : "!bg-transparent !text-white"
