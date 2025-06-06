@@ -9,20 +9,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/ui/kit/select";
+import {Checkbox} from "@/shared/ui/kit/checkbox";
+
 
 interface MainLayoutProps {
   language: string;
   prompt: string;
+  isShowSubtitles: boolean;
   onLanguageChange: (lang: string) => void;
   onPromptChange: (prompt: string) => void;
+  onHandleShowSubtitles: () => void;
 }
 
 export const MainLayout = ({
   children,
   language,
   prompt,
+  isShowSubtitles,
   onLanguageChange,
   onPromptChange,
+  onHandleShowSubtitles,
 }: PropsWithChildren<MainLayoutProps>) => {
   const languageLabel = languageOptions.find(option => option.value === language)?.label;
   const promptLabel = promptOptions.find(option => option.value === prompt)?.label;
@@ -36,6 +42,26 @@ export const MainLayout = ({
             gap: "1rem",
           }}
         >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.7rem",
+            }}
+            onClick={onHandleShowSubtitles}
+          >
+            <Checkbox
+              checked={isShowSubtitles}
+              style={{
+                border: "1px solid white",
+              }}
+            />
+            <label>Show subtitles</label>
+          </div>
+
+
+
           <Select defaultValue={languageLabel} onValueChange={onLanguageChange}>
             <SelectTrigger className="border-white [&_svg]:!text-white [&_svg]:!opacity-100">
               <SelectValue>{languageLabel}</SelectValue>

@@ -22,6 +22,7 @@ const DemoPage = () => {
   const [prompt, setPrompt] = useState<string>(defaultPrompt || "qa");
   const [isSocketActive, setIsSocketActive] = useState(false);
   const [startPlayRandom, setStartPlayRandom] = useState(false);
+  const [isShowSubtitles, setIsShowSubtitles] = useState(false);
   const [level, setLevel] = useState(0);
   const [wsUrl, setWsUrl] = useState<string>("");
 
@@ -153,6 +154,10 @@ const DemoPage = () => {
     }
   };
 
+  const onHandleShowSubtitles = () => {
+    setIsShowSubtitles(prev => !prev);
+  }
+
   useEffect(() => {
     if (startPlayRandom) {
       const interval = setInterval(() => {
@@ -172,6 +177,8 @@ const DemoPage = () => {
         prompt={prompt}
         onLanguageChange={handleLanguageChange}
         onPromptChange={setPrompt}
+        isShowSubtitles={isShowSubtitles}
+        onHandleShowSubtitles={onHandleShowSubtitles}
       >
         <div className="w-full h-full flex flex-col [&>div]:text-white">
           <div className="h-full flex-1 flex justify-center items-center">
@@ -197,9 +204,10 @@ const DemoPage = () => {
                     handleClick={handleMicButtonClick}
                   />
                 </AudioVisualizerPlayer>
-                <p className="block text-white text-center text-lg">
-                  {audioText || ""}
-                </p>
+                {
+                  isShowSubtitles &&
+                  <p className="block text-white text-center text-lg">{audioText || ""}</p>
+                }
               </div>
             </div>
           </div>
