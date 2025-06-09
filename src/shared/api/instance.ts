@@ -1,5 +1,5 @@
 import axios, { type Method, type ResponseType } from 'axios';
-import { CONFIG } from '../models/config';
+import { CONFIG } from '../model/config';
 
 export const instance = () => axios.create({
   baseURL: CONFIG.API_BASE_URL,

@@ -3,7 +3,7 @@ import { AudioQueueManager, AudioWorkletManager } from "@/features/audio";
 import { defaultPrompt } from "@/shared/mock/prompt";
 import { WebSocketConnection } from "@/features/websocket";
 import { defaultLanguage } from "@/shared/mock/languages";
-import type { AudioResponse, ServerResponse } from "@/shared/models/requests";
+import type { AudioResponse, ServerResponse } from "@/shared/model/requests";
 import { MainLayout } from "@/shared/layouts/main-layout";
 import { testAudio } from "@/shared/mock/internal";
 import { MicrophoneButton } from "@/shared/ui/microphone-button";
@@ -214,7 +214,7 @@ const DemoPage = () => {
           <div>
             {/*<AudioVisualizer level={level} />*/}
             <Button
-              className="opacity-0 cursor-pointer"
+              className="opacity-0"
               size="sm"
               onClick={() => setStartPlayRandom((prev) => !prev)}
             />

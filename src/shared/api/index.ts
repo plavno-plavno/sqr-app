@@ -1,4 +1,4 @@
-import type { GetFreeMachine } from "@/shared/models/requests";
+import type { GetFreeMachine } from "@/shared/model/requests";
 import { api } from "@/shared/api/instance";
 import type { AxiosPromise } from "axios";
 
