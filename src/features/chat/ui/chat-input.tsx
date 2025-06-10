@@ -5,7 +5,17 @@ import { Button } from "@/shared/ui/kit/button";
 import { Input } from "@/shared/ui/kit/input";
 import { useRef, useState, type FormEvent } from "react";
 
-export function ChatInput({ className }: { className?: string }) {
+interface ChatInputProps {
+  className?: string;
+  showPlaceholder?: boolean;
+  onSubmit: (prompt: string) => void;
+}
+
+export function ChatInput({
+  className,
+  showPlaceholder = true,
+  onSubmit,
+}: ChatInputProps) {
   const [isInputActive, setIsInputActive] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -22,6 +32,8 @@ export function ChatInput({ className }: { className?: string }) {
     const prompt = formData.get("prompt") as string;
 
     if (!prompt) return;
+
+    onSubmit(prompt);
   };
 
   return (
@@ -36,7 +48,7 @@ export function ChatInput({ className }: { className?: string }) {
       </Button>
 
       <form onSubmit={handleSubmit}>
-        {isInputActive ? (
+        {isInputActive || !showPlaceholder ? (
           <Input
             size="lg"
             className="flex-1 w-full"

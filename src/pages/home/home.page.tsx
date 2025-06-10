@@ -1,10 +1,32 @@
-import { ActionsCarousel } from "@/features/actions";
-import { ChatInput } from "@/features/chat";
-import { LastTransactionsCarousel } from "@/features/transactions";
+import { ActionsCarousel, actionsMock } from "@/features/actions";
+import { ChatInput, useChatStore } from "@/features/chat";
+import {
+  LastTransactionsCarousel,
+  lastTransactionsMock,
+} from "@/features/transactions";
+import { ROUTES } from "@/shared/model/routes";
 import { AiCircleIcon } from "@/shared/ui/icons/AiCircleIcon";
 import { Button } from "@/shared/ui/kit/button";
+import { v4 as uuidv4 } from "uuid";
+import { href, Link, useNavigate } from "react-router-dom";
 
 const HomePage = () => {
+  const createChat = useChatStore.use.createChat();
+  const addMessage = useChatStore.use.addMessage();
+  const navigate = useNavigate();
+
+  const handleSubmit = (prompt: string) => {
+    const chatId = uuidv4();
+    createChat(chatId, prompt);
+    addMessage(chatId, {
+      id: uuidv4(),
+      role: "user",
+      text: prompt,
+      type: "text",
+    });
+    navigate(href(ROUTES.CHAT, { chatId }));
+  };
+
   return (
     <div className="grid grid-rows-[auto_1fr_auto] h-full mx-5">
       {/* Balance */}
@@ -23,22 +45,27 @@ const HomePage = () => {
         <p className="text-base text-foreground/50 font-semibold">
           Last transactions
         </p>
+
         <Button
           className="text-base text-foreground font-semibold p-0 h-auto"
           variant="link"
+          asChild
         >
-          Show All
+          <Link to={ROUTES.PAYMENTS}>Show All</Link>
         </Button>
       </div>
 
       {/* Last transactions carousel */}
-      <LastTransactionsCarousel className="mt-4" />
+      <LastTransactionsCarousel
+        className="mt-4"
+        transactions={lastTransactionsMock}
+      />
 
       {/* Actions carousel */}
-      <ActionsCarousel className="mt-5.5" />
+      <ActionsCarousel className="mt-5.5" actions={actionsMock} />
 
       {/* Chat input */}
-      <ChatInput className="my-8" />
+      <ChatInput className="my-8" onSubmit={handleSubmit} />
     </div>
   );
 };

@@ -4,18 +4,22 @@ import type { Transaction } from "../model/transaction";
 interface TransactionCardProps {
   transaction: Transaction;
   className?: string;
+  onClick?: () => void;
 }
 
 export function TransactionCard({
   transaction,
   className,
+  onClick,
 }: TransactionCardProps) {
   return (
     <div
       className={cn(
         "flex justify-between items-center w-full bg-background rounded-xl p-4",
+        onClick && "cursor-pointer",
         className
       )}
+      onClick={onClick}
     >
       <div>
         <p className="flex gap-1.5 items-center text-xs text-foreground/50 font-medium">

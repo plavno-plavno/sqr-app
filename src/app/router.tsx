@@ -11,6 +11,14 @@ export const router = createBrowserRouter([
         lazy: () => import("@/pages/demo/demo.page"),
       },
       {
+        path: ROUTES.CHAT,
+        lazy: () => import("@/pages/chat/chat.page"),
+      },
+      {
+        path: ROUTES.PAYMENTS,
+        lazy: () => import("@/pages/payments/payments.page"),
+      },
+      {
         path: ROUTES.HOME,
         lazy: () => import("@/pages/home/home.page"),
       },
