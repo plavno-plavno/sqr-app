@@ -43,6 +43,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   --color-dot: var(--dot);
+  --color-details-title: var(--details-title);
 }
 
 :root {
@@ -80,7 +81,8 @@
   --sidebar-border: rgb(235, 235, 235);
   --sidebar-ring: rgb(181, 181, 181);
 
-  --dot: rgba(217, 217, 217, 1)
+  --dot: rgba(217, 217, 217, 1);
+  --details-title: rgba(75, 75, 75, 1)
 }
 
 .dark {

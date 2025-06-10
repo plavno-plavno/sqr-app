@@ -16,6 +16,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/shared/ui/kit/sidebar";
 import { Link } from "react-router-dom";
 import { ChatHistoryList } from "@/features/chat";
@@ -33,7 +34,7 @@ const items = [
   },
   {
     title: "Payments",
-    url: "#",
+    url: ROUTES.PAYMENTS,
     icon: <PaymentIcon />,
   },
   {
@@ -62,6 +63,8 @@ function SidebarIcon({ children }: { children: React.ReactNode }) {
 }
 
 export function AppSidebar() {
+  const { toggleSidebar } = useSidebar();
+
   return (
     <Sidebar>
       <SidebarHeader className="pt-12">
@@ -87,7 +90,7 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton size="lg" asChild className="px-8 py-2">
-                    <Link to={item.url}>
+                    <Link to={item.url} onClick={toggleSidebar}>
                       <SidebarIcon>{item.icon}</SidebarIcon>
                       {item.title}
                     </Link>
@@ -100,7 +103,7 @@ export function AppSidebar() {
         <SidebarGroup className="flex flex-col gap-4 px-8">
           <SidebarGroupLabel className="h-[17px]">Chats</SidebarGroupLabel>
           <SidebarGroupContent>
-            <ChatHistoryList />
+            <ChatHistoryList onCardClick={toggleSidebar} />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
