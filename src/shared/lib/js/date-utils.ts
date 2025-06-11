@@ -32,3 +32,17 @@ export function formatDateForGroup(date: Date): string {
     });
   }
 }
+
+export const formatDateToMonthDay = (date: Date) => {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric'
+  }).format(date);
+};
+
+export const formatDateToTime = (date: Date) => {
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    hour12: true
+  }).format(date);
+};

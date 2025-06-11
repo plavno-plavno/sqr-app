@@ -1,8 +1,18 @@
 "use client";
 
 import { useIsMobile } from "@/shared/lib/react/use-mobile";
-import { Dialog, DialogContent, DialogHeader } from "@/shared/ui/kit/dialog";
-import { Drawer, DrawerContent, DrawerHeader } from "@/shared/ui/kit/drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/ui/kit/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/shared/ui/kit/drawer";
 import type { Transaction } from "../model/transaction";
 import { ImageFallbackIcon } from "@/shared/ui/icons/ImageFallbackIcon";
 import { Button } from "@/shared/ui/kit/button";
@@ -95,9 +105,9 @@ export function TransactionDetailsDialog({
           showDragTip={false}
         >
           <DrawerHeader className="p-0 pt-7.5">
-            <h3 className="text-[34px] font-medium text-details-title">
+            <DrawerTitle className="text-[34px] leading-none font-medium text-details-title-foreground">
               Transaction details
-            </h3>
+            </DrawerTitle>
           </DrawerHeader>
           <TransactionDetails
             transaction={transaction}
@@ -112,12 +122,12 @@ export function TransactionDetailsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         overlayVariant="dark"
-        className="sm:max-w-[425px] bg-white"
+        className="sm:max-w-[425px] bg-white gap-0"
       >
         <DialogHeader>
-          <h3 className="text-[34px] font-medium text-details-title">
+          <DialogTitle className="text-[34px] leading-none font-medium text-details-title-foreground">
             Transaction details
-          </h3>
+          </DialogTitle>
         </DialogHeader>
         <TransactionDetails
           transaction={transaction}
