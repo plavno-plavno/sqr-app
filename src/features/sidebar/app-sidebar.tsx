@@ -1,9 +1,10 @@
+import { ChatHistoryList } from "@/features/chat";
 import { ROUTES } from "@/shared/model/routes";
+import { IconWrapper } from "@/shared/ui/icon-wrapper";
 import { AccountIcon } from "@/shared/ui/icons/AccountIcon";
 import { AnalyticsIcon } from "@/shared/ui/icons/AnalyticsIcon";
 import { CardIcon } from "@/shared/ui/icons/CardIcon";
 import { EditIcon } from "@/shared/ui/icons/EditIcon";
-import { ImageFallbackIcon } from "@/shared/ui/icons/ImageFallbackIcon";
 import { PaymentIcon } from "@/shared/ui/icons/PaymentIcon";
 import { SettingsIcon } from "@/shared/ui/icons/SettingsIcon";
 import {
@@ -19,7 +20,6 @@ import {
   useSidebar,
 } from "@/shared/ui/kit/sidebar";
 import { Link } from "react-router-dom";
-import { ChatHistoryList } from "@/features/chat";
 
 const items = [
   {
@@ -54,14 +54,6 @@ const items = [
   },
 ];
 
-function SidebarIcon({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="grid place-items-center w-8 h-8 bg-sidebar-primary rounded-[10px]">
-      {children}
-    </div>
-  );
-}
-
 export function AppSidebar() {
   const { toggleSidebar } = useSidebar();
 
@@ -71,15 +63,13 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center justify-between px-8 py-2">
             <div className="flex items-center gap-[14px]">
-              <SidebarIcon>
-                <ImageFallbackIcon />
-              </SidebarIcon>
+              <IconWrapper radius="base" />
               <span className="text-2xl font-medium">Ryan</span>
             </div>
 
-            <SidebarIcon>
+            <IconWrapper radius="base">
               <EditIcon />
-            </SidebarIcon>
+            </IconWrapper>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -91,7 +81,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton size="lg" asChild className="px-8 py-2">
                     <Link to={item.url} onClick={toggleSidebar}>
-                      <SidebarIcon>{item.icon}</SidebarIcon>
+                      <IconWrapper radius="base">{item.icon}</IconWrapper>
                       {item.title}
                     </Link>
                   </SidebarMenuButton>

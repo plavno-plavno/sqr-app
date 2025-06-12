@@ -43,7 +43,10 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   --color-dot: var(--dot);
-  --color-details-title: var(--details-title);
+  --color-details-title-foreground: var(--details-title-foreground);
+  --color-agent-message-foreground: var(--agent-message-foreground);
+  --color-chat-card: var(--chat-card);
+  --color-icon-wrapper-secondary: var(--icon-wrapper-secondary);
 }
 
 :root {
@@ -66,7 +69,7 @@
   --border: rgba(231, 231, 231, 1);
   --input: rgba(231, 231, 231, 1);
   --ring: rgb(181, 181, 181);
-  --chart-1: rgb(164, 109, 73);
+  --chart-1: rgba(115, 115, 115, 1);
   --chart-2: rgb(107, 144, 156);
   --chart-3: rgb(88, 96, 110);
   --chart-4: rgb(175, 211, 126);
@@ -82,7 +85,10 @@
   --sidebar-ring: rgb(181, 181, 181);
 
   --dot: rgba(217, 217, 217, 1);
-  --details-title: rgba(75, 75, 75, 1)
+  --details-title-foreground: rgba(75, 75, 75, 1);
+  --agent-message-foreground: rgba(119, 119, 119, 1);
+  --chat-card: rgba(242, 242, 242, 1);
+  --icon-wrapper-secondary: rgba(205, 205, 205, 1)
 }
 
 .dark {
@@ -129,6 +135,6 @@
 }
 
 @utility text-* {
-  font-size: --value(--text-*, [length]);
+  font-size: --value(--text- *, [length]);
   line-height: normal;
 }

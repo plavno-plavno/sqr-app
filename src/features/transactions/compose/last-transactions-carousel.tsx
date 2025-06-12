@@ -5,7 +5,7 @@ import {
   CarouselItem,
 } from "@/shared/ui/kit/carousel";
 import { type Transaction } from "../model/transaction";
-import { TransactionCard } from "./transaction-card";
+import { TransactionCard } from "../ui/transaction-card";
 
 interface LastTransactionsCarouselProps {
   transactions: Transaction[];
@@ -17,8 +17,8 @@ export function LastTransactionsCarousel({
   className,
 }: LastTransactionsCarouselProps) {
   return (
-    <div className={cn("w-screen -mx-5", className)}>
-      <Carousel className="w-full ml-5 max-w-[calc(100vw_-_20px)]">
+    <div className={cn("w-[calc(100%_+_20px)] overflow-hidden", className)}>
+      <Carousel className="w-full">
         <CarouselContent className="-ml-[11px]">
           {transactions.map((transaction) => (
             <CarouselItem className="basis-2/3 pl-[11px]" key={transaction.id}>

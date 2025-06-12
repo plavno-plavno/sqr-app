@@ -1,23 +1,23 @@
 import { cn } from "@/shared/lib/css/tailwind";
-import type { Action } from "../model/action";
-import { ImageFallbackIcon } from "@/shared/ui/icons/ImageFallbackIcon";
+import { IconWrapper } from "@/shared/ui/icon-wrapper";
+import type { QuickAction } from "../model/action";
 
 interface ActionCardProps {
-  action: Action;
+  action: QuickAction;
   className?: string;
+  onClick?: (action: QuickAction) => void;
 }
 
-export function ActionCard({ action, className }: ActionCardProps) {
+export function ActionCard({ action, className, onClick }: ActionCardProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-2.5 bg-background rounded-xl py-2 px-2.5",
+        "flex items-center gap-2.5 bg-background rounded-xl py-2 px-2.5 cursor-pointer",
         className
       )}
+      onClick={() => onClick?.(action)}
     >
-      <div className="grid place-items-center w-8 h-8 bg-primary rounded-[10px]">
-        <ImageFallbackIcon />
-      </div>
+      <IconWrapper radius="base" />
 
       <p className="text-xs text-foreground/50 font-medium">{action.name}</p>
     </div>

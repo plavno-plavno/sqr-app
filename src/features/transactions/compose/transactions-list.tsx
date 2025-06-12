@@ -2,8 +2,8 @@ import { cn } from "@/shared/lib/css/tailwind";
 import { useMemo, useState } from "react";
 import { groupTransactions } from "../lib/utils";
 import type { Transaction } from "../model/transaction";
-import { TransactionCard } from "./transaction-card";
-import { TransactionDetailsDialog } from "./transaction-details-dialog";
+import { TransactionCard } from "../ui/transaction-card";
+import { TransactionDetailsDialog } from "../ui/transaction-details-dialog";
 
 interface TransactionsListProps {
   transactions: Transaction[];

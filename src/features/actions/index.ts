@@ -1,2 +1,2 @@
-export { type Action, actionsMock } from "./model/action";
-export { ActionsCarousel } from "./ui/actions-carousel";
+export { type QuickAction, actionsMock } from "./model/action";
+export { ActionsCarousel } from "./compose/actions-carousel";

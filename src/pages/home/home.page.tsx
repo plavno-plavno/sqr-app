@@ -1,5 +1,9 @@
-import { ActionsCarousel, actionsMock } from "@/features/actions";
-import { ChatInput, useChatStore } from "@/features/chat";
+import {
+  ActionsCarousel,
+  actionsMock,
+  type QuickAction,
+} from "@/features/actions";
+import { ChatInput, ChatMessageType, useChatStore } from "@/features/chat";
 import {
   LastTransactionsCarousel,
   lastTransactionsMock,
@@ -22,13 +26,25 @@ const HomePage = () => {
       id: uuidv4(),
       role: "user",
       text: prompt,
-      type: "text",
+      type: ChatMessageType.Text,
+    });
+    navigate(href(ROUTES.CHAT, { chatId }));
+  };
+
+  const handleQuickActionClick = (action: QuickAction) => {
+    const chatId = uuidv4();
+    createChat(chatId, action.name);
+    addMessage(chatId, {
+      id: uuidv4(),
+      role: "user",
+      text: action.prompt,
+      type: ChatMessageType.Text,
     });
     navigate(href(ROUTES.CHAT, { chatId }));
   };
 
   return (
-    <div className="grid grid-rows-[auto_1fr_auto] h-full mx-5">
+    <div className="grid grid-rows-[auto_1fr_auto] h-full px-5">
       {/* Balance */}
       <div className="flex flex-col gap-1 pt-8">
         <p className="text-sm text-foreground/50 font-semibold">Your balance</p>
@@ -62,7 +78,11 @@ const HomePage = () => {
       />
 
       {/* Actions carousel */}
-      <ActionsCarousel className="mt-5.5" actions={actionsMock} />
+      <ActionsCarousel
+        className="mt-5.5"
+        actions={actionsMock}
+        onCardClick={handleQuickActionClick}
+      />
 
       {/* Chat input */}
       <ChatInput className="my-8" onSubmit={handleSubmit} />

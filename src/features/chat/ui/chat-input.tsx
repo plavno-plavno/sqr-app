@@ -34,6 +34,7 @@ export function ChatInput({
     if (!prompt) return;
 
     onSubmit(prompt);
+    e.currentTarget.reset();
   };
 
   return (

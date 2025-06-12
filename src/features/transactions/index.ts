@@ -1,4 +1,4 @@
 export { type Transaction, lastTransactionsMock } from "./model/transaction";
-export { LastTransactionsCarousel } from "./ui/last-transactions-carousel";
-export { TransactionsList } from "./ui/transactions-list";
+export { LastTransactionsCarousel } from "./compose/last-transactions-carousel";
+export { TransactionsList } from "./compose/transactions-list";
 export { TransactionDetailsDialog } from "./ui/transaction-details-dialog";
