@@ -1,10 +1,5 @@
 import { cn } from "@/shared/lib/css/tailwind";
-
-export interface Contact {
-  id: string;
-  name: string;
-  phone: string;
-}
+import type { Contact } from "../../model/contact";
 
 interface ChatContactListMessageProps {
   contacts: Contact[];

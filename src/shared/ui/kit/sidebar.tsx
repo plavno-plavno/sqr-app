@@ -21,7 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/shared/ui/kit/tooltip"
-import { CollapseIcon } from "@/shared/ui/icons/CollapseIcon"
+import CollapseIcon from "@/shared/assets/icons/collapse-icon.svg?react"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7

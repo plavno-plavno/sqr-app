@@ -1,7 +1,7 @@
 import { cn } from "@/shared/lib/css/tailwind";
 import { IconWrapper } from "@/shared/ui/icon-wrapper";
 import { ChatDialogCardLayout } from "./chat-dialog-card-layout";
-import { ImageFallbackIcon } from "@/shared/ui/icons/ImageFallbackIcon";
+import ImageFallbackIcon from "@/shared/assets/icons/image-fallback-icon.svg?react";
 
 export function ChatDialogPaymentCard({
   title,

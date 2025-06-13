@@ -4,7 +4,7 @@ import {
   formatDateToTime,
 } from "@/shared/lib/js/date-utils";
 import { IconWrapper } from "@/shared/ui/icon-wrapper";
-import VoiceVisualizationImage from "../../../../../public/images/voice-visualization.png";
+import VoiceVisualizationImage from "@/shared/assets/images/voice-visualization.png";
 import { ChatDialogCardLayout } from "./chat-dialog-card-layout";
 
 const RowWithIcon = ({
@@ -113,7 +113,9 @@ export const ChatDialogActionCardDetails = ({
 }) => {
   return (
     <div className={cn("flex flex-col gap-3", className)}>
-      <p className="text-sm font-medium text-primary-foreground">Transfer details</p>
+      <p className="text-sm font-medium text-primary-foreground">
+        Transfer details
+      </p>
 
       <div className="flex flex-col gap-2">
         {details.map((detail) => (

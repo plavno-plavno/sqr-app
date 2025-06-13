@@ -1,9 +1,19 @@
 export {
   type Chat,
   type ChatMessage,
+  AttachmentType,
   ChatMessageType,
   useChatStore,
 } from "./model/chat-store";
 export { ChatHistoryList } from "./compose/chat-history-list";
 export { ChatMessageList } from "./compose/chat-message-list";
-export { ChatInput } from "./ui/chat-input";
+export { ChatInput, type ImageState } from "./ui/chat-input";
+export {
+  ChatDialogActionCard,
+  ChatDialogActionCardAmount,
+  ChatDialogActionCardBuy,
+  ChatDialogActionCardDetails,
+  ChatDialogActionCardRecipient,
+} from "./ui/chat-dialog-cards/chat-dialog-action-card";
+export { ChatDialogPaymentCard } from "./ui/chat-dialog-cards/chat-dialog-payment-card";
+export { ChatConfirmDialog } from "./ui/chat-confirm-dialog";

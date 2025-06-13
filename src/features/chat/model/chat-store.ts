@@ -5,13 +5,28 @@ import { persist } from "zustand/middleware";
 
 export enum ChatMessageType {
   Text = "text",
-  Chart = "chart",
+  Success = "success",
+  LineChart = "line-chart",
+  PieChart = "pie-chart",
   ContactList = "contact-list",
+  MoneyInfo = "money-info",
+  MoneyTransfer = "money-transfer",
+  Subscription = "subscription",
 }
+
+export enum AttachmentType {
+  Image = "image",
+}
+
+export type Attachment = {
+  image?: string;
+  type: AttachmentType;
+};
 
 export interface ChatMessage {
   id: string;
   text: string;
+  body?: Attachment;
   type: ChatMessageType;
   role: "user" | "agent";
 }
@@ -58,9 +73,13 @@ const useChatStoreBase = create<Store>()(
             state.chats[chatId].messages.push(message);
           }
         }),
-      createChat: (chatId: string, title = "New Chat") =>
+      createChat: (chatId: string, title) =>
         set((state) => {
-          state.chats[chatId] = { id: chatId, title, messages: [] };
+          state.chats[chatId] = {
+            id: chatId,
+            title: title || "New Chat",
+            messages: [],
+          };
         }),
     })),
     {

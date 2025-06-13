@@ -1,12 +1,12 @@
 import { ChatHistoryList } from "@/features/chat";
 import { ROUTES } from "@/shared/model/routes";
 import { IconWrapper } from "@/shared/ui/icon-wrapper";
-import { AccountIcon } from "@/shared/ui/icons/AccountIcon";
-import { AnalyticsIcon } from "@/shared/ui/icons/AnalyticsIcon";
-import { CardIcon } from "@/shared/ui/icons/CardIcon";
-import { EditIcon } from "@/shared/ui/icons/EditIcon";
-import { PaymentIcon } from "@/shared/ui/icons/PaymentIcon";
-import { SettingsIcon } from "@/shared/ui/icons/SettingsIcon";
+import AccountIcon from "@/shared/assets/icons/account-icon.svg?react";
+import AnalyticsIcon from "@/shared/assets/icons/analytics-icon.svg?react";
+import CardIcon from "@/shared/assets/icons/card-icon.svg?react";
+import EditIcon from "@/shared/assets/icons/edit-icon.svg?react";
+import PaymentIcon from "@/shared/assets/icons/payment-icon.svg?react";
+import SettingsIcon from "@/shared/assets/icons/settings-icon.svg?react";
 import {
   Sidebar,
   SidebarContent,
@@ -73,7 +73,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent className="gap-10 pt-8">
+      <SidebarContent className="gap-10 py-8">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>

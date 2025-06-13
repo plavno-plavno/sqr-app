@@ -3,13 +3,13 @@ import {
   actionsMock,
   type QuickAction,
 } from "@/features/actions";
-import { ChatInput, ChatMessageType, useChatStore } from "@/features/chat";
+import { AttachmentType, ChatInput, ChatMessageType, useChatStore, type ImageState } from "@/features/chat";
 import {
   LastTransactionsCarousel,
   lastTransactionsMock,
 } from "@/features/transactions";
 import { ROUTES } from "@/shared/model/routes";
-import { AiCircleIcon } from "@/shared/ui/icons/AiCircleIcon";
+import AiCircleIcon from "@/shared/assets/icons/ai-circle-icon.svg?react";
 import { Button } from "@/shared/ui/kit/button";
 import { v4 as uuidv4 } from "uuid";
 import { href, Link, useNavigate } from "react-router-dom";
@@ -19,14 +19,22 @@ const HomePage = () => {
   const addMessage = useChatStore.use.addMessage();
   const navigate = useNavigate();
 
-  const handleSubmit = (prompt: string) => {
+  const handleSubmit = (prompt: string, image?: ImageState) => {
     const chatId = uuidv4();
+    console.log("prompt", prompt);
+    console.log("image", image);
     createChat(chatId, prompt);
     addMessage(chatId, {
       id: uuidv4(),
       role: "user",
       text: prompt,
       type: ChatMessageType.Text,
+      ...(image && {
+        body: {
+          type: AttachmentType.Image,
+          image: image.imagePreview,
+        },
+      }),
     });
     navigate(href(ROUTES.CHAT, { chatId }));
   };
@@ -46,7 +54,7 @@ const HomePage = () => {
   return (
     <div className="grid grid-rows-[auto_1fr_auto] h-full px-5">
       {/* Balance */}
-      <div className="flex flex-col gap-1 pt-8">
+      <div className="flex flex-col gap-1 pt-4.5">
         <p className="text-sm text-foreground/50 font-semibold">Your balance</p>
         <h3 className="text-[32px] font-semibold">$5060,45</h3>
       </div>
