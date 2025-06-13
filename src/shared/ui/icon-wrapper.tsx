@@ -2,7 +2,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
 import { cn } from "@/shared/lib/css/tailwind";
-import { ImageFallbackIcon } from "./icons/ImageFallbackIcon";
+import ImageFallbackIcon from "@/shared/assets/icons/image-fallback-icon.svg?react";
 
 const iconWrapperVariants = cva(
   "grid place-items-center w-8 h-8 rounded-full bg-primary",

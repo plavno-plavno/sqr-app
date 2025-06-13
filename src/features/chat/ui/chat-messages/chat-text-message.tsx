@@ -15,7 +15,7 @@ export function ChatTextMessage({
   return (
     <p
       className={cn(
-        "text-2xl",
+        "text-2xl break-all",
         role === "user" && "text-foreground font-medium",
         role === "agent" && "text-agent-message-foreground",
         className

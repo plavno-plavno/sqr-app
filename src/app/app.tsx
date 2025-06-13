@@ -42,9 +42,9 @@ export function App() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <main className="w-full grid grid-rows-[auto_1fr] bg-white flex-none">
+      <main className="w-full h-dvh grid grid-rows-[auto_1fr] bg-white">
         {/* Header */}
-        <div className="flex items-center relative mx-3 my-5">
+        <div className="flex-none flex items-center relative px-3 py-5">
           <SidebarTrigger />
           <h3 className="text-sm font-semibold absolute left-1/2 -translate-x-1/2">
             {title}

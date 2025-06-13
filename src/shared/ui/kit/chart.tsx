@@ -250,13 +250,15 @@ const ChartLegend = RechartsPrimitive.Legend;
 
 function ChartLegendContent({
   className,
-  hideIcon = false,
   payload,
   verticalAlign = "bottom",
   nameKey,
+  sign,
+  postfixIcon,
 }: React.ComponentProps<"div"> &
-  Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
-    hideIcon?: boolean;
+  Pick<RechartsPrimitive.LegendProps, "verticalAlign" | "payload"> & {
+    sign?: string;
+    postfixIcon?: React.ReactNode;
     nameKey?: string;
   }) {
   const { config } = useChart();
@@ -268,7 +270,7 @@ function ChartLegendContent({
   return (
     <div
       className={cn(
-        "flex items-center justify-center gap-4",
+        "flex items-center gap-2 flex-wrap",
         verticalAlign === "top" ? "pb-3" : "pt-3",
         className
       )}
@@ -281,20 +283,18 @@ function ChartLegendContent({
           <div
             key={item.value}
             className={cn(
-              "[&>svg]:text-muted-foreground flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3"
+              "[&>svg]:text-muted-foreground py-1 px-3 flex items-center gap-1 rounded-full [&>svg]:h-3 [&>svg]:w-3"
             )}
+            style={{
+              backgroundColor: item.color,
+            }}
           >
-            {itemConfig?.icon && !hideIcon ? (
-              <itemConfig.icon />
-            ) : (
-              <div
-                className="h-2 w-2 shrink-0 rounded-[2px]"
-                style={{
-                  backgroundColor: item.color,
-                }}
-              />
-            )}
-            {itemConfig?.label}
+            <span className="text-xs font-medium">{itemConfig?.label}</span>
+            <span className="text-xs font-semibold">
+              {sign}
+              {item.payload?.value}
+            </span>
+            {(item.payload as { showIcon?: boolean })?.showIcon && postfixIcon}
           </div>
         );
       })}

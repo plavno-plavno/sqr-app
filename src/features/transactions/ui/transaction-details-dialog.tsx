@@ -14,8 +14,9 @@ import {
   DrawerTitle,
 } from "@/shared/ui/kit/drawer";
 import type { Transaction } from "../model/transaction";
-import { ImageFallbackIcon } from "@/shared/ui/icons/ImageFallbackIcon";
+import ImageFallbackIcon from "@/shared/assets/icons/image-fallback-icon.svg?react";
 import { Button } from "@/shared/ui/kit/button";
+import { ScrollArea } from "@/shared/ui/kit/scroll-area";
 
 interface TransactionDetailsProps {
   open: boolean;
@@ -101,7 +102,7 @@ export function TransactionDetailsDialog({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent
           overlayVariant="dark"
-          className="bg-white px-5"
+          className="bg-white px-5 grid grid-rows-[auto_1fr]"
           showDragTip={false}
         >
           <DrawerHeader className="p-0 pt-7.5">
@@ -109,10 +110,12 @@ export function TransactionDetailsDialog({
               Transaction details
             </DrawerTitle>
           </DrawerHeader>
-          <TransactionDetails
-            transaction={transaction}
-            onOpenChange={onOpenChange}
-          />
+          <ScrollArea className="h-min-0 pr-3.5 -mr-3.5 overflow-hidden">
+            <TransactionDetails
+              transaction={transaction}
+              onOpenChange={onOpenChange}
+            />
+          </ScrollArea>
         </DrawerContent>
       </Drawer>
     );
