@@ -23,12 +23,18 @@ export type Attachment = {
   type: AttachmentType;
 };
 
+export interface MessageMeta {
+  start: string;
+  end: string;
+}
+
 export interface ChatMessage {
   id: string;
   text: string;
   body?: Attachment;
   type: ChatMessageType;
   role: "user" | "agent";
+  meta?: MessageMeta;
 }
 
 export interface Chat {
@@ -44,14 +50,16 @@ interface State {
 interface Actions {
   setTitle: (chatId: string, title: string) => void;
   addMessage: (chatId: string, message: ChatMessage) => void;
+  updateMessage: (chatId: string, message: ChatMessage) => void;
   createChat: (chatId: string, title?: string) => void;
+  getMessages: (chatId?: string) => ChatMessage[];
 }
 
 type Store = State & Actions;
 
 const useChatStoreBase = create<Store>()(
   persist(
-    immer((set) => ({
+    immer((set, get) => ({
       chats: {},
       setTitle: (chatId: string, title: string) =>
         set((state) => {
@@ -66,21 +74,36 @@ const useChatStoreBase = create<Store>()(
           if (!state.chats[chatId]) {
             state.chats[chatId] = {
               id: chatId,
-              title: "New Chat",
+              title: message.text, // Set first message as title
               messages: [message],
             };
           } else {
+            // If chat has no title, set the message text as title
+            if (!state.chats[chatId].title && message.text) {
+              state.chats[chatId].title = message.text;
+            }
             state.chats[chatId].messages.push(message);
+          }
+        }),
+      updateMessage: (chatId: string, message: ChatMessage) =>
+        set((state) => {
+          const messageIndex = state.chats[chatId].messages.findIndex(
+            (m) => m.id === message.id
+          );
+          if (messageIndex !== -1) {
+            state.chats[chatId].messages[messageIndex] = message;
           }
         }),
       createChat: (chatId: string, title) =>
         set((state) => {
           state.chats[chatId] = {
             id: chatId,
-            title: title || "New Chat",
+            title: title ?? "",
             messages: [],
           };
         }),
+      getMessages: (chatId?: string) =>
+        chatId ? get().chats[chatId]?.messages || [] : [],
     })),
     {
       name: "chat-store",

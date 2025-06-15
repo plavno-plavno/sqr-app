@@ -1,16 +1,16 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { AudioQueueManager, AudioWorkletManager } from "@/features/audio";
-import { defaultPrompt } from "@/shared/mock/prompt";
-import { WebSocketConnection } from "@/features/websocket";
-import { defaultLanguage } from "@/shared/mock/languages";
-import type { AudioResponse, ServerResponse } from "@/shared/model/requests";
+import { AudioQueueManager, AudioWorkletManager } from "@/features/_audio_demo_old";
+import { WebSocketConnection } from "@/features/_websocket_demo_old";
+import { requests } from "@/shared/api";
 import { MainLayout } from "@/shared/layouts/main-layout";
 import { testAudio } from "@/shared/mock/internal";
-import { MicrophoneButton } from "@/shared/ui/microphone-button";
+import { defaultLanguage } from "@/shared/mock/languages";
+import { defaultPrompt } from "@/shared/mock/prompt";
+import type { AudioSegmentResponse, ServerResponse } from "@/shared/model/requests";
 import { AudioVisualizerPlayer } from "@/shared/ui/audio-visualizer-player";
-import { requests } from "@/shared/api";
 import { Button } from "@/shared/ui/kit/button";
+import { MicrophoneButton } from "@/shared/ui/microphone-button";
 import { ThemeProvider } from "@/shared/ui/theme-provider";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const DemoPage = () => {
   const audioQueueRef = useRef<AudioQueueManager | null>(null);
@@ -140,7 +140,7 @@ const DemoPage = () => {
       ) {
         if ("audio" in response.segments) {
           // Обработка аудио ответа
-          const audioResponse = response as AudioResponse;
+          const audioResponse = response as AudioSegmentResponse;
           if (!audioQueueRef.current) {
             audioQueueRef.current = new AudioQueueManager(setCurrentLevel);
           }

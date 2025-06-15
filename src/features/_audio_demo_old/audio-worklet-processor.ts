@@ -65,8 +65,8 @@ export class AudioWorkletManager {
   async initialize(stream: MediaStream): Promise<void> {
     try {
       this.audioContext = new AudioContext();
-      await this.audioContext.audioWorklet.addModule('/audio-processor.js');
-      await this.audioContext.audioWorklet.addModule('/echo-processor.js');
+      await this.audioContext.audioWorklet.addModule('audio-processor.js');
+      await this.audioContext.audioWorklet.addModule('echo-processor.js');
       
       // Настройки аудио с шумоподавлением
       const audioConstraints = {

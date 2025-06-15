@@ -3,6 +3,7 @@ import type { ServerResponse } from '@/shared/model/requests';
 export class WebSocketConnection {
   #socket: WebSocket | null = null;
   #isServerReady: boolean = false;
+  #onServerReady: (() => void) | null = null;
   #onResponse: ((response: ServerResponse) => void) | null = null;
   #language: string;
   #prompt: string;
@@ -26,10 +27,11 @@ export class WebSocketConnection {
       this.#socket = null;
     }
     this.#isServerReady = false;
-    this.initSocket(this.#url!, this.#onResponse!);
+    this.initSocket(this.#url!, this.#onServerReady!, this.#onResponse!);
   }
 
-  async initSocket(url: string, onResponse: (response: ServerResponse) => void): Promise<void> {
+  async initSocket(url: string, onServerReady: () => void, onResponse: (response: ServerResponse) => void): Promise<void> {
+    this.#onServerReady = onServerReady;
     this.#onResponse = onResponse;
     this.#url = url;
     
@@ -60,6 +62,10 @@ export class WebSocketConnection {
           if (data.message === 'SERVER_READY') {
             console.log('Server is ready for audio streaming');
             this.#isServerReady = true;
+            // Вызываем колбэк в следующем тике, чтобы избежать проблем с состоянием
+            setTimeout(() => {
+              this.#onServerReady?.();
+            }, 0);
           } else if (data.segments) {
             // Это ответ с транскрипцией
             this.#onResponse?.(data as ServerResponse);
@@ -94,6 +100,7 @@ export class WebSocketConnection {
     }
 
     if (this.#socket?.readyState === WebSocket.OPEN) {
+      // TODO: problem here
       console.log('Sending audio data, socket state:', this.#socket.readyState);
 
       // console.log('rank__________________________', rank);
