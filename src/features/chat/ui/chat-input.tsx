@@ -11,7 +11,9 @@ import { useRef, useState } from "react";
 interface ChatInputProps {
   className?: string;
   showPlaceholder?: boolean;
+  disabled?: boolean;
   onSubmit: (prompt: string, image?: ImageState) => void;
+  onMicClick: () => void;
 }
 
 export interface ImageState {
@@ -22,7 +24,9 @@ export interface ImageState {
 export function ChatInput({
   className,
   showPlaceholder = true,
+  disabled = false,
   onSubmit,
+  onMicClick,
 }: ChatInputProps) {
   const [isInputActive, setIsInputActive] = useState<boolean>(false);
   const [value, setValue] = useState<string>("");
@@ -106,6 +110,7 @@ export function ChatInput({
   return (
     <div className={cn("flex justify-between items-end gap-2", className)}>
       <Button
+        disabled={disabled}
         className="flex-none h-10 w-10"
         variant="ghost"
         size="icon"
@@ -142,6 +147,7 @@ export function ChatInput({
             className="w-full min-h-10 max-h-24 resize-none break-all overflow-auto"
             name="prompt"
             value={value}
+            disabled={disabled}
             onChange={(e) => {
               setValue(e.target.value);
               adjustTextareaHeight();
@@ -162,6 +168,7 @@ export function ChatInput({
 
       {value || imageState?.imageFile ? (
         <Button
+          disabled={disabled}
           onClick={handleSend}
           className="flex-none h-10 w-10"
           variant="ghost"
@@ -170,7 +177,13 @@ export function ChatInput({
           <SendIcon />
         </Button>
       ) : (
-        <Button className="flex-none h-10 w-10" variant="ghost" size="icon">
+        <Button
+          disabled={disabled}
+          className="flex-none h-10 w-10"
+          variant="ghost"
+          size="icon"
+          onClick={onMicClick}
+        >
           <MicIcon />
         </Button>
       )}

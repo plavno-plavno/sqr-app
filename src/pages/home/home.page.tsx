@@ -3,16 +3,23 @@ import {
   actionsMock,
   type QuickAction,
 } from "@/features/actions";
-import { AttachmentType, ChatInput, ChatMessageType, useChatStore, type ImageState } from "@/features/chat";
+import {
+  AttachmentType,
+  ChatInput,
+  ChatMessageType,
+  useChatStore,
+  type ImageState,
+} from "@/features/chat";
 import {
   LastTransactionsCarousel,
   lastTransactionsMock,
 } from "@/features/transactions";
 import { ROUTES } from "@/shared/model/routes";
-import AiCircleIcon from "@/shared/assets/icons/ai-circle-icon.svg?react";
 import { Button } from "@/shared/ui/kit/button";
-import { v4 as uuidv4 } from "uuid";
+import Lottie from "lottie-react";
 import { href, Link, useNavigate } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
+import sphere from "@/shared/assets/animations/sphere.json";
 
 const HomePage = () => {
   const createChat = useChatStore.use.createChat();
@@ -21,8 +28,6 @@ const HomePage = () => {
 
   const handleSubmit = (prompt: string, image?: ImageState) => {
     const chatId = uuidv4();
-    console.log("prompt", prompt);
-    console.log("image", image);
     createChat(chatId, prompt);
     addMessage(chatId, {
       id: uuidv4(),
@@ -51,6 +56,12 @@ const HomePage = () => {
     navigate(href(ROUTES.CHAT, { chatId }));
   };
 
+  const handleMicClick = () => {
+    const chatId = uuidv4();
+    createChat(chatId);
+    navigate(`${href(ROUTES.CHAT, { chatId })}?mic=true`);
+  };
+
   return (
     <div className="grid grid-rows-[auto_1fr_auto] h-full px-5">
       {/* Balance */}
@@ -60,8 +71,8 @@ const HomePage = () => {
       </div>
 
       {/* AI Circle */}
-      <div className="grid place-items-center">
-        <AiCircleIcon />
+      <div className="grid place-items-center" onClick={handleMicClick}>
+        <Lottie animationData={sphere} />
       </div>
 
       {/* Last transactions */}
@@ -93,7 +104,11 @@ const HomePage = () => {
       />
 
       {/* Chat input */}
-      <ChatInput className="my-8" onSubmit={handleSubmit} />
+      <ChatInput
+        className="my-8"
+        onSubmit={handleSubmit}
+        onMicClick={handleMicClick}
+      />
     </div>
   );
 };

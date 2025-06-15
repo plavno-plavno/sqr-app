@@ -1,15 +1,15 @@
 export type GetFreeMachine = {
-  ip: string
-  port: string
-  start_time: number
-  httpPort: string
-  dns: string
-  gpuType: string
-  id: number
-  uptime: number
-  actual_status: string
-  clients_number: number
-}
+  ip: string;
+  port: string;
+  start_time: number;
+  httpPort: string;
+  dns: string;
+  gpuType: string;
+  id: number;
+  uptime: number;
+  actual_status: string;
+  clients_number: number;
+};
 
 export interface Segment {
   text: string;
@@ -17,18 +17,21 @@ export interface Segment {
   end: string;
 }
 
-export interface TextResponse {
-  segments: Segment[];
+export type TextResponse = Segment[];
+export type TranslationResponse = Record<string, string>;
+export type AudioResponse = {
+  audio: string;
+};
+// Only for old version. Can be removed in future
+export type AudioSegmentResponse = {
+  segments: AudioResponse;
 }
 
-export interface TranslationResponse {
-  segments: Record<string, string>;
-}
+export type ResponseType = "agent" | "transcription";
 
-export interface AudioResponse {
-  segments: {
-    audio: string;
-  };
-}
+export type ServerResponse = {
+  uid: string;
+  segments: TextResponse | TranslationResponse | AudioResponse;
+  type: ResponseType;
+};
 
-export type ServerResponse = TextResponse | TranslationResponse | AudioResponse;
