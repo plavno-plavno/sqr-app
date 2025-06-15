@@ -40,18 +40,17 @@ export const useWSConnection = (
     }
   };
 
-  const getLastUserMessage = (messages: ChatMessage[]) => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === "user") {
-        return messages[i];
-      }
-    }
-    return null;
-  };
+  // const getLastUserMessage = (messages: ChatMessage[]) => {
+  //   for (let i = messages.length - 1; i >= 0; i--) {
+  //     if (messages[i].role === "user") {
+  //       return messages[i];
+  //     }
+  //   }
+  //   return null;
+  // };
 
   const handleUserTranscription = (chatId: string, segments: TextResponse) => {
     const messages = getMessages(chatId);
-    const lastUserMessage = getLastUserMessage(messages);
     const lastMessage = messages[messages.length - 1];
     const lastSegment = segments[segments.length - 1];
     const { text, start, end } = lastSegment;
@@ -64,7 +63,7 @@ export const useWSConnection = (
     };
 
     // If the last message is the same as the current message, update it, otherwise add a new message
-    if (lastUserMessage?.meta?.start && lastUserMessage?.meta?.start >= start) {
+    if (lastMessage?.meta?.start && lastMessage?.meta?.start >= start) {
       updateMessage(chatId, {
         ...message,
         id: lastMessage?.id,
