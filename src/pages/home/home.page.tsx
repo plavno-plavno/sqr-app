@@ -7,6 +7,7 @@ import {
   AttachmentType,
   ChatInput,
   ChatMessageType,
+  ChatMessageRole,
   useChatStore,
   type ImageState,
 } from "@/features/chat";
@@ -31,7 +32,7 @@ const HomePage = () => {
     createChat(chatId, prompt);
     addMessage(chatId, {
       id: uuidv4(),
-      role: "user",
+      role: ChatMessageRole.User,
       text: prompt,
       type: ChatMessageType.Text,
       ...(image && {
@@ -49,7 +50,7 @@ const HomePage = () => {
     createChat(chatId, action.name);
     addMessage(chatId, {
       id: uuidv4(),
-      role: "user",
+      role: ChatMessageRole.User,
       text: action.prompt,
       type: ChatMessageType.Text,
     });

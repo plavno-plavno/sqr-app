@@ -1,4 +1,4 @@
-import type { ServerResponse } from '@/shared/model/requests';
+import type { ServerResponse } from '@/shared/model/websocket';
 
 export class WebSocketConnection {
   #socket: WebSocket | null = null;
@@ -52,7 +52,6 @@ export class WebSocketConnection {
       };
 
       this.#socket.onmessage = (event) => {
-        console.log('Received message:', event.data);
         try {
           const data = JSON.parse(event.data);
           console.log('Parsed message:', data);

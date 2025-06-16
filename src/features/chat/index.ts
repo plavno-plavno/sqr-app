@@ -3,6 +3,7 @@ export {
   type ChatMessage,
   AttachmentType,
   ChatMessageType,
+  ChatMessageRole,
   useChatStore,
 } from "./model/chat-store";
 export { ChatHistoryList } from "./compose/chat-history-list";
@@ -17,3 +18,4 @@ export {
 } from "./ui/chat-dialog-cards/chat-dialog-action-card";
 export { ChatDialogPaymentCard } from "./ui/chat-dialog-cards/chat-dialog-payment-card";
 export { ChatConfirmDialog } from "./ui/chat-confirm-dialog";
+export { ChatDialog } from "./compose/chat-dialog";

@@ -1,12 +1,9 @@
 import {
   AttachmentType,
-  ChatConfirmDialog,
-  ChatDialogActionCard,
-  ChatDialogActionCardAmount,
-  ChatDialogActionCardBuy,
-  ChatDialogPaymentCard,
+  ChatDialog,
   ChatInput,
   ChatMessageList,
+  ChatMessageRole,
   ChatMessageType,
   type ImageState,
   useChatStore,
@@ -17,7 +14,7 @@ import { cn } from "@/shared/lib/css/tailwind";
 import { type PathParams, ROUTES } from "@/shared/model/routes";
 import { Button } from "@/shared/ui/kit/button";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   Navigate,
   useLocation,
@@ -28,13 +25,6 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { useAudio } from "./model/useAudio";
 import { useWSConnection } from "./model/useWSConnection";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/ui/kit/select";
 
 const ChatPage = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
@@ -45,11 +35,9 @@ const ChatPage = () => {
   const chats = useChatStore.use.chats();
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
-
-  const [openConfirmDialog, setOpenConfirmDialog] = useState<boolean>(false);
-  const [messageType, setMessageType] = useState<ChatMessageType>(
-    ChatMessageType.Text
-  );
+  // const [messageType, setMessageType] = useState<ChatMessageType>(
+  //   ChatMessageType.Text
+  // );
 
   const micEnabled = searchParams.get("mic") === "true";
 
@@ -96,9 +84,9 @@ const ChatPage = () => {
   const handleSubmit = (prompt: string, image?: ImageState) => {
     const newMessage = {
       id: uuidv4(),
-      role: "user" as const,
+      role: ChatMessageRole.User,
       text: prompt,
-      type: messageType,
+      type: ChatMessageType.Text,
       ...(image && {
         body: {
           type: AttachmentType.Image,
@@ -124,10 +112,7 @@ const ChatPage = () => {
       {/* Chat input */}
       {isRecording ? (
         <div className="grid grid-rows-[1fr_auto] justify-items-center my-5 -mx-5 gap-7">
-          <div
-            className="grid self-center place-items-center w-full"
-            onClick={() => setOpenConfirmDialog(true)}
-          >
+          <div className="grid self-center place-items-center w-full">
             <Lottie
               animationData={voice}
               lottieRef={lottieRef}
@@ -150,7 +135,7 @@ const ChatPage = () => {
             onSubmit={handleSubmit}
             onMicClick={startRecording}
           />
-          <Select
+          {/* <Select
             onValueChange={(value) => setMessageType(value as ChatMessageType)}
             defaultValue={messageType}
           >
@@ -164,42 +149,11 @@ const ChatPage = () => {
                 </SelectItem>
               ))}
             </SelectContent>
-          </Select>
+          </Select> */}
         </div>
       )}
 
-      {/* Chat confirm dialog */}
-      <ChatConfirmDialog
-        title="Sure, just confirm"
-        open={openConfirmDialog}
-        onOpenChange={setOpenConfirmDialog}
-      >
-        <ChatDialogActionCard>
-          {/* <ChatDialogActionCardDetails
-            details={[
-              { name: "Bank Name", value: "ING Bank N.V." },
-              { name: "IBAN", value: "NL42INGB0020101346" },
-            ]}
-          />
-          <ChatDialogActionCardRecipient
-            name="John Doe"
-            phone="1234567890"
-            date={new Date()}
-          /> */}
-          <ChatDialogActionCardBuy amount={100} coin="BTC" />
-          <ChatDialogActionCardAmount amount={100} restAmount={15600} />
-        </ChatDialogActionCard>
-        <ChatDialogPaymentCard
-          title="Pay using"
-          identifier="**** 7890"
-          paymentMethod="Credit Card"
-        />
-        <ChatDialogPaymentCard
-          title="Wallet address"
-          identifier="17rm2dvb439dZqyMe2d4D6AQJSgg6yeNRn"
-          paymentMethod="Metamask"
-        />
-      </ChatConfirmDialog>
+      <ChatDialog />
     </div>
   );
 };

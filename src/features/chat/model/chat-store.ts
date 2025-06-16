@@ -2,16 +2,27 @@ import { createSelectors } from "@/shared/lib/js/zustand";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { persist } from "zustand/middleware";
+import type { IntentResponse } from "@/shared/model/intents";
+
+// export enum ChatMessageType {
+//   Text = "text",
+//   Success = "success",
+//   LineChart = "line-chart",
+//   PieChart = "pie-chart",
+//   ContactList = "contact-list",
+//   MoneyInfo = "money-info",
+//   MoneyTransfer = "money-transfer",
+//   Subscription = "subscription",
+// }
 
 export enum ChatMessageType {
   Text = "text",
-  Success = "success",
-  LineChart = "line-chart",
-  PieChart = "pie-chart",
-  ContactList = "contact-list",
-  MoneyInfo = "money-info",
-  MoneyTransfer = "money-transfer",
-  Subscription = "subscription",
+  Intent = "intent",
+}
+
+export enum ChatMessageRole {
+  User = "user",
+  Agent = "agent",
 }
 
 export enum AttachmentType {
@@ -30,11 +41,17 @@ export interface MessageMeta {
 
 export interface ChatMessage {
   id: string;
-  text: string;
+  text?: string;
+  intent?: IntentResponse;
   body?: Attachment;
   type: ChatMessageType;
-  role: "user" | "agent";
+  role: ChatMessageRole;
   meta?: MessageMeta;
+}
+
+export interface ChatDialog {
+  open: boolean;
+  dialogIntent: IntentResponse | null;
 }
 
 export interface Chat {
@@ -44,6 +61,7 @@ export interface Chat {
 }
 
 interface State {
+  dialog: ChatDialog;
   chats: Record<string, Chat>;
 }
 
@@ -53,6 +71,7 @@ interface Actions {
   updateMessage: (chatId: string, message: ChatMessage) => void;
   createChat: (chatId: string, title?: string) => void;
   getMessages: (chatId?: string) => ChatMessage[];
+  setDialog: (open: boolean, dialogIntent: IntentResponse | null) => void;
 }
 
 type Store = State & Actions;
@@ -61,6 +80,10 @@ const useChatStoreBase = create<Store>()(
   persist(
     immer((set, get) => ({
       chats: {},
+      dialog: {
+        open: false,
+        dialogIntent: null,
+      },
       setTitle: (chatId: string, title: string) =>
         set((state) => {
           if (!state.chats[chatId]) {
@@ -74,7 +97,7 @@ const useChatStoreBase = create<Store>()(
           if (!state.chats[chatId]) {
             state.chats[chatId] = {
               id: chatId,
-              title: message.text, // Set first message as title
+              title: message.text || "", // Set first message as title
               messages: [message],
             };
           } else {
@@ -104,6 +127,13 @@ const useChatStoreBase = create<Store>()(
         }),
       getMessages: (chatId?: string) =>
         chatId ? get().chats[chatId]?.messages || [] : [],
+      setDialog: (open: boolean, dialogIntent: IntentResponse | null) =>
+        set((state) => {
+          state.dialog = {
+            open,
+            dialogIntent,
+          };
+        }),
     })),
     {
       name: "chat-store",

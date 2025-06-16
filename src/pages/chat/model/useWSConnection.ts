@@ -1,5 +1,6 @@
 import { AudioQueueManager } from "@/features/audio";
 import {
+  ChatMessageRole,
   ChatMessageType,
   useChatStore,
   type ChatMessage,
@@ -8,14 +9,17 @@ import { WebSocketConnection } from "@/features/websocket";
 import { requests } from "@/shared/api";
 import { defaultLanguage } from "@/shared/mock/languages";
 import { defaultPrompt } from "@/shared/mock/prompt";
+import { IntentType, type IntentResponse } from "@/shared/model/intents";
 import type {
   AudioResponse,
   ServerResponse,
   TextResponse,
   TranslationResponse,
-} from "@/shared/model/requests";
+} from "@/shared/model/websocket";
 import { useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+
+const MAX_USER_MESSAGES_COUNT = 11;
 
 export const useWSConnection = (
   chatId?: string,
@@ -24,9 +28,11 @@ export const useWSConnection = (
   const addMessage = useChatStore.use.addMessage();
   const updateMessage = useChatStore.use.updateMessage();
   const getMessages = useChatStore.use.getMessages();
+  const setDialog = useChatStore.use.setDialog();
 
   const audioQueueRef = useRef<AudioQueueManager | null>(null);
   const wsConnectionRef = useRef<WebSocketConnection | null>(null);
+  const userMessagesCountRef = useRef<number>(0);
 
   const [isConnecting, setIsConnecting] = useState(true);
   const [currentLevel, setCurrentLevel] = useState(0);
@@ -34,7 +40,8 @@ export const useWSConnection = (
   const getFreeMachine = async () => {
     try {
       const req = await requests.getFreeMachine();
-      return `wss://${req.data.dns}:${req.data.port}`;
+      const freeMachine = req.data.free[0];
+      return `wss://${freeMachine.dns}:${freeMachine.port}`;
     } catch (err) {
       console.log(err);
     }
@@ -57,35 +64,59 @@ export const useWSConnection = (
 
     const message = {
       type: ChatMessageType.Text,
-      role: "user" as const,
+      role: ChatMessageRole.User,
       text,
       meta: { start, end },
     };
 
-    // If the last message is the same as the current message, update it, otherwise add a new message
-    if (lastMessage?.meta?.start && lastMessage?.meta?.start >= start) {
+    if (segments.length > userMessagesCountRef.current) {
+      const newMessage = { ...message, id: uuidv4() };
+      addMessage(chatId, newMessage);
+      onNewMessage?.(newMessage);
+
+      if (userMessagesCountRef.current < MAX_USER_MESSAGES_COUNT)
+        userMessagesCountRef.current++;
+    } else {
+      if (lastMessage.role === "agent") return;
       updateMessage(chatId, {
         ...message,
         id: lastMessage?.id,
       });
-    } else {
-      const newMessage = { ...message, id: uuidv4() };
-      addMessage(chatId, newMessage);
-      onNewMessage?.(newMessage);
+    }
+
+    if (
+      userMessagesCountRef.current === MAX_USER_MESSAGES_COUNT &&
+      segments.length === userMessagesCountRef.current - 1
+    ) {
+      userMessagesCountRef.current--;
     }
   };
 
   const handleAgentResponse = (
     chatId: string,
-    segments: AudioResponse | TranslationResponse
+    segments: AudioResponse | TranslationResponse | IntentResponse
   ) => {
-    // Audio response from agent
-    if ("audio" in segments) {
-      const audioResponse = segments as AudioResponse;
-      if (!audioQueueRef.current) {
-        audioQueueRef.current = new AudioQueueManager(setCurrentLevel);
+    // Intent response from agent
+    if ("intent" in segments && "output" in segments) {
+      const intentResponse = segments as IntentResponse;
+      const newMessage = {
+        id: uuidv4(),
+        type: ChatMessageType.Intent,
+        role: ChatMessageRole.Agent,
+        text: segments.text,
+        intent: intentResponse,
+      };
+      addMessage(chatId, newMessage);
+      onNewMessage?.(newMessage);
+
+      if (intentResponse.intent === IntentType.BUY_BTC) {
+        setDialog(true, intentResponse);
       }
-      audioQueueRef.current.addToQueue(audioResponse.audio);
+
+      if (intentResponse.intent === IntentType.TRANSFER_MONEY) {
+        setDialog(true, intentResponse);
+      }
+      return;
     }
     // Text response from agent
     if ("text" in segments) {
@@ -94,12 +125,20 @@ export const useWSConnection = (
       const newMessage = {
         id: uuidv4(),
         type: ChatMessageType.Text,
-        role: "agent" as const,
+        role: ChatMessageRole.Agent,
         text,
         meta: { start, end },
       };
       addMessage(chatId, newMessage);
       onNewMessage?.(newMessage);
+    }
+    // Audio response from agent
+    if ("audio" in segments) {
+      const audioResponse = segments as AudioResponse;
+      if (!audioQueueRef.current) {
+        audioQueueRef.current = new AudioQueueManager(setCurrentLevel);
+      }
+      audioQueueRef.current.addToQueue(audioResponse.audio);
     }
   };
 

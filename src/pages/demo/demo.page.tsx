@@ -1,11 +1,20 @@
-import { AudioQueueManager, AudioWorkletManager } from "@/features/_audio_demo_old";
+import {
+  AudioQueueManager,
+  AudioWorkletManager,
+} from "@/features/_audio_demo_old";
 import { WebSocketConnection } from "@/features/_websocket_demo_old";
 import { requests } from "@/shared/api";
 import { MainLayout } from "@/shared/layouts/main-layout";
 import { testAudio } from "@/shared/mock/internal";
 import { defaultLanguage } from "@/shared/mock/languages";
 import { defaultPrompt } from "@/shared/mock/prompt";
-import type { AudioSegmentResponse, ServerResponse } from "@/shared/model/requests";
+import type {
+  FreeMachine,
+} from "@/shared/model/machine";
+import type {
+  AudioSegmentResponse,
+  ServerResponse,
+} from "@/shared/model/websocket";
 import { AudioVisualizerPlayer } from "@/shared/ui/audio-visualizer-player";
 import { Button } from "@/shared/ui/kit/button";
 import { MicrophoneButton } from "@/shared/ui/microphone-button";
@@ -31,7 +40,9 @@ const DemoPage = () => {
 
   const getFreeMachine = useCallback(async () => {
     try {
-      const req = await requests.getFreeMachine();
+      const req = (await requests.getFreeMachine()) as unknown as {
+        data: FreeMachine;
+      };
       setLoading(true);
       return `wss://${req.data.dns}:${req.data.port}`;
     } catch (err) {
@@ -42,7 +53,7 @@ const DemoPage = () => {
   }, []);
 
   const startRecording = async () => {
-    console.log(isSocketActive)
+    console.log(isSocketActive);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -155,8 +166,8 @@ const DemoPage = () => {
   };
 
   const onHandleShowSubtitles = () => {
-    setIsShowSubtitles(prev => !prev);
-  }
+    setIsShowSubtitles((prev) => !prev);
+  };
 
   useEffect(() => {
     if (startPlayRandom) {
@@ -204,10 +215,11 @@ const DemoPage = () => {
                     handleClick={handleMicButtonClick}
                   />
                 </AudioVisualizerPlayer>
-                {
-                  isShowSubtitles &&
-                  <p className="block text-white text-center text-lg">{audioText || ""}</p>
-                }
+                {isShowSubtitles && (
+                  <p className="block text-white text-center text-lg">
+                    {audioText || ""}
+                  </p>
+                )}
               </div>
             </div>
           </div>

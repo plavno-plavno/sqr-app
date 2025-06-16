@@ -1,17 +1,6 @@
-export type GetFreeMachine = {
-  ip: string;
-  port: string;
-  start_time: number;
-  httpPort: string;
-  dns: string;
-  gpuType: string;
-  id: number;
-  uptime: number;
-  actual_status: string;
-  clients_number: number;
-};
+import type { IntentResponse } from "./intents";
 
-export interface Segment {
+interface Segment {
   text: string;
   start: string;
   end: string;
@@ -25,13 +14,12 @@ export type AudioResponse = {
 // Only for old version. Can be removed in future
 export type AudioSegmentResponse = {
   segments: AudioResponse;
-}
+};
 
 export type ResponseType = "agent" | "transcription";
 
 export type ServerResponse = {
   uid: string;
-  segments: TextResponse | TranslationResponse | AudioResponse;
+  segments: TextResponse | TranslationResponse | AudioResponse | IntentResponse;
   type: ResponseType;
 };
-

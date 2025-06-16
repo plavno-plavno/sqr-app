@@ -13,7 +13,7 @@ interface ChatConfirmDialogProps {
   open: boolean;
   actionButtonText?: string;
   onActionButtonClick?: () => void;
-  onOpenChange: (open: boolean) => void;
+  onCancelButtonClick?: () => void;
   children?: React.ReactNode;
 }
 
@@ -22,11 +22,11 @@ export function ChatConfirmDialog({
   open,
   actionButtonText = "Send",
   onActionButtonClick,
-  onOpenChange,
+  onCancelButtonClick,
   children,
 }: ChatConfirmDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open}>
       <DialogContent
         showCloseButton={false}
         overlayVariant="light"
@@ -46,7 +46,7 @@ export function ChatConfirmDialog({
             size="lg"
             variant="secondary"
             className="flex-1"
-            onClick={() => onOpenChange(false)}
+            onClick={onCancelButtonClick}
           >
             Cancel
           </Button>
