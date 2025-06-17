@@ -35,9 +35,25 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return <ChatTextMessage text={text} role={role} />;
   }
 
+  if (type === ChatMessageType.Success && text) {
+    return <ChatSuccessMessage text={text} />;
+  }
+
   if (type === ChatMessageType.Intent && intent) {
-    if (intent.intent === IntentType.BUY_BTC && text) {
-      return <ChatSuccessMessage text={text} />;
+    if (intent.intent === IntentType.DAILY_BUDGET) {
+      const { budget_summary } = intent.output;
+      return (
+        <div className="flex flex-col gap-2">
+          <ChatMoneyInfoMessage
+            description="Your current balance"
+            amount={budget_summary.available_balance.toString()}
+          />
+          <ChatMoneyInfoMessage
+            description="To stay within budget, you need to spend per day"
+            amount={budget_summary.daily_limit.toString()}
+          />
+        </div>
+      );
     }
 
     if (intent.intent === IntentType.SPENDING_INSIGHTS) {

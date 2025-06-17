@@ -40,11 +40,9 @@ const DemoPage = () => {
 
   const getFreeMachine = useCallback(async () => {
     try {
-      const req = (await requests.getFreeMachine()) as unknown as {
-        data: FreeMachine;
-      };
+      const req = await requests.getFreeMachine()
       setLoading(true);
-      return `wss://${req.data.dns}:${req.data.port}`;
+      return `wss://${req.data.free[0].dns}:${req.data.free[0].port}`;
     } catch (err) {
       console.log(err);
     } finally {

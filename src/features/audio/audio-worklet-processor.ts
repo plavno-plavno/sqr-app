@@ -153,8 +153,8 @@ export class AudioWorkletManager {
         },
         stream: processedStream,
         positiveSpeechThreshold: 0.8,
-        negativeSpeechThreshold: 0.6,
-        redemptionFrames: 8,
+        negativeSpeechThreshold: 0.8,
+        redemptionFrames: 20, // ~1.9 seconds of silence tolerance
         preSpeechPadFrames: 4,
       });
 
@@ -392,7 +392,7 @@ export class AudioWorkletManager {
       
       // Проверяем, прошло ли достаточно времени
       if (currentTime - this.echoStartTime >= this.MIN_ECHO_DURATION) {
-        console.log('Echo detected:', maxSimilarity, 'Delay:', bestDelay);
+      //   console.log('Echo detected:', maxSimilarity, 'Delay:', bestDelay);
         return maxSimilarity;
       }
     } else {

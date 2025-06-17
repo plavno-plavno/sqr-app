@@ -20,62 +20,62 @@ export class AudioQueueManager {
     if (typeof AudioContext !== 'undefined') {
       this.audioContext = new AudioContext();
       this.audioContext.onstatechange = () => {
-        console.log(`AudioContext state changed: ${this.audioContext?.state}`);
+       // console.log(`AudioContext state changed: ${this.audioContext?.state}`);
       };
     } else {
-      console.error("AudioContext not supported in this browser.");
+      //console.error("AudioContext not supported in this browser.");
     }
   }
 
   public addToQueue(audioData: string) {
     if (!this.audioContext) {
-      console.error("AudioContext not initialized. Cannot add to queue.");
+     //  console.error("AudioContext not initialized. Cannot add to queue.");
       return;
     }
     if (this.isStopping) {
-      console.log("Currently stopping/fading. Clearing queue and adding new data.");
+     //  console.log("Currently stopping/fading. Clearing queue and adding new data.");
       this.audioQueue = [];
       this.audioQueue.push(audioData);
     } else {
       this.audioQueue.push(audioData);
-      console.log(`Added item to queue. Queue size: ${this.audioQueue.length}`);
+      // console.log(`Added item to queue. Queue size: ${this.audioQueue.length}`);
       if (!this.isPlaying) {
-        console.log("Not currently playing, starting playback.");
+       //  console.log("Not currently playing, starting playback.");
         this.playNext();
       } else {
-        console.log("Currently playing, item added to queue.");
+       //  console.log("Currently playing, item added to queue.");
       }
     }
   }
 
   private async playNext() {
     if (this.isStopping) {
-      console.log("Stop process is active, deferring playNext.");
+      // console.log("Stop process is active, deferring playNext.");
       return;
     }
 
-    console.log("Attempting to play next item...");
+    // console.log("Attempting to play next item...");
     if (this.audioQueue.length === 0) {
-      console.log("Queue is empty. Stopping playback cycle.");
+     //  console.log("Queue is empty. Stopping playback cycle.");
       this.isPlaying = false;
       this.disconnectAndClearNodes();
       return;
     }
 
     if (!this.audioContext) {
-      console.error("AudioContext is null. Cannot play.");
+     //  console.error("AudioContext is null. Cannot play.");
       this.audioQueue = [];
       this.isPlaying = false;
       return;
     }
 
     if (this.audioContext.state === 'suspended') {
-      console.log("AudioContext is suspended. Attempting to resume.");
+     //  console.log("AudioContext is suspended. Attempting to resume.");
       try {
         await this.audioContext.resume();
-        console.log("AudioContext resumed.");
+       //  console.log("AudioContext resumed.");
       } catch (e) {
-        console.error("Failed to resume AudioContext:", e);
+       //  console.error("Failed to resume AudioContext:", e);
         this.audioQueue = [];
         this.isPlaying = false;
         this.disconnectAndClearNodes();
@@ -83,7 +83,7 @@ export class AudioQueueManager {
         return;
       }
     } else if (this.audioContext.state === 'closed') {
-      console.error("AudioContext is closed. Cannot play.");
+    //   console.error("AudioContext is closed. Cannot play.");
       this.audioQueue = [];
       this.isPlaying = false;
       this.disconnectAndClearNodes();
@@ -92,10 +92,10 @@ export class AudioQueueManager {
 
     this.isPlaying = true;
     const audioData = this.audioQueue.shift();
-    console.log(`Processing next item. Queue size remaining: ${this.audioQueue.length}`);
+   //  console.log(`Processing next item. Queue size remaining: ${this.audioQueue.length}`);
 
     if (!audioData) {
-      console.warn("Shifted item was null or undefined. Playing next.");
+    //   console.warn("Shifted item was null or undefined. Playing next.");
       this.playNext();
       return;
     }
@@ -158,7 +158,7 @@ export class AudioQueueManager {
       }
 
       source.onended = () => {
-        console.log("Current source ended.");
+      //   console.log("Current source ended.");
         scriptNode.disconnect();
         if (this.audioWorkletManager) {
           this.audioWorkletManager.stopPlayback();
@@ -167,11 +167,11 @@ export class AudioQueueManager {
           this.disconnectAndClearNodes();
           this.playNext();
         } else {
-          console.log("Source ended during stop process. Cleanup handled by stop timeout.");
+       //    console.log("Source ended during stop process. Cleanup handled by stop timeout.");
         }
       };
 
-      console.log("Starting source playback.");
+    //   console.log("Starting source playback.");
       source.start(0);
 
     } catch (error) {
@@ -182,12 +182,12 @@ export class AudioQueueManager {
   }
 
   public stop() {
-    console.log("Stop requested.");
+  //   console.log("Stop requested.");
     this.isStopping = true;
     this.audioQueue = [];
 
     if (this.currentGainNode && this.audioContext && this.audioContext.state === 'running') {
-      console.log("Fading out current sound...");
+   //    console.log("Fading out current sound...");
       const currentTime = this.audioContext.currentTime;
       const stopTime = currentTime + this.fadeDuration;
 
@@ -196,31 +196,31 @@ export class AudioQueueManager {
       this.currentGainNode.gain.linearRampToValueAtTime(0, stopTime);
 
       setTimeout(() => {
-        console.log("Fade complete, stopping source and cleaning up nodes.");
+       //  console.log("Fade complete, stopping source and cleaning up nodes.");
         this.isPlaying = false;
         this.disconnectAndClearNodes();
         this.onLevel?.(0);
         this.isStopping = false;
 
         if (this.audioQueue.length > 0) {
-          console.log("New data arrived during stop. Playing next.");
+        //   console.log("New data arrived during stop. Playing next.");
           this.playNext();
         } else {
-          console.log("Queue is empty after stop. Staying idle.");
+        //   console.log("Queue is empty after stop. Staying idle.");
         }
       }, this.fadeDuration * 1000);
     } else {
-      console.log("No sound playing or context not running. Immediate stop.");
+     //  console.log("No sound playing or context not running. Immediate stop.");
       this.isPlaying = false;
       this.disconnectAndClearNodes();
       this.onLevel?.(0);
       this.isStopping = false;
 
       if (this.audioQueue.length > 0) {
-        console.log("New data arrived during immediate stop. Playing next.");
+      //   console.log("New data arrived during immediate stop. Playing next.");
         this.playNext();
       } else {
-        console.log("Queue is empty after immediate stop. Staying idle.");
+     //    console.log("Queue is empty after immediate stop. Staying idle.");
       }
     }
   }
@@ -236,7 +236,7 @@ export class AudioQueueManager {
   }
 
   private disconnectAndClearNodes() {
-    console.log("Disconnecting and clearing nodes...");
+  //   console.log("Disconnecting and clearing nodes...");
     if (this.currentSourceNode) {
       try {
         this.currentSourceNode.stop();
@@ -263,16 +263,16 @@ export class AudioQueueManager {
     this.currentSourceNode = null;
     this.currentGainNode = null;
     this.currentAnalyserNode = null;
-    console.log("Nodes cleared.");
+ //    console.log("Nodes cleared.");
   }
 
   public destroy() {
-    console.log("Destroying AudioQueueManager.");
+  //   console.log("Destroying AudioQueueManager.");
     this.stop();
     if (this.audioContext && this.audioContext.state !== 'closed') {
-      console.log("Closing final AudioContext.");
+  //     console.log("Closing final AudioContext.");
       this.audioContext.close().then(() => {
-        console.log("AudioContext closed successfully during destroy.");
+  //       console.log("AudioContext closed successfully during destroy.");
         this.audioContext = null;
       }).catch(error => {
         console.error("Error closing AudioContext during destroy:", error);

@@ -18,6 +18,7 @@ import type { IntentResponse } from "@/shared/model/intents";
 export enum ChatMessageType {
   Text = "text",
   Intent = "intent",
+  Success = "success",
 }
 
 export enum ChatMessageRole {
@@ -46,7 +47,6 @@ export interface ChatMessage {
   body?: Attachment;
   type: ChatMessageType;
   role: ChatMessageRole;
-  meta?: MessageMeta;
 }
 
 export interface ChatDialog {
@@ -58,6 +58,7 @@ export interface Chat {
   id: string;
   title: string;
   messages: ChatMessage[];
+  lastMessageMeta?: MessageMeta;
 }
 
 interface State {
@@ -66,10 +67,12 @@ interface State {
 }
 
 interface Actions {
+  createChat: (chatId: string, title?: string) => void;
   setTitle: (chatId: string, title: string) => void;
+  setLastMessageMeta: (chatId: string, meta: MessageMeta) => void;
+  getLastMessageMeta: (chatId: string) => MessageMeta | undefined;
   addMessage: (chatId: string, message: ChatMessage) => void;
   updateMessage: (chatId: string, message: ChatMessage) => void;
-  createChat: (chatId: string, title?: string) => void;
   getMessages: (chatId?: string) => ChatMessage[];
   setDialog: (open: boolean, dialogIntent: IntentResponse | null) => void;
 }
@@ -84,6 +87,14 @@ const useChatStoreBase = create<Store>()(
         open: false,
         dialogIntent: null,
       },
+      createChat: (chatId: string, title) =>
+        set((state) => {
+          state.chats[chatId] = {
+            id: chatId,
+            title: title ?? "",
+            messages: [],
+          };
+        }),
       setTitle: (chatId: string, title: string) =>
         set((state) => {
           if (!state.chats[chatId]) {
@@ -92,6 +103,12 @@ const useChatStoreBase = create<Store>()(
             state.chats[chatId].title = title;
           }
         }),
+      setLastMessageMeta: (chatId: string, meta: MessageMeta) =>
+        set((state) => {
+          state.chats[chatId].lastMessageMeta = meta;
+        }),
+      getLastMessageMeta: (chatId: string) =>
+        get().chats[chatId]?.lastMessageMeta,
       addMessage: (chatId: string, message: ChatMessage) =>
         set((state) => {
           if (!state.chats[chatId]) {
@@ -116,14 +133,6 @@ const useChatStoreBase = create<Store>()(
           if (messageIndex !== -1) {
             state.chats[chatId].messages[messageIndex] = message;
           }
-        }),
-      createChat: (chatId: string, title) =>
-        set((state) => {
-          state.chats[chatId] = {
-            id: chatId,
-            title: title ?? "",
-            messages: [],
-          };
         }),
       getMessages: (chatId?: string) =>
         chatId ? get().chats[chatId]?.messages || [] : [],

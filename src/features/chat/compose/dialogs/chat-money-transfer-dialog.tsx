@@ -11,18 +11,21 @@ interface ChatBuyBtcDialogProps {
   data: TransferMoneyOutput;
   open: boolean;
   onActionButtonClick: () => void;
+  onCancelButtonClick: () => void;
 }
 
 export function ChatMoneyTransferDialog({
   data,
   open,
   onActionButtonClick,
+  onCancelButtonClick,
 }: ChatBuyBtcDialogProps) {
   return (
     <ChatConfirmDialog
       title={"Sure, just confirm"}
       actionButtonText="OK"
       onActionButtonClick={onActionButtonClick}
+      onCancelButtonClick={onCancelButtonClick}
       open={open}
     >
       <ChatDialogActionCard>

@@ -6,6 +6,7 @@ interface Segment {
   end: string;
 }
 
+export type UserTextResponse = { current_user_text: string };
 export type TextResponse = Segment[];
 export type TranslationResponse = Record<string, string>;
 export type AudioResponse = {
@@ -20,6 +21,6 @@ export type ResponseType = "agent" | "transcription";
 
 export type ServerResponse = {
   uid: string;
-  segments: TextResponse | TranslationResponse | AudioResponse | IntentResponse;
+  segments: UserTextResponse | TextResponse | TranslationResponse | AudioResponse | IntentResponse;
   type: ResponseType;
 };

@@ -11,18 +11,21 @@ interface ChatBuyBtcDialogProps {
   data: BuyBTCOutput;
   open: boolean;
   onActionButtonClick: () => void;
+  onCancelButtonClick: () => void;
 }
 
 export function ChatBuyBtcDialog({
   data,
   open,
   onActionButtonClick,
+  onCancelButtonClick,
 }: ChatBuyBtcDialogProps) {
   return (
     <ChatConfirmDialog
-      title={data.summary.message}
+      title={"Sure, just confirm"}
       actionButtonText="OK"
       onActionButtonClick={onActionButtonClick}
+      onCancelButtonClick={onCancelButtonClick}
       open={open}
     >
       <ChatDialogActionCard>
@@ -36,9 +39,9 @@ export function ChatBuyBtcDialog({
         />
       </ChatDialogActionCard>
       <ChatDialogPaymentCard
-        title="Wallet address"
-        identifier="17rm2dvb439dZqyMe2d4D6AQJSgg6yeNRn"
-        paymentMethod="Metamask"
+        title="Pay using"
+        identifier="**** 7890"
+        paymentMethod="Credit card"
       />
     </ChatConfirmDialog>
   );

@@ -35,9 +35,6 @@ const ChatPage = () => {
   const chats = useChatStore.use.chats();
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
-  // const [messageType, setMessageType] = useState<ChatMessageType>(
-  //   ChatMessageType.Text
-  // );
 
   const micEnabled = searchParams.get("mic") === "true";
 
@@ -135,25 +132,10 @@ const ChatPage = () => {
             onSubmit={handleSubmit}
             onMicClick={startRecording}
           />
-          {/* <Select
-            onValueChange={(value) => setMessageType(value as ChatMessageType)}
-            defaultValue={messageType}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(ChatMessageType).map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select> */}
         </div>
       )}
 
-      <ChatDialog />
+      <ChatDialog onNewMessage={(message) => scrollToMessage(message.id)} />
     </div>
   );
 };
