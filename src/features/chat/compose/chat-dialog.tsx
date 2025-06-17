@@ -21,14 +21,14 @@ export function ChatDialog({ onNewMessage }: ChatDialogProps) {
 
   const { dialogIntent, open } = dialog;
 
-  const handleActionButtonClick = () => {
+  const handleActionButtonClick = (text: string) => {
     if (!chatId) return;
 
     const message = {
       id: uuidv4(),
       type: ChatMessageType.Success,
       role: ChatMessageRole.Agent,
-      text: "Order completed. BTC transferred to your wallet.",
+      text,
     };
 
     addMessage(chatId, message);
@@ -41,7 +41,7 @@ export function ChatDialog({ onNewMessage }: ChatDialogProps) {
       <ChatBuyBtcDialog
         data={dialogIntent.output}
         open={open}
-        onActionButtonClick={handleActionButtonClick}
+        onActionButtonClick={() => handleActionButtonClick("Order completed. BTC transferred to your wallet.")}
         onCancelButtonClick={() => setDialog(false, null)}
       />
     );
@@ -52,7 +52,7 @@ export function ChatDialog({ onNewMessage }: ChatDialogProps) {
       <ChatMoneyTransferDialog
         data={dialogIntent.output}
         open={open}
-        onActionButtonClick={handleActionButtonClick}
+        onActionButtonClick={() => handleActionButtonClick("Transfer done. Funds sent.")}
         onCancelButtonClick={() => setDialog(false, null)}
       />
     );

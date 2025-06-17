@@ -73,6 +73,7 @@ export const useWSConnection = (
     };
 
     if (
+      segments.length !== 1 &&
       lastMessage?.role === ChatMessageRole.Agent &&
       lastMessageMeta.start >= start
     ) {

@@ -91,7 +91,8 @@ export function ChatPieChartMessage({
               {valueSign}
               {item[dataKey]}
             </span>
-            {item.showIcon && <ChevronUpIcon />}
+            {item.trend === "up" && <ChevronUpIcon />}
+            {item.trend === "down" && <ChevronUpIcon className="rotate-180" />}
           </div>
         ))}
       </div>

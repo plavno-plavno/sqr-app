@@ -10,7 +10,7 @@ export interface LineChartData {
 }
 
 export type PieChartData = Record<string, string | number | boolean> & {
-  showIcon?: boolean;
+  trend?: "up" | "down" | "stable";
 };
 
 export interface PieChartConfig {
@@ -83,11 +83,11 @@ const chartAllData = [
 ];
 
 export const pieChartDataMock: PieChartData[] = [
-  { category: "food", amount: 275.53, showIcon: false },
-  { category: "transport", amount: 200.32, showIcon: true },
-  { category: "entertainment", amount: 187.32, showIcon: false },
-  { category: "shopping", amount: 173.42, showIcon: false },
-  { category: "other", amount: 90.99, showIcon: false },
+  { category: "food", amount: 275.53, trend: "up" },
+  { category: "transport", amount: 200.32, trend: "down" },
+  { category: "entertainment", amount: 187.32, trend: "stable" },
+  { category: "shopping", amount: 173.42, trend: "up" },
+  { category: "other", amount: 90.99, trend: "down" },
 ];
 
 export const lineChartDataMock: LineChartData = {

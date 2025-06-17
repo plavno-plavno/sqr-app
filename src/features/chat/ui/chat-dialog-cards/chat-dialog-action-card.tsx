@@ -36,7 +36,7 @@ export const ChatDialogActionCardRecipient = ({
   className,
 }: {
   name: string;
-  phone: string;
+  phone?: string;
   date?: Date;
   className?: string;
 }) => {

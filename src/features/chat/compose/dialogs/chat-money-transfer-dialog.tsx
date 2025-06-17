@@ -31,7 +31,6 @@ export function ChatMoneyTransferDialog({
       <ChatDialogActionCard>
         <ChatDialogActionCardRecipient
           name={data.transfer_details.recipient}
-          phone={data.transfer_details.recipient}
         />
         <ChatDialogActionCardAmount
           amount={data.transfer_details.amount}
@@ -39,9 +38,9 @@ export function ChatMoneyTransferDialog({
         />
       </ChatDialogActionCard>
       <ChatDialogPaymentCard
-        title="Wallet address"
-        identifier="17rm2dvb439dZqyMe2d4D6AQJSgg6yeNRn"
-        paymentMethod="Metamask"
+        title="Pay using"
+        identifier="**** 7890"
+        paymentMethod="Credit card"
       />
     </ChatConfirmDialog>
   );

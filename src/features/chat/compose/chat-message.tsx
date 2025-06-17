@@ -10,6 +10,7 @@ import { ChatSuccessMessage } from "../ui/chat-messages/chat-success-message";
 import { ChatPieChartMessage } from "../ui/chat-messages/chat-pie-chart-message";
 import type { PieChartConfig } from "../model/chart";
 import { ChatMoneyInfoMessage } from "../ui/chat-messages/chat-money-info-message";
+import { ChatMoneyTransferMessage } from "../ui/chat-messages/chat-money-transfer-message";
 
 interface ChatMessageProps {
   message: ChatMessage;
@@ -79,14 +80,15 @@ export function ChatMessage({ message }: ChatMessageProps) {
     }
 
     if (intent.intent === IntentType.SPENDING_ANALYTICS) {
-      const { comparison, summary } = intent.output;
+      const { comparison, summary, insights } = intent.output;
 
       return (
         <div className="flex flex-col gap-2">
           {comparison.previous_month.categories.map((category, index) => (
             <ChatMoneyInfoMessage
-              description={summary.key_findings[index]}
-              amount={`$${category.amount.toFixed(2)}`}
+              key={index}
+              description={insights[index].message || summary.key_findings[index]}
+              amount={`${category.amount.toFixed(2)}`}
               category={category.name}
             />
           ))}
@@ -94,9 +96,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
       );
     }
 
-    if (intent.intent === IntentType.TRANSFER_MONEY) {
-      const { summary } = intent.output;
-      return <ChatSuccessMessage text={summary.message} />;
+    if (intent.intent === IntentType.SCHEDULED_TRANSFER) {
+      const { transfer_details } = intent.output;
+      return <ChatMoneyTransferMessage
+        amount={`$${transfer_details.amount.toFixed(2)}`}
+        recipient={transfer_details.recipient}
+        date={new Date(transfer_details.scheduled_time)}
+      />;
     }
   }
 
