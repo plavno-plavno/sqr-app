@@ -103,7 +103,7 @@ export class WebSocketConnection {
         isStartStream: true,
         disableSentenceCutter: true,
         returnTranslatedSegments: true,
-        sameOutputThreshold: 3,
+        sameOutputThreshold: 4,
         prompt: this.#prompt,
       };
       
