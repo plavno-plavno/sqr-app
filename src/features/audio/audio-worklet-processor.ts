@@ -392,7 +392,7 @@ export class AudioWorkletManager {
       
       // Проверяем, прошло ли достаточно времени
       if (currentTime - this.echoStartTime >= this.MIN_ECHO_DURATION) {
-      //   console.log('Echo detected:', maxSimilarity, 'Delay:', bestDelay);
+        console.log('Echo detected:', maxSimilarity, 'Delay:', bestDelay);
         return maxSimilarity;
       }
     } else {
