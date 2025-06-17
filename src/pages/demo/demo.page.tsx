@@ -9,9 +9,6 @@ import { testAudio } from "@/shared/mock/internal";
 import { defaultLanguage } from "@/shared/mock/languages";
 import { defaultPrompt } from "@/shared/mock/prompt";
 import type {
-  FreeMachine,
-} from "@/shared/model/machine";
-import type {
   AudioSegmentResponse,
   ServerResponse,
 } from "@/shared/model/websocket";
