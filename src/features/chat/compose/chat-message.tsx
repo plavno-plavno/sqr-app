@@ -47,11 +47,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
         <div className="flex flex-col gap-2">
           <ChatMoneyInfoMessage
             description="Your current balance"
-            amount={budget_summary.available_balance.toString()}
+            amount={budget_summary?.available_balance?.toString()}
           />
           <ChatMoneyInfoMessage
             description="To stay within budget, you need to spend per day"
-            amount={budget_summary.daily_limit.toString()}
+            amount={budget_summary?.daily_limit?.toString()}
           />
         </div>
       );
@@ -62,10 +62,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
       return (
         <ChatPieChartMessage
           title="Expenses for"
-          titleBoldPart={summary.month}
+          titleBoldPart={summary?.month}
           chartData={top_categories}
-          amount={summary.total_spent.toString()}
-          chartConfig={top_categories.reduce((acc, category, index) => {
+          amount={summary?.total_spent?.toString()}
+          chartConfig={top_categories?.reduce((acc, category, index) => {
             acc[category.category] = {
               label: category.category,
               color: `var(--chart-${index + 1})`,
@@ -87,7 +87,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           {comparison.previous_month.categories.map((category, index) => (
             <ChatMoneyInfoMessage
               key={index}
-              description={insights[index].message || summary.key_findings[index]}
+              description={insights?.[index]?.message || summary?.key_findings[index]}
               amount={`${category.amount.toFixed(2)}`}
               category={category.name}
             />
@@ -99,9 +99,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
     if (intent.intent === IntentType.SCHEDULED_TRANSFER) {
       const { transfer_details } = intent.output;
       return <ChatMoneyTransferMessage
-        amount={`$${transfer_details.amount.toFixed(2)}`}
-        recipient={transfer_details.recipient}
-        date={new Date(transfer_details.scheduled_time)}
+        amount={`$${transfer_details?.amount?.toFixed(2)}`}
+        recipient={transfer_details?.recipient}
+        date={new Date(transfer_details?.scheduled_time)}
       />;
     }
   }
