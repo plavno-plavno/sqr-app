@@ -32,12 +32,12 @@ const HomePage = () => {
     createChat(chatId, prompt);
     addMessage(chatId, {
       id: uuidv4(),
-      role: ChatMessageRole.User,
+      role: ChatMessageRole.USER_TEXT,
       text: prompt,
-      type: ChatMessageType.Text,
+      type: ChatMessageType.TEXT,
       ...(image && {
         body: {
-          type: AttachmentType.Image,
+          type: AttachmentType.IMAGE,
           image: image.imagePreview,
         },
       }),
@@ -50,9 +50,9 @@ const HomePage = () => {
     createChat(chatId, action.name);
     addMessage(chatId, {
       id: uuidv4(),
-      role: ChatMessageRole.User,
+      role: ChatMessageRole.USER_TEXT,
       text: action.prompt,
-      type: ChatMessageType.Text,
+      type: ChatMessageType.TEXT,
     });
     navigate(`${href(ROUTES.CHAT, { chatId })}?message=${action.prompt}`);
   };

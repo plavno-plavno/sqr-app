@@ -7,6 +7,7 @@ import type { PathParams, ROUTES } from "@/shared/model/routes";
 import { useParams } from "react-router-dom";
 import { ChatMessageType } from "../model/chat-store";
 import { ChatMessageRole } from "../model/chat-store";
+import { ChatScheduledMoneyTransferDialog } from "./dialogs/chat-scheduled-money-transfer-dialog";
 
 interface ChatDialogProps {
   onNewMessage?: (message: ChatMessage) => void;
@@ -18,30 +19,33 @@ export function ChatDialog({ onNewMessage }: ChatDialogProps) {
   const setDialog = useChatStore.use.setDialog();
   const addMessage = useChatStore.use.addMessage();
 
-
   const { dialogIntent, open } = dialog;
 
-  const handleActionButtonClick = (text: string) => {
+  const handleActionButtonClick = (message: Partial<ChatMessage>) => {
     if (!chatId) return;
 
-    const message = {
+    const newMessage = {
       id: uuidv4(),
-      type: ChatMessageType.Success,
-      role: ChatMessageRole.Agent,
-      text,
+      type: ChatMessageType.SUCCESS,
+      role: ChatMessageRole.AGENT,
+      ...message,
     };
 
-    addMessage(chatId, message);
-    onNewMessage?.(message);
+    addMessage(chatId, newMessage);
+    onNewMessage?.(newMessage);
     setDialog(false, null);
-  };  
+  };
 
   if (dialogIntent?.intent === IntentType.BUY_BTC) {
     return (
       <ChatBuyBtcDialog
         data={dialogIntent.output}
         open={open}
-        onActionButtonClick={() => handleActionButtonClick("Order completed. BTC transferred to your wallet.")}
+        onActionButtonClick={() =>
+          handleActionButtonClick({
+            text: "Order completed. BTC transferred to your wallet.",
+          })
+        }
         onCancelButtonClick={() => setDialog(false, null)}
       />
     );
@@ -52,7 +56,27 @@ export function ChatDialog({ onNewMessage }: ChatDialogProps) {
       <ChatMoneyTransferDialog
         data={dialogIntent.output}
         open={open}
-        onActionButtonClick={() => handleActionButtonClick("Transfer done. Funds sent.")}
+        onActionButtonClick={() =>
+          handleActionButtonClick({
+            text: "Transfer done. Funds sent.",
+          })
+        }
+        onCancelButtonClick={() => setDialog(false, null)}
+      />
+    );
+  }
+
+  if (dialogIntent?.intent === IntentType.SCHEDULED_TRANSFER) {
+    return (
+      <ChatScheduledMoneyTransferDialog
+        data={dialogIntent.output}
+        open={open}
+        onActionButtonClick={() =>
+          handleActionButtonClick({
+            type: IntentType.SCHEDULED_TRANSFER,
+            intent: dialogIntent,
+          })
+        }
         onCancelButtonClick={() => setDialog(false, null)}
       />
     );

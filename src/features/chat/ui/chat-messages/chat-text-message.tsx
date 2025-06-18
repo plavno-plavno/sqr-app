@@ -1,5 +1,5 @@
 import { cn } from "@/shared/lib/css/tailwind";
-import { type ChatMessage } from "../../model/chat-store";
+import { ChatMessageRole, type ChatMessage } from "../../model/chat-store";
 
 interface ChatTextMessageProps {
   text: string;
@@ -16,8 +16,10 @@ export function ChatTextMessage({
     <p
       className={cn(
         "text-2xl break-all",
-        role === "user" && "text-foreground font-medium",
-        role === "agent" && "text-agent-message-foreground",
+        (role === ChatMessageRole.USER_TEXT ||
+          role === ChatMessageRole.USER_VOICE) &&
+          "text-foreground font-medium",
+        role === ChatMessageRole.AGENT && "text-agent-message-foreground",
         className
       )}
     >

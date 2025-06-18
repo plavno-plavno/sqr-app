@@ -46,15 +46,6 @@ export const useWSConnection = (
     }
   };
 
-  // const getLastMessage = (messages: ChatMessage[], role: ChatMessageRole) => {
-  //   for (let i = messages.length - 1; i >= 0; i--) {
-  //     if (messages[i].role === role) {
-  //       return messages[i];
-  //     }
-  //   }
-  //   return null;
-  // };
-
   const handleUserTranscription = (chatId: string, segments: TextResponse) => {
     const messages = getMessages(chatId);
     const lastMessageMeta = getLastMessageMeta(chatId) || {
@@ -66,29 +57,33 @@ export const useWSConnection = (
     const { text, start, end } = lastSegment;
 
     const message = {
-      type: ChatMessageType.Text,
-      role: ChatMessageRole.User,
+      type: ChatMessageType.TEXT,
+      role: ChatMessageRole.USER_VOICE,
       text,
       meta: { start, end },
     };
 
     if (
       segments.length !== 1 &&
-      lastMessage?.role === ChatMessageRole.Agent &&
+      lastMessage?.role === ChatMessageRole.AGENT &&
       lastMessageMeta.start >= start
     ) {
       setLastMessageMeta(chatId, { start, end });
       return;
     }
 
-    if (!lastMessage || lastMessage?.role === ChatMessageRole.Agent) {
+    if (
+      !lastMessage ||
+      lastMessage?.role === ChatMessageRole.AGENT ||
+      lastMessage?.role === ChatMessageRole.USER_TEXT
+    ) {
       console.log("add message");
       const newMessage = { ...message, id: uuidv4() };
       addMessage(chatId, newMessage);
       onNewMessage?.(newMessage);
     }
 
-    if (lastMessage?.role === ChatMessageRole.User) {
+    if (lastMessage?.role === ChatMessageRole.USER_VOICE) {
       console.log("update message");
       updateMessage(chatId, { ...lastMessage, text });
     }
@@ -102,17 +97,6 @@ export const useWSConnection = (
   ) => {
     // Last user message
     if ("current_user_text" in segments) {
-      // const userTextResponse = segments as UserTextResponse;
-      // const messages = getMessages(chatId);
-      // const lastMessage = getLastMessage(messages, ChatMessageRole.User);
-
-      // if (!lastMessage) return;
-
-      // const newMessage = {
-      //   ...lastMessage,
-      //   text: userTextResponse.current_user_text,
-      // };
-      // updateMessage(chatId, newMessage);
       return;
     }
 
@@ -122,7 +106,8 @@ export const useWSConnection = (
 
       if (
         intentResponse.intent === IntentType.BUY_BTC ||
-        intentResponse.intent === IntentType.TRANSFER_MONEY
+        intentResponse.intent === IntentType.TRANSFER_MONEY ||
+        intentResponse.intent === IntentType.SCHEDULED_TRANSFER
       ) {
         setDialog(true, intentResponse);
         return;
@@ -130,8 +115,8 @@ export const useWSConnection = (
 
       const newMessage = {
         id: uuidv4(),
-        type: ChatMessageType.Intent,
-        role: ChatMessageRole.Agent,
+        type: intentResponse.intent,
+        role: ChatMessageRole.AGENT,
         text: segments.text,
         intent: intentResponse,
       };
@@ -146,8 +131,8 @@ export const useWSConnection = (
 
       const newMessage = {
         id: uuidv4(),
-        type: ChatMessageType.Text,
-        role: ChatMessageRole.Agent,
+        type: ChatMessageType.TEXT,
+        role: ChatMessageRole.AGENT,
         text,
         meta: { start, end },
       };
@@ -210,7 +195,7 @@ export const useWSConnection = (
     return () => {
       wsConnectionRef.current?.closeConnection();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {

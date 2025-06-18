@@ -12,20 +12,32 @@ export function ChatMessageList({ className }: { className?: string }) {
   const messages = chats[chatId as string]?.messages;
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to last message on initial load
+  // Scroll to bottom when new message is added or resized
   useEffect(() => {
-    if (!scrollAreaRef.current) return;
+    if (!messagesContainerRef.current || !scrollAreaRef.current) return;
 
-    const scrollElement = scrollAreaRef.current.querySelector(
-      "[data-radix-scroll-area-viewport]"
-    );
-    if (scrollElement) scrollElement.scrollTop = scrollElement.scrollHeight;
+    const scrollToBottom = () => {
+      const scrollElement = scrollAreaRef.current?.querySelector(
+        "[data-radix-scroll-area-viewport]"
+      );
+
+      if (scrollElement) scrollElement.scrollTop = scrollElement.scrollHeight;
+    };
+
+    const observer = new ResizeObserver(scrollToBottom);
+    observer.observe(messagesContainerRef.current);
+
+    return () => observer.disconnect();
   }, []);
 
   return (
     <ScrollArea ref={scrollAreaRef} className="min-h-0 pr-3.5 -mr-3.5">
-      <div className={cn("flex flex-col gap-4", className)}>
+      <div
+        ref={messagesContainerRef}
+        className={cn("flex flex-col gap-4", className)}
+      >
         {messages?.map((message) => (
           <div id={message.id} key={message.id}>
             <ChatMessage message={message} />

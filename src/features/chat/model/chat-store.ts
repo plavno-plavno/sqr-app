@@ -2,32 +2,21 @@ import { createSelectors } from "@/shared/lib/js/zustand";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { persist } from "zustand/middleware";
-import type { IntentResponse } from "@/shared/model/intents";
-
-// export enum ChatMessageType {
-//   Text = "text",
-//   Success = "success",
-//   LineChart = "line-chart",
-//   PieChart = "pie-chart",
-//   ContactList = "contact-list",
-//   MoneyInfo = "money-info",
-//   MoneyTransfer = "money-transfer",
-//   Subscription = "subscription",
-// }
+import { IntentType, type IntentResponse } from "@/shared/model/intents";
 
 export enum ChatMessageType {
-  Text = "text",
-  Intent = "intent",
-  Success = "success",
+  TEXT = "text",
+  SUCCESS = "success",
 }
 
 export enum ChatMessageRole {
-  User = "user",
-  Agent = "agent",
+  USER_VOICE = "user_voice",
+  USER_TEXT = "user_text",
+  AGENT = "agent",
 }
 
 export enum AttachmentType {
-  Image = "image",
+  IMAGE = "image",
 }
 
 export type Attachment = {
@@ -45,7 +34,7 @@ export interface ChatMessage {
   text?: string;
   intent?: IntentResponse;
   body?: Attachment;
-  type: ChatMessageType;
+  type: ChatMessageType | IntentType;
   role: ChatMessageRole;
 }
 

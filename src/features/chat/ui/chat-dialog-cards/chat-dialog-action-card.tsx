@@ -92,10 +92,12 @@ export const ChatDialogActionCardAmount = ({
           <span className="text-primary-foreground">$</span>
           {amount}
         </p>
-        <p className="text-base font-semibold text-foreground/50">
-          <span className="text-primary-foreground/50">$</span>
-          {restAmount}
-        </p>
+        {restAmount && (
+          <p className="text-base font-semibold text-foreground/50">
+            <span className="text-primary-foreground/50">$</span>
+            {restAmount}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import {
   ChatDialogPaymentCard
 } from "../..";
 
-interface ChatBuyBtcDialogProps {
+interface ChatMoneyTransferDialogProps {
   data: TransferMoneyOutput;
   open: boolean;
   onActionButtonClick: () => void;
@@ -19,11 +19,11 @@ export function ChatMoneyTransferDialog({
   open,
   onActionButtonClick,
   onCancelButtonClick,
-}: ChatBuyBtcDialogProps) {
+}: ChatMoneyTransferDialogProps) {
   return (
     <ChatConfirmDialog
       title={"Sure, just confirm"}
-      actionButtonText="OK"
+      actionButtonText="Confirm"
       onActionButtonClick={onActionButtonClick}
       onCancelButtonClick={onCancelButtonClick}
       open={open}

@@ -39,18 +39,8 @@ const ChatPage = () => {
   const micEnabled = searchParams.get("mic") === "true";
   const searchParamsMessage = searchParams.get("message");
 
-  const scrollToMessage = (messageId: string) => {
-    setTimeout(() => {
-      const messageElement = document.getElementById(messageId);
-      messageElement?.scrollIntoView();
-    }, 0);
-  };
-
-  const { isConnecting, wsConnectionRef, audioQueueRef } = useWSConnection(
-    chatId,
-    // Scroll to message when it's added
-    (message) => scrollToMessage(message.id)
-  );
+  const { isConnecting, wsConnectionRef, audioQueueRef } =
+    useWSConnection(chatId);
   const { isRecording, startRecording, stopRecording } = useAudio(
     wsConnectionRef,
     audioQueueRef,
@@ -96,19 +86,18 @@ const ChatPage = () => {
   const handleSubmit = (prompt: string, image?: ImageState) => {
     const newMessage = {
       id: uuidv4(),
-      role: ChatMessageRole.User,
+      role: ChatMessageRole.USER_TEXT,
       text: prompt,
-      type: ChatMessageType.Text,
+      type: ChatMessageType.TEXT,
       ...(image && {
         body: {
-          type: AttachmentType.Image,
+          type: AttachmentType.IMAGE,
           image: image.imagePreview,
         },
       }),
     };
     wsConnectionRef.current?.sendTextCommand(prompt);
     addMessage(chatId, newMessage);
-    scrollToMessage(newMessage.id);
   };
 
   const messages = chats[chatId]?.messages || [];
@@ -151,7 +140,7 @@ const ChatPage = () => {
         </div>
       )}
 
-      <ChatDialog onNewMessage={(message) => scrollToMessage(message.id)} />
+      <ChatDialog />
     </div>
   );
 };

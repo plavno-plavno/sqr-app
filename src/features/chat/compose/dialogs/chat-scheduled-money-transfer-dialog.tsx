@@ -1,25 +1,25 @@
-import type { BuyBTCOutput } from "@/shared/model/intents";
+import type { ScheduledTransferOutput } from "@/shared/model/intents";
 import {
   ChatConfirmDialog,
   ChatDialogActionCard,
   ChatDialogActionCardAmount,
-  ChatDialogActionCardBuy,
-  ChatDialogPaymentCard,
+  ChatDialogActionCardRecipient,
+  ChatDialogPaymentCard
 } from "../..";
 
-interface ChatBuyBtcDialogProps {
-  data: BuyBTCOutput;
+interface ChatScheduledMoneyTransferDialogProps {
+  data: ScheduledTransferOutput;
   open: boolean;
   onActionButtonClick: () => void;
   onCancelButtonClick: () => void;
 }
 
-export function ChatBuyBtcDialog({
+export function ChatScheduledMoneyTransferDialog({
   data,
   open,
   onActionButtonClick,
   onCancelButtonClick,
-}: ChatBuyBtcDialogProps) {
+}: ChatScheduledMoneyTransferDialogProps) {
   return (
     <ChatConfirmDialog
       title={"Sure, just confirm"}
@@ -29,13 +29,13 @@ export function ChatBuyBtcDialog({
       open={open}
     >
       <ChatDialogActionCard>
-        <ChatDialogActionCardBuy
-          amount={data.purchase_details.btc_amount}
-          coin="BTC"
+        <ChatDialogActionCardRecipient
+          name={data.transfer_details.recipient}
+          date={new Date(data.transfer_details.scheduled_time)}
         />
         <ChatDialogActionCardAmount
-          amount={data.purchase_details.total_cost}
-          restAmount={data.purchase_details.current_price}
+          amount={data.transfer_details.amount}
+          restAmount={data.transfer_details.amount}
         />
       </ChatDialogActionCard>
       <ChatDialogPaymentCard
