@@ -37,6 +37,7 @@ const ChatPage = () => {
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
 
   const micEnabled = searchParams.get("mic") === "true";
+  const searchParamsMessage = searchParams.get("message");
 
   const scrollToMessage = (messageId: string) => {
     setTimeout(() => {
@@ -68,11 +69,25 @@ const ChatPage = () => {
 
   // Activate mic when user clicks on mic button in home page
   useEffect(() => {
-    if (micEnabled && !isConnecting) {
-      startRecording();
-      navigate(location.pathname, { replace: true });
-    }
+    if (isConnecting || !micEnabled) return;
+
+    startRecording();
+    navigate(location.pathname, { replace: true });
   }, [micEnabled, isConnecting, startRecording, navigate, location.pathname]);
+
+  // Send message if user input message in home page
+  useEffect(() => {
+    if (isConnecting || !searchParamsMessage) return;
+
+    wsConnectionRef.current?.sendTextCommand(searchParamsMessage);
+    navigate(location.pathname, { replace: true });
+  }, [
+    isConnecting,
+    searchParamsMessage,
+    wsConnectionRef,
+    navigate,
+    location.pathname,
+  ]);
 
   if (!chatId) {
     return <Navigate to={ROUTES.HOME} />;
@@ -91,6 +106,7 @@ const ChatPage = () => {
         },
       }),
     };
+    wsConnectionRef.current?.sendTextCommand(prompt);
     addMessage(chatId, newMessage);
     scrollToMessage(newMessage.id);
   };

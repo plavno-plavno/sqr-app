@@ -33,6 +33,10 @@ export const useAudio = (
             setIsRecording(false);
           },
           onLevel: onMicLevelChange,
+          onVoiceActivity: (isActive) => {
+            if (isActive) return;
+            wsConnectionRef.current?.sendVoiceEndCommand();
+          },
           audioQueue: audioQueueRef,
         });
       }

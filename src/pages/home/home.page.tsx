@@ -42,7 +42,7 @@ const HomePage = () => {
         },
       }),
     });
-    navigate(href(ROUTES.CHAT, { chatId }));
+    navigate(`${href(ROUTES.CHAT, { chatId })}?message=${prompt}`);
   };
 
   const handleQuickActionClick = (action: QuickAction) => {
@@ -54,7 +54,7 @@ const HomePage = () => {
       text: action.prompt,
       type: ChatMessageType.Text,
     });
-    navigate(href(ROUTES.CHAT, { chatId }));
+    navigate(`${href(ROUTES.CHAT, { chatId })}?message=${action.prompt}`);
   };
 
   const handleMicClick = () => {

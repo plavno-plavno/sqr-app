@@ -210,6 +210,7 @@ export const useWSConnection = (
     return () => {
       wsConnectionRef.current?.closeConnection();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
