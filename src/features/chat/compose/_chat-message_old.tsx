@@ -13,8 +13,8 @@ interface ChatMessageProps {
 export function ChatMessage({ message }: ChatMessageProps) {
   const { text, type, role, body } = message;
 
-  if (body?.type === AttachmentType.Image && body.image) {
-    if (type === ChatMessageType.Text && text && text.length > 0) {
+  if (body?.type === AttachmentType.IMAGE && body.image) {
+    if (type === ChatMessageType.TEXT && text && text.length > 0) {
       return (
         <>
           <ChatTextMessage text={text} role={role} />
