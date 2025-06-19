@@ -35,12 +35,16 @@ export const useWSConnection = (
 
   const [isConnecting, setIsConnecting] = useState(true);
   const [currentLevel, setCurrentLevel] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const getFreeMachine = async () => {
     try {
       const req = await requests.getFreeMachine();
-      const freeMachine = req.data.free[0];
-      return `wss://${freeMachine.dns}:${freeMachine.port}`;
+      const freeMachine = req?.data?.free[0];
+
+      return freeMachine
+        ? `wss://${freeMachine.dns}:${freeMachine.port}`
+        : null;
     } catch (err) {
       console.log(err);
     }
@@ -182,7 +186,7 @@ export const useWSConnection = (
 
       await wsConnectionRef.current.initSocket(url, handleWSMessage);
     } catch (error) {
-      console.log("Failed to init websocket or audio:", error);
+      setError((error as Error).message);
       wsConnectionRef.current = null;
     } finally {
       setIsConnecting(false);
@@ -199,6 +203,7 @@ export const useWSConnection = (
   }, []);
 
   return {
+    error,
     wsConnectionRef,
     audioQueueRef,
     isConnecting,

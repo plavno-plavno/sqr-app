@@ -30,16 +30,17 @@ function DialogClose({
 }
 
 const overlayVariants = cva(
-  "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 backdrop-blur-xl",
+  "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50",
   {
     variants: {
       variant: {
-        light: "bg-white/[0.05]",
-        dark: "bg-black/[0.07]",
+        default: "bg-black/80",
+        light: "backdrop-blur-xl bg-white/[0.05]",
+        dark: "backdrop-blur-xl bg-black/[0.07]",
       },
     },
     defaultVariants: {
-      variant: "light",
+      variant: "default",
     },
   }
 );

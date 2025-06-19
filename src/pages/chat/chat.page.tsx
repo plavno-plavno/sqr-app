@@ -12,9 +12,10 @@ import voice from "@/shared/assets/animations/voice.json";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import { cn } from "@/shared/lib/css/tailwind";
 import { type PathParams, ROUTES } from "@/shared/model/routes";
+import { ErrorDialog } from "@/shared/ui/error-dialog";
 import { Button } from "@/shared/ui/kit/button";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Navigate,
   useLocation,
@@ -36,10 +37,12 @@ const ChatPage = () => {
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
 
+  const [errorDialog, setErrorDialog] = useState<boolean>(false);
+
   const micEnabled = searchParams.get("mic") === "true";
   const searchParamsMessage = searchParams.get("message");
 
-  const { isConnecting, wsConnectionRef, audioQueueRef } =
+  const { error, isConnecting, wsConnectionRef, audioQueueRef } =
     useWSConnection(chatId);
   const { isRecording, startRecording, stopRecording } = useAudio(
     wsConnectionRef,
@@ -57,17 +60,39 @@ const ChatPage = () => {
     }
   );
 
+  const checkError = useCallback(() => {
+    if (!error) return false;
+
+    setErrorDialog(true);
+    return true;
+  }, [error]);
+
   // Activate mic when user clicks on mic button in home page
   useEffect(() => {
     if (isConnecting || !micEnabled) return;
+    if (checkError()) {
+      navigate(location.pathname, { replace: true });
+      return;
+    }
 
     startRecording();
     navigate(location.pathname, { replace: true });
-  }, [micEnabled, isConnecting, startRecording, navigate, location.pathname]);
+  }, [
+    micEnabled,
+    isConnecting,
+    startRecording,
+    navigate,
+    location.pathname,
+    checkError,
+  ]);
 
   // Send message if user input message in home page
   useEffect(() => {
     if (isConnecting || !searchParamsMessage) return;
+    if (checkError()) {
+      navigate(location.pathname, { replace: true });
+      return;
+    }
 
     wsConnectionRef.current?.sendTextCommand(searchParamsMessage);
     navigate(location.pathname, { replace: true });
@@ -77,6 +102,7 @@ const ChatPage = () => {
     wsConnectionRef,
     navigate,
     location.pathname,
+    checkError,
   ]);
 
   if (!chatId) {
@@ -84,6 +110,8 @@ const ChatPage = () => {
   }
 
   const handleSubmit = (prompt: string, image?: ImageState) => {
+    if (checkError()) return;
+
     const newMessage = {
       id: uuidv4(),
       role: ChatMessageRole.USER_TEXT,
@@ -100,6 +128,11 @@ const ChatPage = () => {
     addMessage(chatId, newMessage);
   };
 
+  const handleStartRecording = () => {
+    if (checkError()) return;
+    startRecording();
+  };
+
   const messages = chats[chatId]?.messages || [];
 
   return (
@@ -111,7 +144,6 @@ const ChatPage = () => {
     >
       <ChatMessageList />
 
-      {/* Chat input */}
       {isRecording ? (
         <div className="grid grid-rows-[1fr_auto] justify-items-center my-5 -mx-5 gap-7">
           <div className="grid self-center place-items-center w-full">
@@ -135,12 +167,19 @@ const ChatPage = () => {
             disabled={isConnecting}
             showPlaceholder={false}
             onSubmit={handleSubmit}
-            onMicClick={startRecording}
+            onMicClick={handleStartRecording}
           />
         </div>
       )}
 
       <ChatDialog />
+
+      <ErrorDialog
+        open={errorDialog}
+        title="Server is not available"
+        description={error || "Something went wrong"}
+        onOpenChange={setErrorDialog}
+      />
     </div>
   );
 };
