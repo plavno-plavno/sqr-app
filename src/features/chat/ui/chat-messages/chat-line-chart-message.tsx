@@ -22,22 +22,44 @@ const xAxisData = [
   { type: "all", label: "All" },
 ];
 
-interface ChatLineChartMessageProps {
+export enum PeriodType {
+  SINGLE = "single",
+  MULTIPLE = "multiple",
+}
+
+interface MultiplePeriodsData {
   chartData: LineChartData;
+  period: PeriodType.MULTIPLE;
+}
+interface SinglePeriodData {
+  chartData: Record<string, string | number>[];
+  period: PeriodType.SINGLE;
+}
+
+type BaseProps = {
+  currentPrice: number;
   valueKey: string;
   xAxisKey?: string;
   yAxisKey?: string;
   className?: string;
 }
 
+type SinglePeriodProps = BaseProps & SinglePeriodData;
+type MultiplePeriodsProps = BaseProps & MultiplePeriodsData;
+
+type ChatLineChartMessageProps = SinglePeriodProps | MultiplePeriodsProps;
+
 export function ChatLineChartMessage({
   chartData,
+  currentPrice,
+  period,
   className,
   valueKey,
   xAxisKey,
   yAxisKey,
 }: ChatLineChartMessageProps) {
   const [chartType, setChartType] = useState<keyof LineChartData>("month");
+  const data = period === PeriodType.SINGLE ? chartData : chartData[chartType];
 
   const chartConfig = {
     [valueKey]: {
@@ -59,7 +81,7 @@ export function ChatLineChartMessage({
           <IconWrapper />
           <p className="text-2xl font-semibold">
             <span className="text-primary-foreground">$</span>
-            103.594
+            {currentPrice}
           </p>
         </div>
         <div className="flex items-center gap-1 bg-primary rounded-full px-2 py-1.5">
@@ -71,7 +93,7 @@ export function ChatLineChartMessage({
         className="w-full rounded-3xl bg-primary"
         config={chartConfig}
       >
-        <LineChart accessibilityLayer data={chartData[chartType]}>
+        <LineChart accessibilityLayer data={data}>
           <XAxis
             dataKey={xAxisKey}
             tickLine={false}
@@ -98,20 +120,22 @@ export function ChatLineChartMessage({
           />
         </LineChart>
       </ChartContainer>
-      <div className="flex items-center justify-between">
-        {xAxisData.map((item) => (
-          <div
-            key={item.type}
-            className={cn(
-              "text-base font-semibold cursor-pointer p-2.5 rounded-full",
-              chartType === item.type && "bg-primary"
-            )}
-            onClick={() => setChartType(item.type as keyof LineChartData)}
-          >
-            {item.label}
-          </div>
-        ))}
-      </div>
+      {period === PeriodType.MULTIPLE && (
+        <div className="flex items-center justify-between">
+          {xAxisData.map((item) => (
+            <div
+              key={item.type}
+              className={cn(
+                "text-base font-semibold cursor-pointer p-2.5 rounded-full",
+                chartType === item.type && "bg-primary"
+              )}
+              onClick={() => setChartType(item.type as keyof LineChartData)}
+            >
+              {item.label}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

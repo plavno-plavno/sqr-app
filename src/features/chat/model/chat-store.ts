@@ -68,6 +68,8 @@ interface Actions {
 
 type Store = State & Actions;
 
+const defaultTitle = "New chat";
+
 const useChatStoreBase = create<Store>()(
   persist(
     immer((set, get) => ({
@@ -80,7 +82,7 @@ const useChatStoreBase = create<Store>()(
         set((state) => {
           state.chats[chatId] = {
             id: chatId,
-            title: title ?? "",
+            title: title ?? defaultTitle,
             messages: [],
           };
         }),
@@ -108,7 +110,7 @@ const useChatStoreBase = create<Store>()(
             };
           } else {
             // If chat has no title, set the message text as title
-            if (!state.chats[chatId].title && message.text) {
+            if (state.chats[chatId].title === defaultTitle && message.text) {
               state.chats[chatId].title = message.text;
             }
             state.chats[chatId].messages.push(message);
@@ -135,6 +137,9 @@ const useChatStoreBase = create<Store>()(
     })),
     {
       name: "chat-store",
+      partialize: (state) => ({
+        chats: state.chats,
+      }),
     }
   )
 );

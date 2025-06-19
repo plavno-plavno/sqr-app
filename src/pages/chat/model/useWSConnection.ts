@@ -50,6 +50,15 @@ export const useWSConnection = (
     }
   };
 
+  const getLastMessageByRole = (role: ChatMessageRole) => {
+    const messages = getMessages(chatId);
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message.role === role) return message;
+    }
+    return null;
+  };
+
   const handleUserTranscription = (chatId: string, segments: TextResponse) => {
     const messages = getMessages(chatId);
     const lastMessageMeta = getLastMessageMeta(chatId) || {
@@ -59,6 +68,9 @@ export const useWSConnection = (
     const lastMessage = messages[messages.length - 1];
     const lastSegment = segments[segments.length - 1];
     const { text, start, end } = lastSegment;
+
+    console.log("store meta", lastMessageMeta);
+    console.log("new meta", { start, end, text });
 
     const message = {
       type: ChatMessageType.TEXT,
@@ -101,6 +113,13 @@ export const useWSConnection = (
   ) => {
     // Last user message
     if ("current_user_text" in segments) {
+      const lastUserMessage = getLastMessageByRole(ChatMessageRole.USER_VOICE);
+      if (!lastUserMessage) return;
+
+      updateMessage(chatId, {
+        ...lastUserMessage,
+        text: segments.current_user_text,
+      });
       return;
     }
 

@@ -1,4 +1,6 @@
 export enum IntentType {
+  ABILITIES = "abilities",
+  BTC_PRICE = "btc_price",
   BUY_BTC = "buy_btc",
   DAILY_BUDGET = "daily_budget",
   SCHEDULED_TRANSFER = "scheduled_transfer",
@@ -17,7 +19,27 @@ interface Warning {
 interface Summary {
   status: string;
   message: string;
-  next_steps: string[];
+  next_steps?: string[];
+}
+
+// ABILITIES Intent Response Schema
+export interface AbilitiesOutput {
+  abilities: {
+    intent_name: string;
+    description: string;
+  }[];
+  summary: Summary;
+}
+
+// BTC_PRICE Intent Response Schema
+export interface BTCPriceOutput {
+  current_price: number;
+  currency: string;
+  price_points: {
+    timestamp: string;
+    price: number;
+  }[];
+  summary: Summary;
 }
 
 // BUY_BTC Intent Response Schema
@@ -177,6 +199,18 @@ export interface TransferMoneyOutput {
   summary: Summary;
 }
 
+export type AbilitiesResponse = {
+  intent: IntentType.ABILITIES;
+  output: AbilitiesOutput;
+  text?: string;
+};
+
+export type BTCPriceResponse = {
+  intent: IntentType.BTC_PRICE;
+  output: BTCPriceOutput;
+  text?: string;
+};
+
 export type BuyBTCResponse = {
   intent: IntentType.BUY_BTC;
   output: BuyBTCOutput;
@@ -214,6 +248,8 @@ export type TransferMoneyResponse = {
 };
 
 export type IntentResponse =
+  | AbilitiesResponse
+  | BTCPriceResponse
   | BuyBTCResponse
   | DailyBudgetResponse
   | ScheduledTransferResponse

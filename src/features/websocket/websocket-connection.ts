@@ -106,7 +106,7 @@ export class WebSocketConnection {
   sendAudioData(base64Data: string, voicestop?: boolean) {
     console.log("this.#socket?.readyState", this.#socket?.readyState);
 
-    if (!this.checkSocketState()) return;
+    if (!this.checkSocketState()) throw new Error("Socket not ready");
 
     console.log("Sending audio data, socket state:", this.#socket?.readyState);
 
@@ -118,7 +118,7 @@ export class WebSocketConnection {
       isStartStream: true,
       disableSentenceCutter: true,
       returnTranslatedSegments: true,
-      sameOutputThreshold: 4,
+      sameOutputThreshold: 2,
       prompt: this.#prompt,
     };
 
@@ -129,7 +129,7 @@ export class WebSocketConnection {
   }
 
   sendVoiceEndCommand() {
-    if (!this.checkSocketState()) return;
+    if (!this.checkSocketState()) throw new Error("Socket not ready");
 
     const packet = {
       command: true,
@@ -140,7 +140,7 @@ export class WebSocketConnection {
   }
 
   sendTextCommand(text: string) {
-    if (!this.checkSocketState()) return;
+    if (!this.checkSocketState()) throw new Error("Socket not ready");
 
     const packet = {
       command: true,
@@ -163,7 +163,7 @@ export class WebSocketConnection {
 
   closeConnection() {
     if (this.#socket) {
-      console.log("Closing connection");
+      console.log("Closing connection", this.#socket);
       this.#socket.close(1000, "Connection closed by user");
       this.#socket = null;
       this.#isServerReady = false;

@@ -144,7 +144,7 @@ export function ChatInput({
 
         {isInputActive || !showPlaceholder ? (
           <Textarea
-            className="w-full min-h-10 max-h-24 resize-none overflow-auto"
+            className="w-full min-h-10 max-h-24 resize-none overflow-auto wrap-anywhere"
             name="prompt"
             value={value}
             disabled={disabled}

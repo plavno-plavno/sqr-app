@@ -1,16 +1,21 @@
 import { IntentType } from "@/shared/model/intents";
-import type { PieChartConfig } from "../model/chart";
+import { type PieChartConfig } from "../model/chart";
 import {
   AttachmentType,
   ChatMessageType,
   type ChatMessage,
 } from "../model/chat-store";
 import { ChatImageMessage } from "../ui/chat-messages/chat-image-message";
+import { ChatInfoListMessage } from "../ui/chat-messages/chat-info-list-message";
+import {
+  ChatLineChartMessage,
+  PeriodType,
+} from "../ui/chat-messages/chat-line-chart-message";
 import { ChatMoneyInfoMessage } from "../ui/chat-messages/chat-money-info-message";
+import { ChatMoneyTransferMessage } from "../ui/chat-messages/chat-money-transfer-message";
 import { ChatPieChartMessage } from "../ui/chat-messages/chat-pie-chart-message";
 import { ChatSuccessMessage } from "../ui/chat-messages/chat-success-message";
 import { ChatTextMessage } from "../ui/chat-messages/chat-text-message";
-import { ChatMoneyTransferMessage } from "../ui/chat-messages/chat-money-transfer-message";
 
 interface ChatMessageProps {
   message: ChatMessage;
@@ -38,6 +43,37 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   if (type === ChatMessageType.SUCCESS && text) {
     return <ChatSuccessMessage text={text} />;
+  }
+
+  if (
+    type === IntentType.ABILITIES &&
+    intent?.intent === IntentType.ABILITIES
+  ) {
+    return (
+      <ChatInfoListMessage
+        list={intent.output.abilities.map((ability) => ({
+          title: ability.intent_name,
+          description: ability.description,
+        }))}
+      />
+    );
+  }
+
+  if (
+    type === IntentType.BTC_PRICE &&
+    intent?.intent === IntentType.BTC_PRICE
+  ) {
+    const { current_price, price_points } = intent.output;
+    return (
+      <ChatLineChartMessage
+        currentPrice={current_price}
+        chartData={price_points}
+        period={PeriodType.SINGLE}
+        valueKey="price"
+        xAxisKey="timestamp"
+        yAxisKey="price"
+      />
+    );
   }
 
   if (
@@ -106,7 +142,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
     return (
       <div className="flex flex-col gap-2">
-        {comparison.previous_month.categories.map((category, index) => (
+        {comparison?.previous_month?.categories?.map((category, index) => (
           <ChatMoneyInfoMessage
             key={index}
             description={

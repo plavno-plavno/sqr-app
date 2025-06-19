@@ -10,6 +10,7 @@ export const useAudio = (
   const audioManagerRef = useRef<AudioWorkletManager | null>(null);
 
   const [isRecording, setIsRecording] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const startRecording = async () => {
     try {
@@ -26,7 +27,11 @@ export const useAudio = (
       if (!audioManagerRef.current) {
         audioManagerRef.current = new AudioWorkletManager({
           onAudioData: (base64Data, voicestop) => {
-            wsConnectionRef.current?.sendAudioData(base64Data, voicestop);
+            try {
+              wsConnectionRef.current?.sendAudioData(base64Data, voicestop);
+            } catch (error) {
+              setError((error as Error)?.message);
+            }
           },
           onError: (error) => {
             console.error("Audio processing error:", error);
@@ -56,6 +61,7 @@ export const useAudio = (
 
   return {
     isRecording,
+    error,
     startRecording,
     stopRecording,
   };

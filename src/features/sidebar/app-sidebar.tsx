@@ -24,7 +24,7 @@ import { Link } from "react-router-dom";
 const items = [
   {
     title: "Accounts",
-    url: "#",
+    url: ROUTES.HOME,
     icon: <AccountIcon />,
   },
   {

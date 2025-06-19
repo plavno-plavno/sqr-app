@@ -37,7 +37,7 @@ const ChatPage = () => {
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
 
-  const [errorDialog, setErrorDialog] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const micEnabled = searchParams.get("mic") === "true";
   const searchParamsMessage = searchParams.get("message");
@@ -63,7 +63,7 @@ const ChatPage = () => {
   const checkError = useCallback(() => {
     if (!error) return false;
 
-    setErrorDialog(true);
+    setErrorMessage(error);
     return true;
   }, [error]);
 
@@ -94,8 +94,13 @@ const ChatPage = () => {
       return;
     }
 
-    wsConnectionRef.current?.sendTextCommand(searchParamsMessage);
-    navigate(location.pathname, { replace: true });
+    try {
+      wsConnectionRef.current?.sendTextCommand(searchParamsMessage);
+    } catch (error) {
+      setErrorMessage((error as Error)?.message);
+    } finally {
+      navigate(location.pathname, { replace: true });
+    }
   }, [
     isConnecting,
     searchParamsMessage,
@@ -124,8 +129,13 @@ const ChatPage = () => {
         },
       }),
     };
-    wsConnectionRef.current?.sendTextCommand(prompt);
-    addMessage(chatId, newMessage);
+
+    try {
+      wsConnectionRef.current?.sendTextCommand(prompt);
+      addMessage(chatId, newMessage);
+    } catch (error) {
+      setErrorMessage((error as Error)?.message);
+    }
   };
 
   const handleStartRecording = () => {
@@ -175,10 +185,10 @@ const ChatPage = () => {
       <ChatDialog />
 
       <ErrorDialog
-        open={errorDialog}
+        open={!!errorMessage}
         title="Server is not available"
-        description={error || "Something went wrong"}
-        onOpenChange={setErrorDialog}
+        description={errorMessage || "Something went wrong"}
+        onOpenChange={() => setErrorMessage(null)}
       />
     </div>
   );

@@ -5,7 +5,7 @@ import { ROUTES } from "@/shared/model/routes";
 export function ChatHistoryCard({ text }: { text: string }) {
   return (
     <div className="bg-sidebar-primary rounded-xl px-5 py-4">
-      <span className="font-semibold text-foreground">{text}</span>
+      <span className="font-semibold text-foreground line-clamp-3">{text}</span>
     </div>
   );
 }

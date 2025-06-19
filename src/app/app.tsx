@@ -46,7 +46,7 @@ export function App() {
         {/* Header */}
         <div className="flex-none flex items-center relative px-3 py-5">
           <SidebarTrigger />
-          <h3 className="text-sm font-semibold absolute left-1/2 -translate-x-1/2">
+          <h3 className="w-[calc(100%-136px)] text-center text-sm font-semibold absolute left-1/2 -translate-x-1/2 truncate">
             {title}
           </h3>
         </div>
