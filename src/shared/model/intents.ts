@@ -256,3 +256,8 @@ export type IntentResponse =
   | SpendingInsightsResponse
   | SpendingAnalyticsResponse
   | TransferMoneyResponse;
+
+export type OperationInfo = {
+  intent: IntentType;
+  info: Record<string, string | number | boolean | object>;
+};

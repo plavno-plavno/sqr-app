@@ -1,28 +1,46 @@
-import { IntentType } from "@/shared/model/intents";
-import { useChatStore, type ChatMessage } from "../model/chat-store";
+import {
+  IntentType,
+  type IntentResponse,
+  type OperationInfo,
+} from "@/shared/model/intents";
+import { v4 as uuidv4 } from "uuid";
+import {
+  ChatMessageRole,
+  ChatMessageType,
+  useChatStore,
+  type ChatMessage,
+} from "../model/chat-store";
 import { ChatBuyBtcDialog } from "./dialogs/chat-buy-btc-dialog";
 import { ChatMoneyTransferDialog } from "./dialogs/chat-money-transfer-dialog";
-import { v4 as uuidv4 } from "uuid";
-import type { PathParams, ROUTES } from "@/shared/model/routes";
-import { useParams } from "react-router-dom";
-import { ChatMessageType } from "../model/chat-store";
-import { ChatMessageRole } from "../model/chat-store";
 import { ChatScheduledMoneyTransferDialog } from "./dialogs/chat-scheduled-money-transfer-dialog";
 
 interface ChatDialogProps {
-  onNewMessage?: (message: ChatMessage) => void;
+  handleConfirm?: (message: ChatMessage, intent: OperationInfo) => void;
 }
 
-export function ChatDialog({ onNewMessage }: ChatDialogProps) {
-  const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
+const getConfirmInfo = (intent: IntentResponse) => {
+  const { output, intent: intentType } = intent;
+
+  switch (intentType) {
+    case IntentType.BUY_BTC:
+      return output.purchase_details;
+    case IntentType.TRANSFER_MONEY:
+      return output.transfer_details;
+    case IntentType.SCHEDULED_TRANSFER:
+      return output.transfer_details;
+    default:
+      return {};
+  }
+};
+
+export function ChatDialog({ handleConfirm }: ChatDialogProps) {
   const dialog = useChatStore.use.dialog();
   const setDialog = useChatStore.use.setDialog();
-  const addMessage = useChatStore.use.addMessage();
 
   const { dialogIntent, open } = dialog;
 
   const handleActionButtonClick = (message: Partial<ChatMessage>) => {
-    if (!chatId) return;
+    if (!dialogIntent) return;
 
     const newMessage = {
       id: uuidv4(),
@@ -30,9 +48,12 @@ export function ChatDialog({ onNewMessage }: ChatDialogProps) {
       role: ChatMessageRole.AGENT,
       ...message,
     };
+    const confirmInfo: OperationInfo = {
+      intent: dialogIntent?.intent,
+      info: getConfirmInfo(dialogIntent),
+    };
 
-    addMessage(chatId, newMessage);
-    onNewMessage?.(newMessage);
+    handleConfirm?.(newMessage, confirmInfo);
     setDialog(false, null);
   };
 

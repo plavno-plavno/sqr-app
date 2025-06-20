@@ -1,14 +1,6 @@
-import axios, { type Method, type ResponseType } from 'axios';
-import { CONFIG } from '../model/config';
+import axios from "axios";
+import { CONFIG } from "../model/config";
 
-export const instance = () => axios.create({
+export const apiClient = axios.create({
   baseURL: CONFIG.API_BASE_URL,
 });
-
-export const api = <T>(method: Method, urlPoint: string, params?: T, _token?: string, responseType: ResponseType = 'json') => instance()
-  .request({
-    method,
-    url: urlPoint,
-    data: params,
-    responseType: responseType,
-  });

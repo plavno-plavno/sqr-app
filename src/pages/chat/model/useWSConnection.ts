@@ -9,14 +9,20 @@ import { WebSocketConnection } from "@/features/websocket";
 import { requests } from "@/shared/api";
 import { defaultLanguage } from "@/shared/mock/languages";
 import { defaultPrompt } from "@/shared/mock/prompt";
-import { IntentType, type IntentResponse } from "@/shared/model/intents";
+import {
+  IntentType,
+  type IntentResponse,
+  type SpendingAnalyticsOutput,
+} from "@/shared/model/intents";
 import type {
   AudioResponse,
   ServerResponse,
   TextResponse,
   TranslationResponse,
 } from "@/shared/model/websocket";
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+import { useEffectEvent } from "use-effect-event";
 import { v4 as uuidv4 } from "uuid";
 
 export const useWSConnection = (
@@ -33,28 +39,26 @@ export const useWSConnection = (
   const audioQueueRef = useRef<AudioQueueManager | null>(null);
   const wsConnectionRef = useRef<WebSocketConnection | null>(null);
 
-  const [isConnecting, setIsConnecting] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
   const [currentLevel, setCurrentLevel] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [wsError, setWsError] = useState<string | null>(null);
 
-  const getFreeMachine = async () => {
-    try {
-      const req = await requests.getFreeMachine();
-      const freeMachine = req?.data?.free[0];
-
-      return freeMachine
-        ? `wss://${freeMachine.dns}:${freeMachine.port}`
-        : null;
-    } catch (err) {
-      console.log(err);
-    }
+  const cleanWsError = () => {
+    setWsError(null);
   };
 
-  const getLastMessageByRole = (role: ChatMessageRole) => {
+  const getFreeMachine = async (controller: AbortController) => {
+    const req = await requests.getFreeMachine({ signal: controller.signal });
+    const freeMachine = req?.data;
+
+    return `wss://${freeMachine.dns}:${freeMachine.port}`;
+  };
+
+  const getLastMessageByRole = (roles: ChatMessageRole[]) => {
     const messages = getMessages(chatId);
     for (let i = messages.length - 1; i >= 0; i--) {
       const message = messages[i];
-      if (message.role === role) return message;
+      if (roles.includes(message.role)) return message;
     }
     return null;
   };
@@ -80,9 +84,9 @@ export const useWSConnection = (
     };
 
     if (
-      segments.length !== 1 &&
+      messages.length !== 0 &&
       lastMessage?.role === ChatMessageRole.AGENT &&
-      lastMessageMeta.start >= start
+      +lastMessageMeta.start >= +start
     ) {
       setLastMessageMeta(chatId, { start, end });
       return;
@@ -99,7 +103,10 @@ export const useWSConnection = (
       onNewMessage?.(newMessage);
     }
 
-    if (lastMessage?.role === ChatMessageRole.USER_VOICE) {
+    if (
+      lastMessage?.role === ChatMessageRole.USER_VOICE &&
+      !lastMessage.isTextCorrected
+    ) {
       console.log("update message");
       updateMessage(chatId, { ...lastMessage, text });
     }
@@ -113,13 +120,36 @@ export const useWSConnection = (
   ) => {
     // Last user message
     if ("current_user_text" in segments) {
-      const lastUserMessage = getLastMessageByRole(ChatMessageRole.USER_VOICE);
+      const lastUserMessage = getLastMessageByRole([
+        ChatMessageRole.USER_VOICE,
+        ChatMessageRole.USER_TEXT,
+      ]);
       if (!lastUserMessage) return;
 
       updateMessage(chatId, {
         ...lastUserMessage,
         text: segments.current_user_text,
+        isTextCorrected: true,
       });
+      return;
+    }
+
+    // Temporary fix for spending analytics text
+    if (
+      "intent" in segments &&
+      "output" in segments &&
+      segments.intent === IntentType.SPENDING_ANALYTICS &&
+      (segments.output as SpendingAnalyticsOutput)?.spending_analysis
+        ?.categories.length === 0
+    ) {
+      const newMessage = {
+        id: uuidv4(),
+        type: ChatMessageType.TEXT,
+        role: ChatMessageRole.AGENT,
+        text: segments.text,
+      };
+      addMessage(chatId, newMessage);
+      onNewMessage?.(newMessage);
       return;
     }
 
@@ -173,59 +203,66 @@ export const useWSConnection = (
     }
   };
 
-  const handleWSMessage = (response: ServerResponse) => {
-    if (!chatId) return;
-    if (!("segments" in response)) return;
-    if (typeof response.segments !== "object") return;
+  const handleWSMessage = useEffectEvent(
+    (response: ServerResponse, chatId?: string) => {
+      if (!chatId) return;
+      if (!("segments" in response)) return;
+      if (typeof response.segments !== "object") return;
 
-    // User transcription response
-    if (response.type === "transcription" && Array.isArray(response.segments)) {
-      handleUserTranscription(chatId, response.segments);
+      // User transcription response
+      if (
+        response.type === "transcription" &&
+        Array.isArray(response.segments)
+      ) {
+        handleUserTranscription(chatId, response.segments);
+      }
+
+      // Agent response
+      if (response.type === "agent" && !Array.isArray(response.segments)) {
+        handleAgentResponse(chatId, response.segments);
+      }
     }
-
-    // Agent response
-    if (response.type === "agent" && !Array.isArray(response.segments)) {
-      handleAgentResponse(chatId, response.segments);
-    }
-  };
-
-  const initWSConnection = async () => {
-    if (wsConnectionRef.current) return;
-
-    try {
-      setIsConnecting(true);
-      wsConnectionRef.current = new WebSocketConnection(
-        defaultLanguage,
-        defaultPrompt
-      );
-
-      const url = await getFreeMachine();
-
-      if (!url) throw new Error("No free machine found");
-
-      await wsConnectionRef.current.initSocket(url, handleWSMessage);
-    } catch (error) {
-      setError((error as Error).message);
-      wsConnectionRef.current = null;
-    } finally {
-      setIsConnecting(false);
-    }
-  };
+  );
 
   useEffect(() => {
-    initWSConnection();
+    const controller = new AbortController();
+    const ws = new WebSocketConnection(defaultLanguage, defaultPrompt);
+    wsConnectionRef.current = ws;
+
+    async function init() {
+      try {
+        const url = await getFreeMachine(controller);
+
+        if (controller.signal.aborted) return;
+
+        await ws.initSocket(url, (response) => {
+          handleWSMessage(response, chatId);
+        });
+        setIsConnected(true);
+      } catch (error) {
+        if (axios.isCancel(error)) return;
+        setWsError((error as Error).message);
+        ws.closeConnection();
+        wsConnectionRef.current = null;
+      }
+    }
+
+    init();
 
     return () => {
-      wsConnectionRef.current?.closeConnection();
+      controller.abort();
+      ws.closeConnection();
+      wsConnectionRef.current = null;
+      setIsConnected(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [chatId]);
 
   return {
-    error,
+    wsError,
     wsConnectionRef,
     audioQueueRef,
-    isConnecting,
+    isConnected,
     currentLevel,
+    cleanWsError,
   };
 };

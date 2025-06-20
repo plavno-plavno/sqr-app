@@ -2,6 +2,7 @@ import {
   AttachmentType,
   ChatDialog,
   ChatInput,
+  type ChatMessage,
   ChatMessageList,
   ChatMessageRole,
   ChatMessageType,
@@ -11,11 +12,12 @@ import {
 import voice from "@/shared/assets/animations/voice.json";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import { cn } from "@/shared/lib/css/tailwind";
+import type { OperationInfo } from "@/shared/model/intents";
 import { type PathParams, ROUTES } from "@/shared/model/routes";
 import { ErrorDialog } from "@/shared/ui/error-dialog";
 import { Button } from "@/shared/ui/kit/button";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Navigate,
   useLocation,
@@ -23,6 +25,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
+import { useEffectEvent } from "use-effect-event";
 import { v4 as uuidv4 } from "uuid";
 import { useAudio } from "./model/useAudio";
 import { useWSConnection } from "./model/useWSConnection";
@@ -33,18 +36,26 @@ const ChatPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const addMessage = useChatStore.use.addMessage();
+  const setLastMessageMeta = useChatStore.use.setLastMessageMeta();
   const chats = useChatStore.use.chats();
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
 
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorDialog, setErrorDialog] = useState<boolean>(false);
 
   const micEnabled = searchParams.get("mic") === "true";
   const searchParamsMessage = searchParams.get("message");
 
-  const { error, isConnecting, wsConnectionRef, audioQueueRef } =
+  const { isConnected, wsError, wsConnectionRef, audioQueueRef, cleanWsError } =
     useWSConnection(chatId);
-  const { isRecording, startRecording, stopRecording } = useAudio(
+  const {
+    isRecording,
+    audioError,
+    audioVoiceError,
+    startRecording,
+    stopRecording,
+    cleanAudioErrors,
+  } = useAudio(
     wsConnectionRef,
     audioQueueRef,
     // Update Lottie animation frame based on voice level
@@ -60,16 +71,16 @@ const ChatPage = () => {
     }
   );
 
-  const checkError = useCallback(() => {
-    if (!error) return false;
+  const checkError = useEffectEvent(() => {
+    if (!wsError && !audioError) return false;
 
-    setErrorMessage(error);
+    setErrorDialog(true);
     return true;
-  }, [error]);
+  });
 
   // Activate mic when user clicks on mic button in home page
   useEffect(() => {
-    if (isConnecting || !micEnabled) return;
+    if (!isConnected || !micEnabled) return;
     if (checkError()) {
       navigate(location.pathname, { replace: true });
       return;
@@ -77,18 +88,11 @@ const ChatPage = () => {
 
     startRecording();
     navigate(location.pathname, { replace: true });
-  }, [
-    micEnabled,
-    isConnecting,
-    startRecording,
-    navigate,
-    location.pathname,
-    checkError,
-  ]);
+  }, [micEnabled, isConnected, startRecording, navigate, location.pathname]);
 
   // Send message if user input message in home page
   useEffect(() => {
-    if (isConnecting || !searchParamsMessage) return;
+    if (!isConnected || !searchParamsMessage) return;
     if (checkError()) {
       navigate(location.pathname, { replace: true });
       return;
@@ -96,19 +100,26 @@ const ChatPage = () => {
 
     try {
       wsConnectionRef.current?.sendTextCommand(searchParamsMessage);
-    } catch (error) {
-      setErrorMessage((error as Error)?.message);
+    } catch {
+      setErrorDialog(true);
     } finally {
       navigate(location.pathname, { replace: true });
     }
   }, [
-    isConnecting,
+    isConnected,
     searchParamsMessage,
     wsConnectionRef,
     navigate,
     location.pathname,
-    checkError,
   ]);
+
+  // Reset last message meta when chat is closed
+  useEffect(() => {
+    return () => {
+      if (!chatId) return;
+      setLastMessageMeta(chatId, { start: "-1", end: "-1" });
+    };
+  }, [chatId, setLastMessageMeta]);
 
   if (!chatId) {
     return <Navigate to={ROUTES.HOME} />;
@@ -133,8 +144,22 @@ const ChatPage = () => {
     try {
       wsConnectionRef.current?.sendTextCommand(prompt);
       addMessage(chatId, newMessage);
-    } catch (error) {
-      setErrorMessage((error as Error)?.message);
+    } catch {
+      setErrorDialog(true);
+    }
+  };
+
+  const handleConfirm = (
+    message: ChatMessage,
+    operationInfo: OperationInfo
+  ) => {
+    if (checkError()) return;
+
+    try {
+      addMessage(chatId, message);
+      wsConnectionRef.current?.sendConfirmationCommand(operationInfo);
+    } catch {
+      setErrorDialog(true);
     }
   };
 
@@ -144,6 +169,8 @@ const ChatPage = () => {
   };
 
   const messages = chats[chatId]?.messages || [];
+  const errorDialogOpen = errorDialog || !!audioVoiceError;
+  const errorMessage = wsError || audioVoiceError || audioError ||"Something went wrong";
 
   return (
     <div
@@ -174,7 +201,7 @@ const ChatPage = () => {
       ) : (
         <div className="my-5 grid grid-cols-[1fr_auto] items-end gap-1">
           <ChatInput
-            disabled={isConnecting}
+            disabled={!isConnected}
             showPlaceholder={false}
             onSubmit={handleSubmit}
             onMicClick={handleStartRecording}
@@ -182,13 +209,17 @@ const ChatPage = () => {
         </div>
       )}
 
-      <ChatDialog />
+      <ChatDialog handleConfirm={handleConfirm} />
 
       <ErrorDialog
-        open={!!errorMessage}
-        title="Server is not available"
-        description={errorMessage || "Something went wrong"}
-        onOpenChange={() => setErrorMessage(null)}
+        open={errorDialogOpen}
+        title="Error occurred, please try again"
+        description={errorMessage}
+        onOpenChange={() => {
+          setErrorDialog(false);
+          cleanAudioErrors();
+          cleanWsError();
+        }}
       />
     </div>
   );

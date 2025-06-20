@@ -154,7 +154,7 @@ export class AudioWorkletManager {
         stream: processedStream,
         positiveSpeechThreshold: 0.8,
         negativeSpeechThreshold: 0.8,
-        redemptionFrames: 10, // ~1 second of silence tolerance
+        redemptionFrames: 15, // ~1.5 seconds of silence tolerance
         preSpeechPadFrames: 4,
       });
 

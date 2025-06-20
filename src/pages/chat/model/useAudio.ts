@@ -10,7 +10,36 @@ export const useAudio = (
   const audioManagerRef = useRef<AudioWorkletManager | null>(null);
 
   const [isRecording, setIsRecording] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [audioVoiceError, setAudioVoiceError] = useState<string | null>(null);
+
+  const onAudioData = (base64Data: string, voicestop: boolean) => {
+    try {
+      wsConnectionRef.current?.sendAudioData(base64Data, voicestop);
+    } catch (error) {
+      setAudioVoiceError((error as Error)?.message);
+    }
+  };
+
+  const onVoiceEnd = (isActive: boolean) => {
+    if (isActive) return;
+
+    try {
+      wsConnectionRef.current?.sendVoiceEndCommand();
+    } catch (error) {
+      setAudioVoiceError((error as Error)?.message);
+    }
+  };
+
+  const onError = (error: Error) => {
+    setIsRecording(false);
+    setAudioError(error.message);
+  };
+
+  const cleanAudioErrors = () => {
+    setAudioError(null);
+    setAudioVoiceError(null);
+  };
 
   const startRecording = async () => {
     try {
@@ -26,22 +55,10 @@ export const useAudio = (
 
       if (!audioManagerRef.current) {
         audioManagerRef.current = new AudioWorkletManager({
-          onAudioData: (base64Data, voicestop) => {
-            try {
-              wsConnectionRef.current?.sendAudioData(base64Data, voicestop);
-            } catch (error) {
-              setError((error as Error)?.message);
-            }
-          },
-          onError: (error) => {
-            console.error("Audio processing error:", error);
-            setIsRecording(false);
-          },
+          onAudioData: onAudioData,
+          onError: onError,
           onLevel: onMicLevelChange,
-          onVoiceActivity: (isActive) => {
-            if (isActive) return;
-            wsConnectionRef.current?.sendVoiceEndCommand();
-          },
+          onVoiceActivity: onVoiceEnd,
           audioQueue: audioQueueRef,
         });
       }
@@ -61,7 +78,9 @@ export const useAudio = (
 
   return {
     isRecording,
-    error,
+    audioError,
+    audioVoiceError,
+    cleanAudioErrors,
     startRecording,
     stopRecording,
   };

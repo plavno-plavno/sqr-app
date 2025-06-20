@@ -32,6 +32,7 @@ export interface MessageMeta {
 export interface ChatMessage {
   id: string;
   text?: string;
+  isTextCorrected?: boolean;
   intent?: IntentResponse;
   body?: Attachment;
   type: ChatMessageType | IntentType;

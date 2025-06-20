@@ -51,9 +51,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
   ) {
     return (
       <ChatInfoListMessage
-        list={intent.output.abilities.map((ability) => ({
-          title: ability.intent_name,
-          description: ability.description,
+        list={intent.output?.abilities?.map((ability) => ({
+          title: ability?.intent_name,
+          description: ability?.description,
         }))}
       />
     );
@@ -121,8 +121,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
         chartData={top_categories}
         amount={summary?.total_spent?.toString()}
         chartConfig={top_categories?.reduce((acc, category, index) => {
-          acc[category.category] = {
-            label: category.category,
+          acc[category?.category] = {
+            label: category?.category,
             color: `var(--chart-${index + 1})`,
           };
           return acc;
@@ -146,10 +146,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
           <ChatMoneyInfoMessage
             key={index}
             description={
-              insights?.[index]?.message || summary?.key_findings[index]
+              insights?.[index]?.message || summary?.key_findings?.[index]
             }
-            amount={`${category.amount.toFixed(2)}`}
-            category={category.name}
+            amount={`${category?.amount?.toFixed(2)}`}
+            category={category?.name}
           />
         ))}
       </div>

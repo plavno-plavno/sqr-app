@@ -1,3 +1,4 @@
+import type { OperationInfo } from "@/shared/model/intents";
 import type { ServerResponse } from "@/shared/model/websocket";
 
 export class WebSocketConnection {
@@ -89,28 +90,18 @@ export class WebSocketConnection {
     });
   }
 
-  private checkSocketState() {
-    if (!this.#isServerReady) {
-      console.log("Waiting for server ready message...");
-      return false;
-    }
+  // eslint-disable-next-line
+  private send(packet: any) {
+    console.log("this.#socket?.readyState", this.#socket?.readyState);
 
-    if (this.#socket?.readyState !== WebSocket.OPEN) {
-      console.log("Socket not ready, state:", this.#socket?.readyState);
-      return false;
-    }
+    if (this.#socket?.readyState !== WebSocket.OPEN)
+      throw new Error("Socket is not open");
+    if (!this.#isServerReady) throw new Error("Socket not ready");
 
-    return true;
+    this.#socket?.send(JSON.stringify(packet));
   }
 
   sendAudioData(base64Data: string, voicestop?: boolean) {
-    console.log("this.#socket?.readyState", this.#socket?.readyState);
-
-    if (!this.checkSocketState()) throw new Error("Socket not ready");
-
-    console.log("Sending audio data, socket state:", this.#socket?.readyState);
-
-    // console.log('rank__________________________', rank);
     // eslint-disable-next-line
     const packet: any = {
       speakerLang: this.#language,
@@ -118,37 +109,37 @@ export class WebSocketConnection {
       isStartStream: true,
       disableSentenceCutter: true,
       returnTranslatedSegments: true,
-      sameOutputThreshold: 2,
+      sameOutputThreshold: 3,
       prompt: this.#prompt,
     };
-
     if (voicestop === true) packet.voicestop = true;
-    const jsonPacket = JSON.stringify(packet);
-
-    this.#socket?.send(jsonPacket);
+    this.send(packet);
   }
 
   sendVoiceEndCommand() {
-    if (!this.checkSocketState()) throw new Error("Socket not ready");
-
     const packet = {
       command: true,
       commandName: "trigger_voice_end",
     };
-    const jsonPacket = JSON.stringify(packet);
-    this.#socket?.send(jsonPacket);
+    this.send(packet);
   }
 
   sendTextCommand(text: string) {
-    if (!this.checkSocketState()) throw new Error("Socket not ready");
-
     const packet = {
       command: true,
       commandName: "send_text_command",
       text,
     };
-    const jsonPacket = JSON.stringify(packet);
-    this.#socket?.send(jsonPacket);
+    this.send(packet);
+  }
+
+  sendConfirmationCommand(operationInfo: OperationInfo) {
+    const packet = {
+      command: true,
+      commandName: "confirm_operation",
+      operation_info: operationInfo,
+    };
+    this.send(packet);
   }
 
   stopStreaming() {

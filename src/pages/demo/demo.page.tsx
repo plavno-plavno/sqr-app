@@ -39,7 +39,7 @@ const DemoPage = () => {
     try {
       const req = await requests.getFreeMachine()
       setLoading(true);
-      return `wss://${req.data.free[0].dns}:${req.data.free[0].port}`;
+      return `wss://${req.data.dns}:${req.data.port}`;
     } catch (err) {
       console.log(err);
     } finally {
