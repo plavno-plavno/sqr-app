@@ -47,6 +47,7 @@ export class AudioWorkletManager {
   public speechDuration: number = 0;
   public isUserFinished: boolean | null = null;
   private speechTimer: ReturnType<typeof setInterval> | null = null;
+  private isMuted: boolean = false;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
@@ -192,14 +193,14 @@ export class AudioWorkletManager {
         const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext!.sampleRate);
         const base64Data = this.float32ToBase64(audioData16kHz);
         
-        // Отправляем данные только если пользователь активно говорит
-        if (this.isVoiceActive) {
+        // Отправляем данные только если пользователь активно говорит и микрофон не заглушен
+        if (this.isVoiceActive && !this.isMuted) {
           this.options.onAudioData(base64Data, this.voicestopFlag);
           if (this.voicestopFlag) this.voicestopFlag = false;
         }
 
-        // Обработка эха только если есть воспроизведение
-        if (this.isPlaying && this.playbackBuffer) {
+        // Обработка эха только если есть воспроизведение и микрофон не заглушен
+        if (this.isPlaying && this.playbackBuffer && !this.isMuted) {
           this.micBuffer = new Float32Array(inputData);
           const similarity = this.compareBuffers(this.playbackBuffer, this.micBuffer);
           if (similarity > this.ECHO_THRESHOLD) {
@@ -225,6 +226,13 @@ export class AudioWorkletManager {
     const dataArray = new Uint8Array(this.analyserNode.frequencyBinCount);
     const updateLevel = () => {
       if (!this.analyserNode || !this.gainNode || !this.audioContext) return;
+
+      // Если микрофон заглушен, пропускаем обработку, но продолжаем цикл
+      if (this.isMuted) {
+        this.options.onLevel(0); // Отправляем нулевой уровень для анимации
+        requestAnimationFrame(updateLevel);
+        return;
+      }
 
       this.analyserNode.getByteTimeDomainData(dataArray);
       let sumSquares = 0;
@@ -305,15 +313,6 @@ export class AudioWorkletManager {
       return new Float32Array(0);
     }
   }
-
-  // private calculateLevel(audioData?: Float32Array): number {
-  //   if (typeof audioData === 'undefined') return 0;
-  //   let sum = 0;
-  //   for (let i = 0; i < audioData.length; i++) {
-  //     sum += audioData[i]! * audioData[i]!;
-  //   }
-  //   return Math.sqrt(sum / audioData.length); // RMS
-  // }
 
   async start(): Promise<void> {
     if (this.audioContext?.state === 'suspended') {
@@ -481,5 +480,21 @@ export class AudioWorkletManager {
     this.playbackBuffer = null;
     this.playbackHistory = [];
     this.resetEchoDetection();
+  }
+
+  public toggleMute(mute?: boolean): void {
+    if (!this.gainNode || !this.audioContext || !this.vad) return;
+    
+    this.isMuted = mute ?? !this.isMuted;
+
+    if (this.isMuted) {
+      this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
+      this.gainNode.gain.setTargetAtTime(0, this.audioContext.currentTime, 0.01);
+      this.vad.pause();
+    } else {
+      this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
+      this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.01);
+      this.vad.start();
+    }
   }
 } 

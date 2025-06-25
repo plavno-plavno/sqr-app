@@ -8,17 +8,22 @@ export interface QuickAction {
 export const actionsMock: QuickAction[] = [
   {
     id: 1,
+    name: "Abilities",
+    prompt: "Show me your abilities",
+  },
+  {
+    id: 2,
     name: "Quick Transfer",
-    prompt: "Who do you want to make the transfer to?",
+    prompt: "I want to transfer money",
   },
   {
-    id: 2,  
-    name: "Show my expenses",
-    prompt: "What do you want to see?",
+    id: 3,  
+    name: "Show my analytics",
+    prompt: "Show my spending analytics for whole year",
   },
   {
-    id: 3,
+    id: 4,
     name: "Invest",
-    prompt: "What do you want to invest in?",
+    prompt: "What is the best way to invest?",
   },
 ];

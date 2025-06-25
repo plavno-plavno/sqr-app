@@ -47,11 +47,15 @@ const ChatPage = () => {
   const searchParamsMessage = searchParams.get("message");
 
   const { isConnected, wsError, wsConnectionRef, audioQueueRef, cleanWsError } =
-    useWSConnection(chatId);
+    useWSConnection(chatId, () => {
+      audioManagerRef.current?.toggleMute(true);
+    });
+
   const {
     isRecording,
     audioError,
     audioVoiceError,
+    audioManagerRef,
     startRecording,
     stopRecording,
     cleanAudioErrors,
@@ -149,7 +153,7 @@ const ChatPage = () => {
     }
   };
 
-  const handleConfirm = (
+  const handleDialogConfirm = (
     message: ChatMessage,
     operationInfo: OperationInfo
   ) => {
@@ -158,9 +162,14 @@ const ChatPage = () => {
     try {
       addMessage(chatId, message);
       wsConnectionRef.current?.sendConfirmationCommand(operationInfo);
+      audioManagerRef.current?.toggleMute(false);
     } catch {
       setErrorDialog(true);
     }
+  };
+
+  const handleDialogClose = () => {
+    audioManagerRef.current?.toggleMute(false);
   };
 
   const handleStartRecording = () => {
@@ -170,7 +179,8 @@ const ChatPage = () => {
 
   const messages = chats[chatId]?.messages || [];
   const errorDialogOpen = errorDialog || !!audioVoiceError;
-  const errorMessage = wsError || audioVoiceError || audioError ||"Something went wrong";
+  const errorMessage =
+    wsError || audioVoiceError || audioError || "Something went wrong";
 
   return (
     <div
@@ -209,7 +219,10 @@ const ChatPage = () => {
         </div>
       )}
 
-      <ChatDialog handleConfirm={handleConfirm} />
+      <ChatDialog
+        handleConfirm={handleDialogConfirm}
+        handleClose={handleDialogClose}
+      />
 
       <ErrorDialog
         open={errorDialogOpen}

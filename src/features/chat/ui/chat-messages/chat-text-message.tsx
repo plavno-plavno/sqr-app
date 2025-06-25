@@ -15,7 +15,7 @@ export function ChatTextMessage({
   return (
     <p
       className={cn(
-        "text-2xl break-all",
+        "text-2xl wrap-anywhere",
         (role === ChatMessageRole.USER_TEXT ||
           role === ChatMessageRole.USER_VOICE) &&
           "text-foreground font-medium",

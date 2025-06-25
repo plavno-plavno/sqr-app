@@ -54,7 +54,7 @@ const items = [
   },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ onNewChatClick }: { onNewChatClick?: () => void }) {
   const { toggleSidebar } = useSidebar();
 
   return (
@@ -67,7 +67,14 @@ export function AppSidebar() {
               <span className="text-2xl font-medium">Ryan</span>
             </div>
 
-            <IconWrapper radius="base">
+            <IconWrapper
+              radius="base"
+              className="cursor-pointer"
+              onClick={() => {
+                onNewChatClick?.();
+                toggleSidebar();
+              }}
+            >
               <EditIcon />
             </IconWrapper>
           </SidebarMenuItem>

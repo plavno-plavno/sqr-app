@@ -23,12 +23,13 @@ function IconWrapper({
   children,
   radius = "rounded",
   className,
+  ...props
 }: VariantProps<typeof iconWrapperVariants> & {
   children?: React.ReactNode;
   className?: string;
-}) {
+} & React.ComponentProps<"div">) {
   return (
-    <div className={cn(iconWrapperVariants({ radius }), className)}>
+    <div className={cn(iconWrapperVariants({ radius }), className)} {...props}>
       {children || <ImageFallbackIcon />}
     </div>
   );

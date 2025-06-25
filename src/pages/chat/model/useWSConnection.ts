@@ -27,6 +27,7 @@ import { v4 as uuidv4 } from "uuid";
 
 export const useWSConnection = (
   chatId?: string,
+  onDialogOpen?: () => void,
   onNewMessage?: (message: ChatMessage) => void
 ) => {
   const addMessage = useChatStore.use.addMessage();
@@ -73,9 +74,6 @@ export const useWSConnection = (
     const lastSegment = segments[segments.length - 1];
     const { text, start, end } = lastSegment;
 
-    console.log("store meta", lastMessageMeta);
-    console.log("new meta", { start, end, text });
-
     const message = {
       type: ChatMessageType.TEXT,
       role: ChatMessageRole.USER_VOICE,
@@ -97,7 +95,6 @@ export const useWSConnection = (
       lastMessage?.role === ChatMessageRole.AGENT ||
       lastMessage?.role === ChatMessageRole.USER_TEXT
     ) {
-      console.log("add message");
       const newMessage = { ...message, id: uuidv4() };
       addMessage(chatId, newMessage);
       onNewMessage?.(newMessage);
@@ -107,7 +104,6 @@ export const useWSConnection = (
       lastMessage?.role === ChatMessageRole.USER_VOICE &&
       !lastMessage.isTextCorrected
     ) {
-      console.log("update message");
       updateMessage(chatId, { ...lastMessage, text });
     }
 
@@ -163,6 +159,7 @@ export const useWSConnection = (
         intentResponse.intent === IntentType.SCHEDULED_TRANSFER
       ) {
         setDialog(true, intentResponse);
+        onDialogOpen?.();
         return;
       }
 

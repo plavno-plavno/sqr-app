@@ -16,6 +16,7 @@ import { ChatScheduledMoneyTransferDialog } from "./dialogs/chat-scheduled-money
 
 interface ChatDialogProps {
   handleConfirm?: (message: ChatMessage, intent: OperationInfo) => void;
+  handleClose?: () => void;
 }
 
 const getConfirmInfo = (intent: IntentResponse) => {
@@ -33,13 +34,16 @@ const getConfirmInfo = (intent: IntentResponse) => {
   }
 };
 
-export function ChatDialog({ handleConfirm }: ChatDialogProps) {
+export function ChatDialog({ handleConfirm, handleClose }: ChatDialogProps) {
   const dialog = useChatStore.use.dialog();
   const setDialog = useChatStore.use.setDialog();
 
   const { dialogIntent, open } = dialog;
 
-  const handleActionButtonClick = (message: Partial<ChatMessage>) => {
+  const onConfirm = (
+    message: Partial<ChatMessage>,
+    confirmInfo: OperationInfo
+  ) => {
     if (!dialogIntent) return;
 
     const newMessage = {
@@ -48,13 +52,14 @@ export function ChatDialog({ handleConfirm }: ChatDialogProps) {
       role: ChatMessageRole.AGENT,
       ...message,
     };
-    const confirmInfo: OperationInfo = {
-      intent: dialogIntent?.intent,
-      info: getConfirmInfo(dialogIntent),
-    };
 
     handleConfirm?.(newMessage, confirmInfo);
     setDialog(false, null);
+  };
+
+  const onCancel = () => {
+    setDialog(false, null);
+    handleClose?.();
   };
 
   if (dialogIntent?.intent === IntentType.BUY_BTC) {
@@ -62,12 +67,23 @@ export function ChatDialog({ handleConfirm }: ChatDialogProps) {
       <ChatBuyBtcDialog
         data={dialogIntent.output}
         open={open}
-        onActionButtonClick={() =>
-          handleActionButtonClick({
-            text: "Order completed. BTC transferred to your wallet.",
-          })
-        }
-        onCancelButtonClick={() => setDialog(false, null)}
+        onConfirm={(inputData) => {
+          const confirmInfo: OperationInfo = {
+            intent: dialogIntent.intent,
+            info: {
+              ...getConfirmInfo(dialogIntent),
+              ...inputData,
+            },
+          };
+
+          onConfirm(
+            {
+              text: "Order completed. BTC transferred to your wallet.",
+            },
+            confirmInfo
+          );
+        }}
+        onCancel={onCancel}
       />
     );
   }
@@ -77,12 +93,20 @@ export function ChatDialog({ handleConfirm }: ChatDialogProps) {
       <ChatMoneyTransferDialog
         data={dialogIntent.output}
         open={open}
-        onActionButtonClick={() =>
-          handleActionButtonClick({
-            text: "Transfer done. Funds sent.",
-          })
-        }
-        onCancelButtonClick={() => setDialog(false, null)}
+        onConfirm={() => {
+          const confirmInfo: OperationInfo = {
+            intent: dialogIntent.intent,
+            info: getConfirmInfo(dialogIntent),
+          };
+
+          onConfirm(
+            {
+              text: "Transfer done. Funds sent.",
+            },
+            confirmInfo
+          );
+        }}
+        onCancel={onCancel}
       />
     );
   }
@@ -92,13 +116,21 @@ export function ChatDialog({ handleConfirm }: ChatDialogProps) {
       <ChatScheduledMoneyTransferDialog
         data={dialogIntent.output}
         open={open}
-        onActionButtonClick={() =>
-          handleActionButtonClick({
-            type: IntentType.SCHEDULED_TRANSFER,
-            intent: dialogIntent,
-          })
-        }
-        onCancelButtonClick={() => setDialog(false, null)}
+        onConfirm={() => {
+          const confirmInfo: OperationInfo = {
+            intent: dialogIntent.intent,
+            info: getConfirmInfo(dialogIntent),
+          };
+
+          onConfirm(
+            {
+              type: IntentType.SCHEDULED_TRANSFER,
+              intent: dialogIntent,
+            },
+            confirmInfo
+          );
+        }}
+        onCancel={onCancel}
       />
     );
   }

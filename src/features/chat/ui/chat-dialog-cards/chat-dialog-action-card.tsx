@@ -1,11 +1,80 @@
+import VoiceVisualizationImage from "@/shared/assets/images/voice-visualization.png";
 import { cn } from "@/shared/lib/css/tailwind";
 import {
   formatDateToMonthDay,
   formatDateToTime,
 } from "@/shared/lib/js/date-utils";
+import { FormInput } from "@/shared/ui/form-input";
 import { IconWrapper } from "@/shared/ui/icon-wrapper";
-import VoiceVisualizationImage from "@/shared/assets/images/voice-visualization.png";
+import { type InputProps } from "@/shared/ui/kit/input";
+import { useFormContext } from "react-hook-form";
 import { ChatDialogCardLayout } from "./chat-dialog-card-layout";
+
+const EditableRowWithIcon = ({
+  firstLine,
+  firstLinePostfix,
+  secondLine,
+  firstLineInputProps,
+  secondLineInputProps,
+}: {
+  editable?: boolean;
+  firstLine?: string;
+  firstLinePostfix?: string;
+  secondLine?: string;
+  firstLineInputProps?: InputProps;
+  secondLineInputProps?: InputProps;
+}) => {
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext();
+
+  const firstLineName = firstLineInputProps?.name ?? "";
+  const secondLineName = secondLineInputProps?.name ?? "";
+
+  const firstLineError = errors[firstLineName]?.message;
+  const secondLineError = errors[secondLineName]?.message;
+
+  return (
+    <div
+      className={cn(
+        "grid grid-cols-[auto_1fr] gap-3",
+        firstLineError || secondLineError ? "items-start" : "items-center"
+      )}
+    >
+      <IconWrapper />
+      <div className="flex flex-col gap-px">
+        {firstLine && (
+          <FormInput
+            autoFocus
+            className="text-2xl font-semibold p-0 min-w-5 max-w-40"
+            variant="ghost"
+            style={{ width: `${firstLine?.length || 1}ch` }}
+            value={firstLine}
+            error={firstLineError?.toString()}
+            rightElement={
+              firstLinePostfix && (
+                <p className="text-2xl font-semibold">{firstLinePostfix}</p>
+              )
+            }
+            {...firstLineInputProps}
+            {...register(firstLineName)}
+          />
+        )}
+        {secondLine && (
+          <FormInput
+            className="text-lg font-medium text-primary-foreground"
+            variant="ghost"
+            value={secondLine}
+            error={secondLineError?.toString()}
+            {...secondLineInputProps}
+            {...register(secondLineName)}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
 
 const RowWithIcon = ({
   firstLine,
@@ -69,7 +138,11 @@ export const ChatDialogActionCardBuy = ({
     <div className={cn("flex flex-col gap-3", className)}>
       <p className="text-sm font-medium text-primary-foreground">Buy</p>
 
-      <RowWithIcon firstLine={`${amount} ${coin}`} />
+      <EditableRowWithIcon
+        firstLine={amount.toString()}
+        firstLinePostfix={coin}
+        firstLineInputProps={{ type: "number", name: "btc_amount" }}
+      />
     </div>
   );
 };
@@ -87,8 +160,8 @@ export const ChatDialogActionCardAmount = ({
     <div className={cn("flex flex-col", className)}>
       <p className="text-sm font-medium text-primary-foreground">Amount</p>
 
-      <div className="flex justify-between items-end">
-        <p className="text-[32px] font-semibold">
+      <div className="grid grid-cols-[1fr_auto] justify-between items-end">
+        <p className="text-[32px] font-semibold truncate">
           <span className="text-primary-foreground">$</span>
           {amount}
         </p>

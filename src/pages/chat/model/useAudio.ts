@@ -80,6 +80,7 @@ export const useAudio = (
     isRecording,
     audioError,
     audioVoiceError,
+    audioManagerRef,
     cleanAudioErrors,
     startRecording,
     stopRecording,

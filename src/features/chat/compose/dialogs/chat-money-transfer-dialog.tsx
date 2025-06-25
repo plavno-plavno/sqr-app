@@ -1,37 +1,35 @@
 import type { TransferMoneyOutput } from "@/shared/model/intents";
 import {
-  ChatConfirmDialog,
   ChatDialogActionCard,
   ChatDialogActionCardAmount,
   ChatDialogActionCardRecipient,
-  ChatDialogPaymentCard
+  ChatDialogPaymentCard,
 } from "../..";
+import { ChatConfirmDialog } from "../../ui/chat-confirm-dialog";
 
 interface ChatMoneyTransferDialogProps {
   data: TransferMoneyOutput;
   open: boolean;
-  onActionButtonClick: () => void;
-  onCancelButtonClick: () => void;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
 export function ChatMoneyTransferDialog({
   data,
   open,
-  onActionButtonClick,
-  onCancelButtonClick,
+  onConfirm,
+  onCancel,
 }: ChatMoneyTransferDialogProps) {
   return (
     <ChatConfirmDialog
+      open={open}
       title={"Sure, just confirm"}
       actionButtonText="Confirm"
-      onActionButtonClick={onActionButtonClick}
-      onCancelButtonClick={onCancelButtonClick}
-      open={open}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
     >
       <ChatDialogActionCard>
-        <ChatDialogActionCardRecipient
-          name={data.transfer_details.recipient}
-        />
+        <ChatDialogActionCardRecipient name={data.transfer_details.recipient} />
         <ChatDialogActionCardAmount
           amount={data.transfer_details.amount}
           restAmount={data.transfer_details.amount}
