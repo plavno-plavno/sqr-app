@@ -14,6 +14,8 @@ export class AudioQueueManager {
   private fadeDuration: number = 0.7;
   private isStopping: boolean = false;
 
+  private audioWorkletNode: AudioWorkletNode | null = null;
+
   constructor(
     onLevel?: (level: number) => void,
     audioWorkletManager?: AudioWorkletManager
@@ -23,6 +25,27 @@ export class AudioQueueManager {
     if (typeof AudioContext !== "undefined") {
       this.audioContext = new AudioContext();
       this.audioContext.onstatechange = () => {};
+    }
+  }
+
+  private async initializeAudioWorklet() {
+    if (!this.audioContext || this.audioWorkletNode) return;
+
+    try {
+      await this.audioContext.audioWorklet.addModule('/audio-buffer-processor.js');
+      
+      this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'audio-buffer-processor', {
+        processorOptions: { bufferSize: 8192 }
+      });
+
+      this.audioWorkletNode.port.onmessage = (event) => {
+        if (event.data.type === 'audioData' && this.audioWorkletManager) {
+          const bufferCopy = event.data.buffer;
+          this.audioWorkletManager.updatePlaybackBuffer(bufferCopy);
+        }
+      };
+    } catch (error) {
+      console.error('Failed to initialize AudioWorklet:', error);
     }
   }
 
@@ -84,36 +107,30 @@ export class AudioQueueManager {
 
     try {
       const arrayBuffer = await this.decodeBase64Audio(audioData);
-      const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      await this.initializeAudioWorklet();
 
-      const source = this.audioContext!.createBufferSource();
+      const source = this.audioContext.createBufferSource();
       source.buffer = audioBuffer;
 
-      const gainNode = this.audioContext!.createGain();
-      gainNode.gain.setValueAtTime(0.3, this.audioContext!.currentTime);
+      const gainNode = this.audioContext.createGain();
+      gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
 
-      const analyser = this.audioContext!.createAnalyser();
+      const analyser = this.audioContext.createAnalyser();
       analyser.fftSize = 256;
 
       this.currentSourceNode = source;
       this.currentGainNode = gainNode;
       this.currentAnalyserNode = analyser;
 
-      const scriptNode = this.audioContext!.createScriptProcessor(1024, 1, 1);
-      scriptNode.onaudioprocess = (e) => {
-        const inputBuffer = e.inputBuffer.getChannelData(0);
-        if (this.audioWorkletManager) {
-          const bufferCopy = new Float32Array(inputBuffer.length);
-          bufferCopy.set(inputBuffer);
-          this.audioWorkletManager.updatePlaybackBuffer(bufferCopy);
-        }
-      };
-
+      // Подключение аудио графа
       source.connect(gainNode);
       gainNode.connect(analyser);
-      gainNode.connect(scriptNode);
-      scriptNode.connect(this.audioContext!.destination);
-      analyser.connect(this.audioContext!.destination);
+      analyser.connect(this.audioContext.destination);
+      if (this.audioWorkletNode) {
+        gainNode.connect(this.audioWorkletNode);
+        this.audioWorkletNode.connect(this.audioContext.destination);
+      }
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       const updateLevel = (currentAnalyser: AnalyserNode) => {
@@ -145,7 +162,9 @@ export class AudioQueueManager {
       }
 
       source.onended = () => {
-        scriptNode.disconnect();
+        if (this.audioWorkletNode) {
+          this.audioWorkletNode.disconnect();
+        }
         if (this.audioWorkletManager) {
           this.audioWorkletManager.stopPlayback();
         }
@@ -215,6 +234,9 @@ export class AudioQueueManager {
   }
 
   private disconnectAndClearNodes() {
+    if (this.audioWorkletNode) {
+      this.audioWorkletNode.disconnect();
+    }
     if (this.currentSourceNode) {
       try {
         this.currentSourceNode.stop();
@@ -238,6 +260,7 @@ export class AudioQueueManager {
       }
     }
 
+    this.audioWorkletNode = null;
     this.currentSourceNode = null;
     this.currentGainNode = null;
     this.currentAnalyserNode = null;

@@ -1,13 +1,17 @@
 import { AudioQueueManager, AudioWorkletManager } from "@/features/audio";
 import type { WebSocketConnection } from "@/features/websocket";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
-export const useAudio = (
-  wsConnectionRef: React.RefObject<WebSocketConnection | null>,
-  audioQueueRef: React.RefObject<AudioQueueManager | null>,
-  onMicLevelChange?: (level: number) => void
-) => {
-  const audioManagerRef = useRef<AudioWorkletManager | null>(null);
+interface UseAudioProps {
+  audioManagerRef: React.RefObject<AudioWorkletManager | null>;
+  wsConnectionRef: React.RefObject<WebSocketConnection | null>;
+  audioQueueRef: React.RefObject<AudioQueueManager | null>;
+  onMicLevelChange?: (level: number) => void;
+}
+
+export const useAudio = (config: UseAudioProps) => {
+  const { audioManagerRef, wsConnectionRef, audioQueueRef, onMicLevelChange } =
+    config;
 
   const [isRecording, setIsRecording] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
@@ -80,7 +84,6 @@ export const useAudio = (
     isRecording,
     audioError,
     audioVoiceError,
-    audioManagerRef,
     cleanAudioErrors,
     startRecording,
     stopRecording,

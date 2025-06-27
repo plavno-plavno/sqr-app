@@ -1,4 +1,4 @@
-import { AudioQueueManager } from "@/features/audio";
+import { AudioQueueManager, AudioWorkletManager } from "@/features/audio";
 import {
   ChatMessageRole,
   ChatMessageType,
@@ -21,15 +21,29 @@ import type {
   TranslationResponse,
 } from "@/shared/model/websocket";
 import axios from "axios";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useEffectEvent } from "use-effect-event";
 import { v4 as uuidv4 } from "uuid";
 
-export const useWSConnection = (
-  chatId?: string,
-  onDialogOpen?: () => void,
-  onNewMessage?: (message: ChatMessage) => void
-) => {
+interface UseWSConnectionProps {
+  chatId: string;
+  wsConnectionRef: React.RefObject<WebSocketConnection | null>;
+  audioQueueRef: React.RefObject<AudioQueueManager | null>;
+  audioManagerRef: React.RefObject<AudioWorkletManager | null>;
+  onDialogOpen?: () => void;
+  onNewMessage?: (message: ChatMessage) => void;
+}
+
+export const useWSConnection = (config: UseWSConnectionProps) => {
+  const {
+    chatId,
+    wsConnectionRef,
+    audioQueueRef,
+    audioManagerRef,
+    onDialogOpen,
+    onNewMessage,
+  } = config;
+
   const addMessage = useChatStore.use.addMessage();
   const updateMessage = useChatStore.use.updateMessage();
   const getMessages = useChatStore.use.getMessages();
@@ -37,11 +51,7 @@ export const useWSConnection = (
   const setLastMessageMeta = useChatStore.use.setLastMessageMeta();
   const getLastMessageMeta = useChatStore.use.getLastMessageMeta();
 
-  const audioQueueRef = useRef<AudioQueueManager | null>(null);
-  const wsConnectionRef = useRef<WebSocketConnection | null>(null);
-
   const [isConnected, setIsConnected] = useState(false);
-  const [currentLevel, setCurrentLevel] = useState(0);
   const [wsError, setWsError] = useState<string | null>(null);
 
   const cleanWsError = () => {
@@ -194,7 +204,10 @@ export const useWSConnection = (
     if ("audio" in segments) {
       const audioResponse = segments as AudioResponse;
       if (!audioQueueRef.current) {
-        audioQueueRef.current = new AudioQueueManager(setCurrentLevel);
+        audioQueueRef.current = new AudioQueueManager(
+          undefined,
+          audioManagerRef.current || undefined
+        );
       }
       audioQueueRef.current.addToQueue(audioResponse.audio);
     }
@@ -252,14 +265,11 @@ export const useWSConnection = (
       wsConnectionRef.current = null;
       setIsConnected(false);
     };
-  }, [chatId]);
+  }, [chatId, wsConnectionRef]);
 
   return {
     wsError,
-    wsConnectionRef,
-    audioQueueRef,
     isConnected,
-    currentLevel,
     cleanWsError,
   };
 };

@@ -11,10 +11,9 @@ export { ChatMessageList } from "./compose/chat-message-list";
 export { ChatInput, type ImageState } from "./ui/chat-input";
 export {
   ChatDialogActionCard,
-  ChatDialogActionCardAmount,
-  ChatDialogActionCardBuy,
-  ChatDialogActionCardDetails,
-  ChatDialogActionCardRecipient,
+  ChatDialogActionCardRowTwoItems,
+  ChatDialogActionCardRowWithIcon,
+  ChatDialogActionCardSection,
 } from "./ui/chat-dialog-cards/chat-dialog-action-card";
 export { ChatDialogPaymentCard } from "./ui/chat-dialog-cards/chat-dialog-payment-card";
 export { ChatConfirmDialog } from "./ui/chat-confirm-dialog";

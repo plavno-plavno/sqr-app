@@ -29,6 +29,8 @@ import { useEffectEvent } from "use-effect-event";
 import { v4 as uuidv4 } from "uuid";
 import { useAudio } from "./model/useAudio";
 import { useWSConnection } from "./model/useWSConnection";
+import type { WebSocketConnection } from "@/features/websocket";
+import type { AudioQueueManager, AudioWorkletManager } from "@/features/audio";
 
 const ChatPage = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
@@ -40,30 +42,36 @@ const ChatPage = () => {
   const chats = useChatStore.use.chats();
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
+  const audioQueueRef = useRef<AudioQueueManager | null>(null);
+  const audioManagerRef = useRef<AudioWorkletManager | null>(null);
+  const wsConnectionRef = useRef<WebSocketConnection | null>(null);
 
   const [errorDialog, setErrorDialog] = useState<boolean>(false);
 
   const micEnabled = searchParams.get("mic") === "true";
   const searchParamsMessage = searchParams.get("message");
 
-  const { isConnected, wsError, wsConnectionRef, audioQueueRef, cleanWsError } =
-    useWSConnection(chatId, () => {
-      audioManagerRef.current?.toggleMute(true);
-    });
+  const { isConnected, wsError, cleanWsError } = useWSConnection({
+    chatId: chatId!,
+    wsConnectionRef,
+    audioQueueRef,
+    audioManagerRef,
+    onDialogOpen: () => audioManagerRef.current?.toggleMute(true),
+  });
 
   const {
     isRecording,
     audioError,
     audioVoiceError,
-    audioManagerRef,
     startRecording,
     stopRecording,
     cleanAudioErrors,
-  } = useAudio(
+  } = useAudio({
+    audioManagerRef,
     wsConnectionRef,
     audioQueueRef,
     // Update Lottie animation frame based on voice level
-    (level) => {
+    onMicLevelChange: (level) => {
       if (!lottieRef.current) return;
 
       const totalFrames = lottieRef.current?.getDuration(true);
@@ -72,8 +80,8 @@ const ChatPage = () => {
 
       const frame = Math.floor(level * 2 * totalFrames);
       lottieRef.current.goToAndStop(frame, true);
-    }
-  );
+    },
+  });
 
   const checkError = useEffectEvent(() => {
     if (!wsError && !audioError) return false;

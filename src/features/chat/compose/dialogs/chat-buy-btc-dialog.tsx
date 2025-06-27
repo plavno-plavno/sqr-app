@@ -1,14 +1,16 @@
 import type { BuyBTCOutput } from "@/shared/model/intents";
-import { FormProvider, useForm, type SubmitHandler } from "react-hook-form";
-import {
-  ChatDialogActionCard,
-  ChatDialogActionCardAmount,
-  ChatDialogActionCardBuy,
-  ChatDialogPaymentCard,
-} from "../..";
-import { ChatConfirmDialog } from "../../ui/chat-confirm-dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
+import { ChatDialogActionCard, ChatDialogPaymentCard } from "../..";
+import { ChatConfirmDialog } from "../../ui/chat-confirm-dialog";
+import {
+  ChatDialogActionCardRowTwoItems,
+  ChatDialogActionCardRowWithIcon,
+  ChatDialogActionCardSection,
+} from "../../ui/chat-dialog-cards/chat-dialog-action-card";
+import { FormInput } from "@/shared/ui/form-input";
+import { cn } from "@/shared/lib/css/tailwind";
 
 interface ChatBuyBtcDialogProps {
   data: BuyBTCOutput;
@@ -34,13 +36,17 @@ export function ChatBuyBtcDialog({
   onConfirm,
   onCancel,
 }: ChatBuyBtcDialogProps) {
-  const methods = useForm<FormValues>({
+  const {
+    register,
+    watch,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      btc_amount: data.purchase_details.btc_amount,
+      btc_amount: data.purchase_details.btc_amount || 0,
     },
   });
-  const { watch } = methods;
 
   const btc_amount = watch("btc_amount");
   const totalCost = btc_amount
@@ -65,19 +71,38 @@ export function ChatBuyBtcDialog({
       actionButtonText="Confirm"
       onCancel={onCancel}
       contentLayout={({ children, className }) => (
-        <FormProvider {...methods}>
-          <form onSubmit={methods.handleSubmit(onSubmit)} className={className}>
-            {children}
-          </form>
-        </FormProvider>
+        <form onSubmit={handleSubmit(onSubmit)} className={className}>
+          {children}
+        </form>
       )}
     >
       <ChatDialogActionCard>
-        <ChatDialogActionCardBuy amount={btc_amount || 0} coin="BTC" />
-        <ChatDialogActionCardAmount
-          amount={totalCost}
-          restAmount={data.purchase_details.current_price}
-        />
+        <ChatDialogActionCardSection title="Buy">
+          <ChatDialogActionCardRowWithIcon
+            className={cn(
+              errors.btc_amount?.message ? "items-start" : "items-center"
+            )}
+            firstLine={
+              <FormInput
+                autoFocus
+                className="text-2xl font-semibold p-0 min-w-5 max-w-40"
+                variant="ghost"
+                style={{
+                  width: `${btc_amount?.toString().length || 1}ch`,
+                }}
+                error={errors.btc_amount?.message}
+                rightElement={<p className="text-2xl font-semibold">BTC</p>}
+                {...register("btc_amount")}
+              />
+            }
+          />
+        </ChatDialogActionCardSection>
+        <ChatDialogActionCardSection title="Amount">
+          <ChatDialogActionCardRowTwoItems
+            leftValue={totalCost}
+            rightValue={data.purchase_details.current_price}
+          />
+        </ChatDialogActionCardSection>
       </ChatDialogActionCard>
       <ChatDialogPaymentCard
         title="Pay using"
