@@ -1,5 +1,3 @@
-"use client";
-
 import { Line, LineChart, XAxis, YAxis } from "recharts";
 
 import { cn } from "@/shared/lib/css/tailwind";

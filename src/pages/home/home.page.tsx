@@ -21,6 +21,8 @@ import Lottie from "lottie-react";
 import { href, Link, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import sphere from "@/shared/assets/animations/sphere.json";
+import { Header, NewChatHeaderButton } from "@/shared/ui/header";
+import { SidebarTrigger } from "@/shared/ui/kit/sidebar";
 
 const HomePage = () => {
   const createChat = useChatStore.use.createChat();
@@ -63,8 +65,20 @@ const HomePage = () => {
     navigate(`${href(ROUTES.CHAT, { chatId })}?mic=true`);
   };
 
+  const handleNewChatClick = () => {
+    const chatId = uuidv4();
+    createChat(chatId);
+    navigate(`${href(ROUTES.CHAT, { chatId })}`);
+  };
+
   return (
-    <div className="grid grid-rows-[auto_1fr_auto] h-full px-5">
+    <div className="grid grid-rows-[auto_auto_1fr_auto] h-full px-5">
+      {/* Header */}
+      <Header
+        leftElement={<SidebarTrigger />}
+        rightElement={<NewChatHeaderButton onClick={handleNewChatClick} />}
+      />
+
       {/* Balance */}
       <div className="flex flex-col gap-1 pt-4.5">
         <p className="text-sm text-foreground/50 font-semibold">Your balance</p>

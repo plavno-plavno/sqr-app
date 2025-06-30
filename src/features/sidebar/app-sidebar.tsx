@@ -7,6 +7,7 @@ import CardIcon from "@/shared/assets/icons/card-icon.svg?react";
 import EditIcon from "@/shared/assets/icons/edit-icon.svg?react";
 import PaymentIcon from "@/shared/assets/icons/payment-icon.svg?react";
 import SettingsIcon from "@/shared/assets/icons/settings-icon.svg?react";
+import InvestIcon from "@/shared/assets/icons/invest-icon.svg?react";
 import {
   Sidebar,
   SidebarContent,
@@ -23,13 +24,13 @@ import { Link } from "react-router-dom";
 
 const items = [
   {
-    title: "Accounts",
+    title: "Home",
     url: ROUTES.HOME,
     icon: <AccountIcon />,
   },
   {
-    title: "Cards",
-    url: "#",
+    title: "Finance",
+    url: ROUTES.FINANCE,
     icon: <CardIcon />,
   },
   {
@@ -38,20 +39,20 @@ const items = [
     icon: <PaymentIcon />,
   },
   {
+    title: "Invest",
+    url: ROUTES.INVEST,
+    icon: <InvestIcon />,
+  },
+  {
     title: "Analytics",
-    url: "#",
+    url: ROUTES.ANALYTICS,
     icon: <AnalyticsIcon />,
   },
   {
     title: "Settings",
-    url: "#",
+    url: ROUTES.SETTINGS,
     icon: <SettingsIcon />,
-  },
-  {
-    title: "Demo",
-    url: ROUTES.DEMO,
-    icon: <SettingsIcon />,
-  },
+  }
 ];
 
 export function AppSidebar({ onNewChatClick }: { onNewChatClick?: () => void }) {

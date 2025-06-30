@@ -1,25 +1,30 @@
-import { AudioQueueManager, AudioWorkletManager } from "@/features/audio";
-import type { WebSocketConnection } from "@/features/websocket";
-import { useState } from "react";
+import { useAudioStore } from "./audio-store";
+import { useWebSocketStore } from "./websocket-store";
+import { AudioWorkletManager } from "@/shared/lib/audio/audio-worklet-processor";
 
 interface UseAudioProps {
-  audioManagerRef: React.RefObject<AudioWorkletManager | null>;
-  wsConnectionRef: React.RefObject<WebSocketConnection | null>;
-  audioQueueRef: React.RefObject<AudioQueueManager | null>;
   onMicLevelChange?: (level: number) => void;
 }
 
 export const useAudio = (config: UseAudioProps) => {
-  const { audioManagerRef, wsConnectionRef, audioQueueRef, onMicLevelChange } =
-    config;
+  const { onMicLevelChange } = config;
 
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioError, setAudioError] = useState<string | null>(null);
-  const [audioVoiceError, setAudioVoiceError] = useState<string | null>(null);
+  const connection = useWebSocketStore.use.connection();
+
+  const isRecording = useAudioStore.use.isRecording();
+  const audioQueue = useAudioStore.use.audioQueue();
+  const audioManager = useAudioStore.use.audioManager();
+  const audioError = useAudioStore.use.audioError();
+  const audioVoiceError = useAudioStore.use.audioVoiceError();
+
+  const setAudioManager = useAudioStore.use.setAudioManager();
+  const setIsRecording = useAudioStore.use.setIsRecording();
+  const setAudioError = useAudioStore.use.setAudioError();
+  const setAudioVoiceError = useAudioStore.use.setAudioVoiceError();
 
   const onAudioData = (base64Data: string, voicestop: boolean) => {
     try {
-      wsConnectionRef.current?.sendAudioData(base64Data, voicestop);
+      connection?.sendAudioData(base64Data, voicestop);
     } catch (error) {
       setAudioVoiceError((error as Error)?.message);
     }
@@ -29,7 +34,7 @@ export const useAudio = (config: UseAudioProps) => {
     if (isActive) return;
 
     try {
-      wsConnectionRef.current?.sendVoiceEndCommand();
+      connection?.sendVoiceEndCommand();
     } catch (error) {
       setAudioVoiceError((error as Error)?.message);
     }
@@ -57,18 +62,23 @@ export const useAudio = (config: UseAudioProps) => {
         },
       });
 
-      if (!audioManagerRef.current) {
-        audioManagerRef.current = new AudioWorkletManager({
+      let newAudioManager;
+
+      if (!audioManager) {
+        newAudioManager = new AudioWorkletManager({
           onAudioData: onAudioData,
           onError: onError,
           onLevel: onMicLevelChange,
           onVoiceActivity: onVoiceEnd,
-          audioQueue: audioQueueRef,
+          audioQueue: audioQueue,
         });
+        setAudioManager(newAudioManager);
+      } else {
+        newAudioManager = audioManager;
       }
 
-      await audioManagerRef.current.initialize(stream);
-      await audioManagerRef.current.start();
+      await newAudioManager?.initialize(stream);
+      await newAudioManager?.start();
       setIsRecording(true);
     } catch (error) {
       console.error("Failed to start recording:", error);
@@ -76,12 +86,14 @@ export const useAudio = (config: UseAudioProps) => {
   };
 
   const stopRecording = () => {
-    audioManagerRef.current?.stop();
+    audioManager?.stop();
     setIsRecording(false);
   };
 
   return {
     isRecording,
+    audioQueue,
+    audioManager,
     audioError,
     audioVoiceError,
     cleanAudioErrors,

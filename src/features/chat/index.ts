@@ -18,3 +18,6 @@ export {
 export { ChatDialogPaymentCard } from "./ui/chat-dialog-cards/chat-dialog-payment-card";
 export { ChatConfirmDialog } from "./ui/chat-confirm-dialog";
 export { ChatDialog } from "./compose/chat-dialog";
+export { useAudio } from "./model/use-audio";
+export { useWSConnection } from "./model/use-ws-connection";
+export { useWebSocketStore } from "./model/websocket-store";

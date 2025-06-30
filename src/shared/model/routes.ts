@@ -2,9 +2,13 @@ import "react-router-dom";
 
 export const ROUTES = {
   HOME: "/",
-  DEMO: "/demo",
+  FINANCE: "/finance",
   PAYMENTS: "/payments",
+  INVEST: "/invest",
+  ANALYTICS: "/analytics",
+  SETTINGS: "/settings",
   CHAT: "/chat/:chatId",
+  DEMO: "/demo",
 } as const;
 
 export type PathParams = {

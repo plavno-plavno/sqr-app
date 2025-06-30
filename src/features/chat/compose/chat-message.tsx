@@ -2,7 +2,9 @@ import { IntentType } from "@/shared/model/intents";
 import { type PieChartConfig } from "../model/chart";
 import {
   AttachmentType,
+  ChatMessageRole,
   ChatMessageType,
+  useChatStore,
   type ChatMessage,
 } from "../model/chat-store";
 import { ChatImageMessage } from "../ui/chat-messages/chat-image-message";
@@ -16,12 +18,30 @@ import { ChatMoneyTransferMessage } from "../ui/chat-messages/chat-money-transfe
 import { ChatPieChartMessage } from "../ui/chat-messages/chat-pie-chart-message";
 import { ChatSuccessMessage } from "../ui/chat-messages/chat-success-message";
 import { ChatTextMessage } from "../ui/chat-messages/chat-text-message";
+import { v4 as uuidv4 } from "uuid";
+import type { PathParams, ROUTES } from "@/shared/model/routes";
+import { useParams } from "react-router-dom";
+import { useWebSocketStore } from "../model/websocket-store";
 
 interface ChatMessageProps {
   message: ChatMessage;
 }
 
+const mapIntentToAbilityMessage = {
+  [IntentType.ABILITIES]: "Show me all your abilities",
+  [IntentType.BTC_PRICE]: "Show me the current price of Bitcoin",
+  [IntentType.BUY_BTC]: "I want to buy a Bitcoin",
+  [IntentType.DAILY_BUDGET]: "Setup my daily budget",
+  [IntentType.SCHEDULED_TRANSFER]: "Transfer money to my friend at given time",
+  [IntentType.SPENDING_INSIGHTS]: "Where my money is going?",
+  [IntentType.SPENDING_ANALYTICS]: "Show my spending analytics for whole year",
+  [IntentType.TRANSFER_MONEY]: "Transfer money to my friend",
+};
+
 export function ChatMessage({ message }: ChatMessageProps) {
+  const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
+  const addMessage = useChatStore.use.addMessage();
+  const connection = useWebSocketStore.use.connection();
   const { text, type, role, body, intent } = message;
 
   if (body?.type === AttachmentType.IMAGE && body.image) {
@@ -54,7 +74,18 @@ export function ChatMessage({ message }: ChatMessageProps) {
         list={intent.output?.abilities?.map((ability) => ({
           title: ability?.intent_name,
           description: ability?.description,
+          message:
+            mapIntentToAbilityMessage[ability?.intent_name as IntentType],
         }))}
+        onItemClick={(item) => {
+          addMessage(chatId!, {
+            id: uuidv4(),
+            type: ChatMessageType.TEXT,
+            text: item.message,
+            role: ChatMessageRole.USER_TEXT,
+          });
+          connection?.sendTextCommand(item.message);
+        }}
       />
     );
   }

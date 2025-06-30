@@ -1,5 +1,3 @@
-"use client";
-
 import { Pie, PieChart } from "recharts";
 
 import ChevronUpIcon from "@/shared/assets/icons/chevron-up-icon.svg?react";

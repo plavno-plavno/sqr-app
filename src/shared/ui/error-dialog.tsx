@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/shared/ui/kit/button";
 import {
   Dialog,

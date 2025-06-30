@@ -7,7 +7,10 @@ import {
   ChatMessageRole,
   ChatMessageType,
   type ImageState,
+  useAudio,
   useChatStore,
+  useWebSocketStore,
+  useWSConnection,
 } from "@/features/chat";
 import voice from "@/shared/assets/animations/voice.json";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
@@ -15,10 +18,13 @@ import { cn } from "@/shared/lib/css/tailwind";
 import type { OperationInfo } from "@/shared/model/intents";
 import { type PathParams, ROUTES } from "@/shared/model/routes";
 import { ErrorDialog } from "@/shared/ui/error-dialog";
+import { Header, NewChatHeaderButton } from "@/shared/ui/header";
 import { Button } from "@/shared/ui/kit/button";
+import { SidebarTrigger } from "@/shared/ui/kit/sidebar";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
 import { useEffect, useRef, useState } from "react";
 import {
+  href,
   Navigate,
   useLocation,
   useNavigate,
@@ -27,50 +33,39 @@ import {
 } from "react-router-dom";
 import { useEffectEvent } from "use-effect-event";
 import { v4 as uuidv4 } from "uuid";
-import { useAudio } from "./model/useAudio";
-import { useWSConnection } from "./model/useWSConnection";
-import type { WebSocketConnection } from "@/features/websocket";
-import type { AudioQueueManager, AudioWorkletManager } from "@/features/audio";
 
 const ChatPage = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  const connection = useWebSocketStore.use.connection();
+  const isConnected = useWebSocketStore.use.isConnected();
+  const wsError = useWebSocketStore.use.wsError();
+  const chats = useChatStore.use.chats();
   const addMessage = useChatStore.use.addMessage();
   const setLastMessageMeta = useChatStore.use.setLastMessageMeta();
-  const chats = useChatStore.use.chats();
+  const setWsError = useWebSocketStore.use.setWsError();
+  const createChat = useChatStore.use.createChat();
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
-  const audioQueueRef = useRef<AudioQueueManager | null>(null);
-  const audioManagerRef = useRef<AudioWorkletManager | null>(null);
-  const wsConnectionRef = useRef<WebSocketConnection | null>(null);
 
   const [errorDialog, setErrorDialog] = useState<boolean>(false);
 
   const micEnabled = searchParams.get("mic") === "true";
   const searchParamsMessage = searchParams.get("message");
 
-  const { isConnected, wsError, cleanWsError } = useWSConnection({
-    chatId: chatId!,
-    wsConnectionRef,
-    audioQueueRef,
-    audioManagerRef,
-    onDialogOpen: () => audioManagerRef.current?.toggleMute(true),
-  });
-
+  useWSConnection({ chatId: chatId! });
   const {
-    isRecording,
+    audioManager,
     audioError,
     audioVoiceError,
+    isRecording,
     startRecording,
     stopRecording,
     cleanAudioErrors,
   } = useAudio({
-    audioManagerRef,
-    wsConnectionRef,
-    audioQueueRef,
-    // Update Lottie animation frame based on voice level
     onMicLevelChange: (level) => {
       if (!lottieRef.current) return;
 
@@ -111,7 +106,7 @@ const ChatPage = () => {
     }
 
     try {
-      wsConnectionRef.current?.sendTextCommand(searchParamsMessage);
+      connection?.sendTextCommand(searchParamsMessage);
     } catch {
       setErrorDialog(true);
     } finally {
@@ -120,7 +115,7 @@ const ChatPage = () => {
   }, [
     isConnected,
     searchParamsMessage,
-    wsConnectionRef,
+    connection,
     navigate,
     location.pathname,
   ]);
@@ -154,7 +149,7 @@ const ChatPage = () => {
     };
 
     try {
-      wsConnectionRef.current?.sendTextCommand(prompt);
+      connection?.sendTextCommand(prompt);
       addMessage(chatId, newMessage);
     } catch {
       setErrorDialog(true);
@@ -169,15 +164,15 @@ const ChatPage = () => {
 
     try {
       addMessage(chatId, message);
-      wsConnectionRef.current?.sendConfirmationCommand(operationInfo);
-      audioManagerRef.current?.toggleMute(false);
+      connection?.sendConfirmationCommand(operationInfo);
+      audioManager?.toggleMute(false);
     } catch {
       setErrorDialog(true);
     }
   };
 
   const handleDialogClose = () => {
-    audioManagerRef.current?.toggleMute(false);
+    audioManager?.toggleMute(false);
   };
 
   const handleStartRecording = () => {
@@ -185,6 +180,13 @@ const ChatPage = () => {
     startRecording();
   };
 
+  const handleNewChatClick = () => {
+    const chatId = uuidv4();
+    createChat(chatId);
+    navigate(`${href(ROUTES.CHAT, { chatId })}`);
+  };
+
+  const chatTitle = chats[chatId]?.title || "";
   const messages = chats[chatId]?.messages || [];
   const errorDialogOpen = errorDialog || !!audioVoiceError;
   const errorMessage =
@@ -193,10 +195,16 @@ const ChatPage = () => {
   return (
     <div
       className={cn(
-        "h-[calc(100dvh-80px)] grid grid-rows-[min-content_auto] mx-5",
+        "h-full grid grid-rows-[min-content_auto] mx-5",
         messages.length > 0 && "grid-rows-[1fr_auto]"
       )}
     >
+      <Header
+        title={chatTitle}
+        leftElement={<SidebarTrigger />}
+        rightElement={<NewChatHeaderButton onClick={handleNewChatClick} />}
+      />
+
       <ChatMessageList />
 
       {isRecording ? (
@@ -239,7 +247,7 @@ const ChatPage = () => {
         onOpenChange={() => {
           setErrorDialog(false);
           cleanAudioErrors();
-          cleanWsError();
+          setWsError(null);
         }}
       />
     </div>

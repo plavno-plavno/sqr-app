@@ -1,4 +1,4 @@
-import { AudioWorkletManager } from ".";
+import type { AudioWorkletManager } from "./audio-worklet-processor";
 
 export class AudioQueueManager {
   private audioQueue: string[] = [];
