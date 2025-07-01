@@ -1,6 +1,13 @@
+import {
+  PaymentMethod,
+  paymentOptionsMock,
+  type PaymentOption,
+} from "@/features/finance";
+import { cn } from "@/shared/lib/css/tailwind";
 import type { BuyBTCOutput } from "@/shared/model/intents";
+import { FormInput } from "@/shared/ui/form-input";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { ChatDialogActionCard, ChatDialogPaymentCard } from "../..";
 import { ChatConfirmDialog } from "../../ui/chat-confirm-dialog";
@@ -9,13 +16,16 @@ import {
   ChatDialogActionCardRowWithIcon,
   ChatDialogActionCardSection,
 } from "../../ui/chat-dialog-cards/chat-dialog-action-card";
-import { FormInput } from "@/shared/ui/form-input";
-import { cn } from "@/shared/lib/css/tailwind";
+import { PaymentSelect } from "../../ui/chat-dialog-cards/chat-dialog-payment-card";
+
+type ConfirmData = Partial<BuyBTCOutput["purchase_details"]> & {
+  payment: PaymentOption;
+};
 
 interface ChatBuyBtcDialogProps {
   data: BuyBTCOutput;
   open: boolean;
-  onConfirm: (data: Partial<BuyBTCOutput["purchase_details"]>) => void;
+  onConfirm: (data: ConfirmData) => void;
   onCancel: () => void;
 }
 
@@ -26,6 +36,10 @@ const formSchema = z.object({
     })
     .min(0.1, "Minimum amount is 0.1 BTC")
     .max(1, "Maximum amount is 1 BTC"),
+  payment: z.object({
+    identifier: z.string().min(1, "Payment method is required"),
+    paymentMethod: z.nativeEnum(PaymentMethod),
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -40,11 +54,16 @@ export function ChatBuyBtcDialog({
     register,
     watch,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       btc_amount: data.purchase_details.btc_amount || 0,
+      payment: {
+        identifier: paymentOptionsMock[0].identifier,
+        paymentMethod: paymentOptionsMock[0].paymentMethod,
+      },
     },
   });
 
@@ -90,6 +109,8 @@ export function ChatBuyBtcDialog({
                 style={{
                   width: `${btc_amount?.toString().length || 1}ch`,
                 }}
+                type="number"
+                step="any"
                 error={errors.btc_amount?.message}
                 rightElement={<p className="text-2xl font-semibold">BTC</p>}
                 {...register("btc_amount")}
@@ -104,11 +125,20 @@ export function ChatBuyBtcDialog({
           />
         </ChatDialogActionCardSection>
       </ChatDialogActionCard>
-      <ChatDialogPaymentCard
-        title="Pay using"
-        identifier="**** 7890"
-        paymentMethod="Credit card"
-      />
+      <ChatDialogPaymentCard title="Pay using">
+        <Controller
+          control={control}
+          name="payment"
+          render={({ field: { onChange, value } }) => (
+            <PaymentSelect
+              options={paymentOptionsMock}
+              className="w-full"
+              value={value}
+              onValueChange={onChange}
+            />
+          )}
+        />
+      </ChatDialogPaymentCard>
     </ChatConfirmDialog>
   );
 }

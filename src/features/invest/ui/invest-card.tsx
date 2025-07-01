@@ -23,7 +23,7 @@ export function InvestCard({
       onClick={onClick}
     >
       <div className="flex items-center gap-2.5">
-        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center">
           {investment.icon}
         </div>
         <span className="text-base font-semibold text-foreground">

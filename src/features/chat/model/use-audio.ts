@@ -21,6 +21,7 @@ export const useAudio = (config: UseAudioProps) => {
   const setIsRecording = useAudioStore.use.setIsRecording();
   const setAudioError = useAudioStore.use.setAudioError();
   const setAudioVoiceError = useAudioStore.use.setAudioVoiceError();
+  const clearAudio = useAudioStore.use.clearAudio();
 
   const onAudioData = (base64Data: string, voicestop: boolean) => {
     try {
@@ -87,7 +88,7 @@ export const useAudio = (config: UseAudioProps) => {
 
   const stopRecording = () => {
     audioManager?.stop();
-    setIsRecording(false);
+    clearAudio();
   };
 
   return {

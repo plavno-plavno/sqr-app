@@ -1,5 +1,10 @@
-// Bank accounts
-export { BankAccountCard } from "./ui/bank-account-card";
-export { BankAccountsList } from "./compose/bank-accounts-list";
-export type { BankAccount } from "./model/bank-account";
-export { bankAccountsMock } from "./model/bank-account"; 
+// Finance accounts
+export { FinanceAccountCard } from "./ui/finance-account-card";
+export { FinanceAccountsList } from "./compose/finance-accounts-list";
+export type { FinanceAccount } from "./model/finance-account";
+export {
+  financeAccountsMock,
+  paymentOptionsMock,
+  PaymentMethod,
+  type PaymentOption,
+} from "./model/finance-account";

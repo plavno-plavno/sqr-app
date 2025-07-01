@@ -34,6 +34,7 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -43,6 +44,8 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  --color-primary-light: var(--primary-light);
+  --color-primary-light-foreground: var(--primary-light-foreground);
   --color-dot: var(--dot);
   --color-details-title-foreground: var(--details-title-foreground);
   --color-agent-message-foreground: var(--agent-message-foreground);
@@ -77,6 +80,7 @@
   --chart-3: rgba(206, 206, 206, 1);
   --chart-4: rgba(187, 187, 187, 1);
   --chart-5: rgba(148, 148, 148, 1);
+  --chart-6: rgba(120, 120, 120, 1);
   --radius: 0.625rem;
   --sidebar: rgb(249, 249, 249);
   --sidebar-foreground: rgb(120, 120, 120);
@@ -87,6 +91,8 @@
   --sidebar-border: rgb(235, 235, 235);
   --sidebar-ring: rgb(181, 181, 181);
 
+  --primary-light: rgba(219, 219, 219, 1);
+  --primary-light-foreground: rgba(120, 120, 120, 1);
   --dot: rgba(217, 217, 217, 1);
   --details-title-foreground: rgba(75, 75, 75, 1);
   --agent-message-foreground: rgba(119, 119, 119, 1);

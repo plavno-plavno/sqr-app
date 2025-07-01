@@ -37,6 +37,7 @@ export class AudioWorkletManager {
   // private readonly MIN_SIMILARITY_DURATION = 0.2; // Увеличиваем время проверки
   // private similarityCounter: number = 0;
   // private lastSimilarityTime: number = 0;
+  private mediaStream: MediaStream | null = null;
   private isPlaying: boolean = false;
   private playbackHistory: Float32Array[] = [];
   private readonly HISTORY_SIZE = 10;
@@ -83,14 +84,14 @@ export class AudioWorkletManager {
         latency: 0.1
       };
 
-      const processedStream = stream.clone();
-      const audioTracks = processedStream.getAudioTracks();
+      this.mediaStream = stream;
+      const audioTracks = this.mediaStream.getAudioTracks();
       audioTracks.forEach(track => {
         track.applyConstraints(audioConstraints);
       });
 
       // Создаем цепочку обработки аудио
-      this.source = this.audioContext.createMediaStreamSource(processedStream);
+      this.source = this.audioContext.createMediaStreamSource(this.mediaStream);
 
       // Создаем анализатор для определения уровня звука
       this.analyserNode = this.audioContext.createAnalyser();
@@ -152,7 +153,7 @@ export class AudioWorkletManager {
           this.options.onVoiceActivity(false);
           this.echoNode?.port.postMessage({ isVoiceActive: false });
         },
-        stream: processedStream,
+        stream: this.mediaStream,
         positiveSpeechThreshold: 0.8,
         negativeSpeechThreshold: 0.8,
         redemptionFrames: 15, // ~1.5 seconds of silence tolerance
@@ -324,6 +325,9 @@ export class AudioWorkletManager {
     if (this.speechTimer) {
       clearInterval(this.speechTimer);
     }
+    this.mediaStream?.getAudioTracks().forEach(track => {
+      track.stop();
+    });
     this.vad?.pause();
     this.workletNode?.disconnect();
     this.echoNode?.disconnect();
@@ -331,6 +335,7 @@ export class AudioWorkletManager {
     this.gainNode?.disconnect();
     this.analyserNode?.disconnect();
     this.audioContext?.close();
+    this.mediaStream = null;
     this.audioContext = null;
     this.workletNode = null;
     this.echoNode = null;

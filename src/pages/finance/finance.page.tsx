@@ -1,4 +1,4 @@
-import { BankAccountsList, bankAccountsMock } from "@/features/finance";
+import { FinanceAccountsList, financeAccountsMock } from "@/features/finance";
 import { AdaptiveDrawer } from "@/shared/ui/adaptive-drawer";
 import { Header, PlusHeaderButton } from "@/shared/ui/header";
 import { Button } from "@/shared/ui/kit/button";
@@ -15,7 +15,7 @@ const FinancePage = () => {
         leftElement={<SidebarTrigger />}
         rightElement={<PlusHeaderButton onClick={() => setOpenDrawer(true)} />}
       />
-      <BankAccountsList accounts={bankAccountsMock} />
+      <FinanceAccountsList financeAccounts={financeAccountsMock} />
 
       <AdaptiveDrawer
         open={openDrawer}
@@ -24,7 +24,9 @@ const FinancePage = () => {
       >
         <div className="flex flex-col gap-2 my-7.5">
           <Button size="lg">Card</Button>
-          <Button size="lg" variant="secondary">Account</Button>
+          <Button size="lg" variant="secondary">
+            Account
+          </Button>
         </div>
       </AdaptiveDrawer>
     </div>

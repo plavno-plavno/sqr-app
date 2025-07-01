@@ -18,6 +18,7 @@ interface Actions {
   setIsRecording: (isRecording: boolean) => void;
   setAudioError: (audioError: string | null) => void;
   setAudioVoiceError: (audioVoiceError: string | null) => void;
+  clearAudio: () => void;
 }
 
 type Store = State & Actions;
@@ -34,6 +35,13 @@ const useAudioStoreBase = create<Store>()((set) => ({
   setAudioVoiceError: (audioVoiceError) => set({ audioVoiceError }),
   setAudioManager: (audioManager) => set({ audioManager }),
   setAudioQueue: (audioQueue) => set({ audioQueue }),
+  clearAudio: () =>
+    set({
+      audioManager: null,
+      isRecording: false,
+      audioError: null,
+      audioVoiceError: null,
+    }),
 }));
 
 export const useAudioStore = createSelectors(useAudioStoreBase);

@@ -1,5 +1,8 @@
+import { PaymentMethod, paymentOptionsMock, type PaymentOption } from "@/features/finance";
 import { cn } from "@/shared/lib/css/tailwind";
-import type { ScheduledTransferOutput } from "@/shared/model/intents";
+import type {
+  ScheduledTransferOutput
+} from "@/shared/model/intents";
 import { DatePicker } from "@/shared/ui/date-picker";
 import { FormInput } from "@/shared/ui/form-input";
 import { Input } from "@/shared/ui/kit/input";
@@ -15,13 +18,16 @@ import {
   ChatDialogPaymentCard,
 } from "../..";
 import { ChatConfirmDialog } from "../../ui/chat-confirm-dialog";
+import { PaymentSelect } from "../../ui/chat-dialog-cards/chat-dialog-payment-card";
+
+type ConfirmData = Partial<ScheduledTransferOutput["transfer_details"]> & {
+  payment: PaymentOption;
+};
 
 interface ChatScheduledMoneyTransferDialogProps {
   data: ScheduledTransferOutput;
   open: boolean;
-  onConfirm: (
-    data: Partial<ScheduledTransferOutput["transfer_details"]>
-  ) => void;
+  onConfirm: (data: ConfirmData) => void;
   onCancel: () => void;
 }
 
@@ -41,6 +47,10 @@ const formSchema = z.object({
       required_error: "Amount is required",
     })
     .min(1, "Minimum amount is 1"),
+  payment: z.object({
+    identifier: z.string().min(1, "Payment method is required"),
+    paymentMethod: z.nativeEnum(PaymentMethod),
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -67,11 +77,14 @@ export function ChatScheduledMoneyTransferDialog({
       scheduled_hour: new Date(data.transfer_details.scheduled_time)
         .toISOString()
         .slice(11, 16),
+      payment: {
+        identifier: paymentOptionsMock[0].identifier,
+        paymentMethod: paymentOptionsMock[0].paymentMethod,
+      },
     },
   });
 
   const onSubmit: SubmitHandler<FormValues> = (formData) => {
-    console.log(formData);
     const res = formSchema.safeParse(formData);
 
     if (!res.success) return;
@@ -169,11 +182,20 @@ export function ChatScheduledMoneyTransferDialog({
           </ChatDialogActionCardSection>
         </ChatDialogActionCardSection>
       </ChatDialogActionCard>
-      <ChatDialogPaymentCard
-        title="Pay using"
-        identifier="**** 7890"
-        paymentMethod="Credit card"
-      />
+      <ChatDialogPaymentCard title="Pay using">
+        <Controller
+          control={control}
+          name="payment"
+          render={({ field: { onChange, value } }) => (
+            <PaymentSelect
+              options={paymentOptionsMock}
+              className="w-full"
+              value={value}
+              onValueChange={onChange}
+            />
+          )}
+        />
+      </ChatDialogPaymentCard>
     </ChatConfirmDialog>
   );
 }

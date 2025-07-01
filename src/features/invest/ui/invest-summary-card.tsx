@@ -21,7 +21,7 @@ export function InvestSummaryCard({
         ${summary.amount}
       </p>
       
-      <div className="flex items-center gap-1.5 bg-primary rounded-full px-2.5 py-1">
+      <div className="flex items-center gap-1.5 bg-primary-light rounded-full px-2.5 py-1">
         <ArrowUpIcon />
         <span className="text-sm font-semibold text-foreground">
           ${formatNumber(summary.change, 2)}

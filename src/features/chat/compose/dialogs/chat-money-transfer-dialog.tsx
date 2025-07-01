@@ -1,6 +1,6 @@
 import type { TransferMoneyOutput } from "@/shared/model/intents";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import {
   ChatDialogActionCard,
@@ -12,11 +12,21 @@ import {
 import { ChatConfirmDialog } from "../../ui/chat-confirm-dialog";
 import { FormInput } from "@/shared/ui/form-input";
 import { cn } from "@/shared/lib/css/tailwind";
+import { PaymentSelect } from "../../ui/chat-dialog-cards/chat-dialog-payment-card";
+import {
+  PaymentMethod,
+  paymentOptionsMock,
+  type PaymentOption,
+} from "@/features/finance";
+
+type ConfirmData = Partial<TransferMoneyOutput["transfer_details"]> & {
+  payment: PaymentOption;
+};
 
 interface ChatMoneyTransferDialogProps {
   data: TransferMoneyOutput;
   open: boolean;
-  onConfirm: (data: Partial<TransferMoneyOutput["transfer_details"]>) => void;
+  onConfirm: (data: ConfirmData) => void;
   onCancel: () => void;
 }
 
@@ -27,6 +37,10 @@ const formSchema = z.object({
       required_error: "Amount is required",
     })
     .min(1, "Minimum amount is 1"),
+  payment: z.object({
+    identifier: z.string().min(1, "Payment method is required"),
+    paymentMethod: z.nativeEnum(PaymentMethod),
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -40,12 +54,17 @@ export function ChatMoneyTransferDialog({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: data.transfer_details.amount,
       recipient: data.transfer_details.recipient,
+      payment: {
+        identifier: paymentOptionsMock[0].identifier,
+        paymentMethod: paymentOptionsMock[0].paymentMethod,
+      },
     },
   });
 
@@ -53,7 +72,7 @@ export function ChatMoneyTransferDialog({
     const res = formSchema.safeParse(formData);
 
     if (!res.success) return;
-  
+
     onConfirm(formData);
   };
 
@@ -109,11 +128,20 @@ export function ChatMoneyTransferDialog({
           />
         </ChatDialogActionCardSection>
       </ChatDialogActionCard>
-      <ChatDialogPaymentCard
-        title="Pay using"
-        identifier="**** 7890"
-        paymentMethod="Credit card"
-      />
+      <ChatDialogPaymentCard title="Pay using">
+        <Controller
+          control={control}
+          name="payment"
+          render={({ field: { onChange, value } }) => (
+            <PaymentSelect
+              options={paymentOptionsMock}
+              className="w-full"
+              value={value}
+              onValueChange={onChange}
+            />
+          )}
+        />
+      </ChatDialogPaymentCard>
     </ChatConfirmDialog>
   );
 }
