@@ -2,7 +2,6 @@ import {
   ChatMessageRole,
   ChatMessageType,
   useChatStore,
-  type ChatMessage,
 } from "@/features/chat";
 import { requests } from "@/shared/api";
 import { AudioQueueManager } from "@/shared/lib/audio/audio-queue-manager";
@@ -12,6 +11,7 @@ import { defaultPrompt } from "@/shared/mock/prompt";
 import {
   IntentType,
   type IntentResponse,
+  type OperationInfo,
   type SpendingAnalyticsOutput,
 } from "@/shared/model/intents";
 import type {
@@ -21,20 +21,13 @@ import type {
   TranslationResponse,
 } from "@/shared/model/websocket";
 import axios from "axios";
-import { useEffect } from "react";
 import { useEffectEvent } from "use-effect-event";
 import { v4 as uuidv4 } from "uuid";
 import { useWebSocketStore } from "./websocket-store";
 import { useAudioStore } from "./audio-store";
+import { useCallback } from "react";
 
-interface UseWSConnectionProps {
-  chatId: string;
-  onNewMessage?: (message: ChatMessage) => void;
-}
-
-export const useWSConnection = (config: UseWSConnectionProps) => {
-  const { chatId, onNewMessage } = config;
-
+export const useWSConnection = () => {
   const audioQueue = useAudioStore.use.audioQueue();
   const audioManager = useAudioStore.use.audioManager();
   const setAudioQueue = useAudioStore.use.setAudioQueue();
@@ -46,6 +39,11 @@ export const useWSConnection = (config: UseWSConnectionProps) => {
   const setLastMessageMeta = useChatStore.use.setLastMessageMeta();
   const getLastMessageMeta = useChatStore.use.getLastMessageMeta();
 
+  const connection = useWebSocketStore.use.connection();
+  const isConnected = useWebSocketStore.use.isConnected();
+  const wsError = useWebSocketStore.use.wsError();
+  const setWsError = useWebSocketStore.use.setWsError();
+
   const getFreeMachine = async (controller: AbortController) => {
     const req = await requests.getFreeMachine({ signal: controller.signal });
     const freeMachine = req?.data;
@@ -53,7 +51,7 @@ export const useWSConnection = (config: UseWSConnectionProps) => {
     return `wss://${freeMachine.dns}:${freeMachine.port}`;
   };
 
-  const getLastMessageByRole = (roles: ChatMessageRole[]) => {
+  const getLastMessageByRole = (chatId: string, roles: ChatMessageRole[]) => {
     const messages = getMessages(chatId);
     for (let i = messages.length - 1; i >= 0; i--) {
       const message = messages[i];
@@ -95,7 +93,6 @@ export const useWSConnection = (config: UseWSConnectionProps) => {
     ) {
       const newMessage = { ...message, id: uuidv4() };
       addMessage(chatId, newMessage);
-      onNewMessage?.(newMessage);
     }
 
     if (
@@ -114,7 +111,7 @@ export const useWSConnection = (config: UseWSConnectionProps) => {
   ) => {
     // Last user message
     if ("current_user_text" in segments) {
-      const lastUserMessage = getLastMessageByRole([
+      const lastUserMessage = getLastMessageByRole(chatId, [
         ChatMessageRole.USER_VOICE,
         ChatMessageRole.USER_TEXT,
       ]);
@@ -143,7 +140,6 @@ export const useWSConnection = (config: UseWSConnectionProps) => {
         text: segments.text,
       };
       addMessage(chatId, newMessage);
-      onNewMessage?.(newMessage);
       return;
     }
 
@@ -169,7 +165,6 @@ export const useWSConnection = (config: UseWSConnectionProps) => {
         intent: intentResponse,
       };
       addMessage(chatId, newMessage);
-      onNewMessage?.(newMessage);
       return;
     }
 
@@ -185,7 +180,6 @@ export const useWSConnection = (config: UseWSConnectionProps) => {
         meta: { start, end },
       };
       addMessage(chatId, newMessage);
-      onNewMessage?.(newMessage);
     }
 
     // Audio response from agent
@@ -221,8 +215,9 @@ export const useWSConnection = (config: UseWSConnectionProps) => {
     }
   );
 
-  useEffect(() => {
-    const { setConnection, setIsConnected, setWsError } = useWebSocketStore.getState();
+  const initWSConnection = useCallback((chatId: string) => {
+    const { setConnection, setIsConnected, setWsError } =
+      useWebSocketStore.getState();
     const controller = new AbortController();
     const ws = new WebSocketConnection(defaultLanguage, defaultPrompt);
     setConnection(ws);
@@ -253,5 +248,32 @@ export const useWSConnection = (config: UseWSConnectionProps) => {
       setConnection(null);
       setIsConnected(false);
     };
-  }, [chatId]);
+  }, []);
+
+  const sendTextCommand = (text: string) => {
+    connection?.sendTextCommand(text);
+  };
+
+  const sendConfirmationCommand = (operationInfo: OperationInfo) => {
+    connection?.sendConfirmationCommand(operationInfo);
+  };
+
+  const sendAudioData = (base64Data: string, voicestop: boolean) => {
+    connection?.sendAudioData(base64Data, voicestop);
+  };
+
+  const sendVoiceEndCommand = () => {
+    connection?.sendVoiceEndCommand();
+  };
+
+  return {
+    isConnected,
+    wsError,
+    initWSConnection,
+    sendTextCommand,
+    sendConfirmationCommand,
+    sendAudioData,
+    sendVoiceEndCommand,
+    setWsError,
+  };
 };

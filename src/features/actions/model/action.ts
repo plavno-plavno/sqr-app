@@ -8,7 +8,7 @@ export interface QuickAction {
 export const actionsMock: QuickAction[] = [
   {
     id: 1,
-    name: "Abilities",
+    name: "Show Abilities",
     prompt: "Show me your abilities",
   },
   {
@@ -18,7 +18,7 @@ export const actionsMock: QuickAction[] = [
   },
   {
     id: 3,  
-    name: "Show my analytics",
+    name: "Show my expenses",
     prompt: "Show my spending analytics for whole year",
   },
   {

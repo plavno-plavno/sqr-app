@@ -1,16 +1,14 @@
 import { cn } from "@/shared/lib/css/tailwind";
-import { ROUTES, type PathParams } from "@/shared/model/routes";
-import { useParams } from "react-router-dom";
-import { useChatStore } from "../model/chat-store";
-import { ChatMessage } from "./chat-message";
 import { ScrollArea } from "@/shared/ui/kit/scroll-area";
 import { useEffect, useRef } from "react";
 
-export function ChatMessageList({ className }: { className?: string }) {
-  const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
-  const chats = useChatStore.use.chats();
-  const messages = chats[chatId as string]?.messages;
-
+export function ChatMessageList({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -38,11 +36,7 @@ export function ChatMessageList({ className }: { className?: string }) {
         ref={messagesContainerRef}
         className={cn("flex flex-col gap-4", className)}
       >
-        {messages?.map((message) => (
-          <div id={message.id} key={message.id}>
-            <ChatMessage message={message} />
-          </div>
-        ))}
+        {children}
       </div>
     </ScrollArea>
   );

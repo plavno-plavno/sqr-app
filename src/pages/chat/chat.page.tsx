@@ -7,11 +7,10 @@ import {
   ChatMessageRole,
   ChatMessageType,
   type ImageState,
-  useAudio,
   useChatStore,
-  useWebSocketStore,
-  useWSConnection,
 } from "@/features/chat";
+import { useAudio } from "@/features/ws-connection";
+import { useWSConnection } from "@/features/ws-connection";
 import voice from "@/shared/assets/animations/voice.json";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import { cn } from "@/shared/lib/css/tailwind";
@@ -22,7 +21,7 @@ import { Header, NewChatHeaderButton } from "@/shared/ui/header";
 import { Button } from "@/shared/ui/kit/button";
 import { SidebarTrigger } from "@/shared/ui/kit/sidebar";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   href,
   Navigate,
@@ -33,6 +32,7 @@ import {
 } from "react-router-dom";
 import { useEffectEvent } from "use-effect-event";
 import { v4 as uuidv4 } from "uuid";
+import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
 
 const ChatPage = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
@@ -40,13 +40,9 @@ const ChatPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const connection = useWebSocketStore.use.connection();
-  const isConnected = useWebSocketStore.use.isConnected();
-  const wsError = useWebSocketStore.use.wsError();
   const chats = useChatStore.use.chats();
   const addMessage = useChatStore.use.addMessage();
   const setLastMessageMeta = useChatStore.use.setLastMessageMeta();
-  const setWsError = useWebSocketStore.use.setWsError();
   const createChat = useChatStore.use.createChat();
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
@@ -56,7 +52,15 @@ const ChatPage = () => {
   const micEnabled = searchParams.get("mic") === "true";
   const searchParamsMessage = searchParams.get("message");
 
-  useWSConnection({ chatId: chatId! });
+  const {
+    isConnected,
+    wsError,
+    initWSConnection,
+    sendTextCommand,
+    sendConfirmationCommand,
+    setWsError,
+  } = useWSConnection();
+
   const {
     audioManager,
     audioError,
@@ -85,6 +89,12 @@ const ChatPage = () => {
     return true;
   });
 
+  // Initialize WebSocket connection
+  useEffect(() => {
+    if (!chatId) return;
+    return initWSConnection(chatId);
+  }, [chatId, initWSConnection]);
+
   // Activate mic when user clicks on mic button in home page
   useEffect(() => {
     if (!isConnected || !micEnabled) return;
@@ -106,7 +116,7 @@ const ChatPage = () => {
     }
 
     try {
-      connection?.sendTextCommand(searchParamsMessage);
+      sendTextCommand(searchParamsMessage);
     } catch {
       setErrorDialog(true);
     } finally {
@@ -115,7 +125,7 @@ const ChatPage = () => {
   }, [
     isConnected,
     searchParamsMessage,
-    connection,
+    sendTextCommand,
     navigate,
     location.pathname,
   ]);
@@ -127,6 +137,25 @@ const ChatPage = () => {
       setLastMessageMeta(chatId, { start: "-1", end: "-1" });
     };
   }, [chatId, setLastMessageMeta]);
+
+  const handleDialogConfirm = useCallback(
+    (message: ChatMessage, operationInfo: OperationInfo) => {
+      if (checkError()) return;
+
+      try {
+        addMessage(chatId!, message);
+        sendConfirmationCommand(operationInfo);
+        audioManager?.toggleMute(false);
+      } catch {
+        setErrorDialog(true);
+      }
+    },
+    [addMessage, chatId, sendConfirmationCommand, audioManager, setErrorDialog]
+  );
+
+  const handleDialogClose = useCallback(() => {
+    audioManager?.toggleMute(false);
+  }, [audioManager]);
 
   if (!chatId) {
     return <Navigate to={ROUTES.HOME} />;
@@ -149,30 +178,11 @@ const ChatPage = () => {
     };
 
     try {
-      connection?.sendTextCommand(prompt);
+      sendTextCommand(prompt);
       addMessage(chatId, newMessage);
     } catch {
       setErrorDialog(true);
     }
-  };
-
-  const handleDialogConfirm = (
-    message: ChatMessage,
-    operationInfo: OperationInfo
-  ) => {
-    if (checkError()) return;
-
-    try {
-      addMessage(chatId, message);
-      connection?.sendConfirmationCommand(operationInfo);
-      audioManager?.toggleMute(false);
-    } catch {
-      setErrorDialog(true);
-    }
-  };
-
-  const handleDialogClose = () => {
-    audioManager?.toggleMute(false);
   };
 
   const handleStartRecording = () => {
@@ -195,8 +205,8 @@ const ChatPage = () => {
   return (
     <div
       className={cn(
-        "h-full grid grid-rows-[min-content_auto] mx-5",
-        messages.length > 0 && "grid-rows-[1fr_auto]"
+        "h-full grid grid-rows-[min-content_min-content_auto] mx-5",
+        messages.length > 0 && "grid-rows-[auto_1fr_auto]"
       )}
     >
       <Header
@@ -205,7 +215,13 @@ const ChatPage = () => {
         rightElement={<NewChatHeaderButton onClick={handleNewChatClick} />}
       />
 
-      <ChatMessageList />
+      <ChatMessageList>
+        {messages?.map((message) => (
+          <div id={message.id} key={message.id}>
+            <ChatMessageComponent message={message} />
+          </div>
+        ))}
+      </ChatMessageList>
 
       {isRecording ? (
         <div className="grid grid-rows-[1fr_auto] justify-items-center my-5 -mx-5 gap-7">

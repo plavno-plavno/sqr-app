@@ -1,27 +1,26 @@
 import { IntentType } from "@/shared/model/intents";
-import { type PieChartConfig } from "../model/chart";
-import {
-  AttachmentType,
-  ChatMessageRole,
-  ChatMessageType,
-  useChatStore,
-  type ChatMessage,
-} from "../model/chat-store";
-import { ChatImageMessage } from "../ui/chat-messages/chat-image-message";
-import { ChatInfoListMessage } from "../ui/chat-messages/chat-info-list-message";
-import {
-  ChatLineChartMessage,
-  PeriodType,
-} from "../ui/chat-messages/chat-line-chart-message";
-import { ChatMoneyInfoMessage } from "../ui/chat-messages/chat-money-info-message";
-import { ChatMoneyTransferMessage } from "../ui/chat-messages/chat-money-transfer-message";
-import { ChatPieChartMessage } from "../ui/chat-messages/chat-pie-chart-message";
-import { ChatSuccessMessage } from "../ui/chat-messages/chat-success-message";
-import { ChatTextMessage } from "../ui/chat-messages/chat-text-message";
+
 import { v4 as uuidv4 } from "uuid";
 import type { PathParams, ROUTES } from "@/shared/model/routes";
 import { useParams } from "react-router-dom";
-import { useWebSocketStore } from "../model/websocket-store";
+import { useWSConnection } from "@/features/ws-connection";
+import {
+  AttachmentType,
+  ChatImageMessage,
+  ChatInfoListMessage,
+  ChatLineChartMessage,
+  ChatMessageRole,
+  ChatMessageType,
+  ChatMoneyInfoMessage,
+  ChatMoneyTransferMessage,
+  ChatPieChartMessage,
+  ChatSuccessMessage,
+  ChatTextMessage,
+  PeriodType,
+  useChatStore,
+  type ChatMessage,
+  type PieChartConfig,
+} from "@/features/chat";
 
 interface ChatMessageProps {
   message: ChatMessage;
@@ -40,8 +39,8 @@ const mapIntentToAbilityMessage = {
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
+  const { sendTextCommand } = useWSConnection();
   const addMessage = useChatStore.use.addMessage();
-  const connection = useWebSocketStore.use.connection();
   const { text, type, role, body, intent } = message;
 
   if (body?.type === AttachmentType.IMAGE && body.image) {
@@ -84,7 +83,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             text: item.message,
             role: ChatMessageRole.USER_TEXT,
           });
-          connection?.sendTextCommand(item.message);
+          sendTextCommand(item.message);
         }}
       />
     );
