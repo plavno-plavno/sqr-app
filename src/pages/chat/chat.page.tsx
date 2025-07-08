@@ -1,6 +1,5 @@
 import {
   AttachmentType,
-  ChatDialog,
   ChatInput,
   type ChatMessage,
   ChatMessageList,
@@ -9,8 +8,7 @@ import {
   type ImageState,
   useChatStore,
 } from "@/features/chat";
-import { useAudio } from "@/features/ws-connection";
-import { useWSConnection } from "@/features/ws-connection";
+import { useAudio, useWSConnection } from "@/features/ws-connection";
 import voice from "@/shared/assets/animations/voice.json";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import { cn } from "@/shared/lib/css/tailwind";
@@ -21,7 +19,7 @@ import { Header, NewChatHeaderButton } from "@/shared/ui/header";
 import { Button } from "@/shared/ui/kit/button";
 import { SidebarTrigger } from "@/shared/ui/kit/sidebar";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   href,
   Navigate,
@@ -30,9 +28,9 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { useEffectEvent } from "use-effect-event";
 import { v4 as uuidv4 } from "uuid";
 import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
+import { ChatDialog } from "./compose/chat-dialog";
 
 const ChatPage = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
@@ -47,13 +45,12 @@ const ChatPage = () => {
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
 
-  const [errorDialog, setErrorDialog] = useState<boolean>(false);
-
   const micEnabled = searchParams.get("mic") === "true";
-  const searchParamsMessage = searchParams.get("message");
+  const searchParamsMessage = searchParams.get("prompt");
 
   const {
     isConnected,
+    isConnecting,
     wsError,
     initWSConnection,
     sendTextCommand,
@@ -64,11 +61,10 @@ const ChatPage = () => {
   const {
     audioManager,
     audioError,
-    audioVoiceError,
     isRecording,
     startRecording,
     stopRecording,
-    cleanAudioErrors,
+    setAudioError,
   } = useAudio({
     onMicLevelChange: (level) => {
       if (!lottieRef.current) return;
@@ -82,13 +78,6 @@ const ChatPage = () => {
     },
   });
 
-  const checkError = useEffectEvent(() => {
-    if (!wsError && !audioError) return false;
-
-    setErrorDialog(true);
-    return true;
-  });
-
   // Initialize WebSocket connection
   useEffect(() => {
     if (!chatId) return;
@@ -98,10 +87,6 @@ const ChatPage = () => {
   // Activate mic when user clicks on mic button in home page
   useEffect(() => {
     if (!isConnected || !micEnabled) return;
-    if (checkError()) {
-      navigate(location.pathname, { replace: true });
-      return;
-    }
 
     startRecording();
     navigate(location.pathname, { replace: true });
@@ -110,18 +95,9 @@ const ChatPage = () => {
   // Send message if user input message in home page
   useEffect(() => {
     if (!isConnected || !searchParamsMessage) return;
-    if (checkError()) {
-      navigate(location.pathname, { replace: true });
-      return;
-    }
 
-    try {
-      sendTextCommand(searchParamsMessage);
-    } catch {
-      setErrorDialog(true);
-    } finally {
-      navigate(location.pathname, { replace: true });
-    }
+    sendTextCommand(searchParamsMessage);
+    navigate(location.pathname, { replace: true });
   }, [
     isConnected,
     searchParamsMessage,
@@ -140,17 +116,11 @@ const ChatPage = () => {
 
   const handleDialogConfirm = useCallback(
     (message: ChatMessage, operationInfo: OperationInfo) => {
-      if (checkError()) return;
-
-      try {
-        addMessage(chatId!, message);
-        sendConfirmationCommand(operationInfo);
-        audioManager?.toggleMute(false);
-      } catch {
-        setErrorDialog(true);
-      }
+      addMessage(chatId!, message);
+      sendConfirmationCommand(operationInfo);
+      audioManager?.toggleMute(false);
     },
-    [addMessage, chatId, sendConfirmationCommand, audioManager, setErrorDialog]
+    [addMessage, chatId, sendConfirmationCommand, audioManager]
   );
 
   const handleDialogClose = useCallback(() => {
@@ -162,8 +132,6 @@ const ChatPage = () => {
   }
 
   const handleSubmit = (prompt: string, image?: ImageState) => {
-    if (checkError()) return;
-
     const newMessage = {
       id: uuidv4(),
       role: ChatMessageRole.USER_TEXT,
@@ -177,16 +145,11 @@ const ChatPage = () => {
       }),
     };
 
-    try {
-      sendTextCommand(prompt);
-      addMessage(chatId, newMessage);
-    } catch {
-      setErrorDialog(true);
-    }
+    sendTextCommand(prompt);
+    addMessage(chatId, newMessage);
   };
 
   const handleStartRecording = () => {
-    if (checkError()) return;
     startRecording();
   };
 
@@ -198,14 +161,16 @@ const ChatPage = () => {
 
   const chatTitle = chats[chatId]?.title || "";
   const messages = chats[chatId]?.messages || [];
-  const errorDialogOpen = errorDialog || !!audioVoiceError;
-  const errorMessage =
-    wsError || audioVoiceError || audioError || "Something went wrong";
+  const errorDialogOpen = !!wsError || !!audioError;
+  const errorMessage = wsError || audioError || "Something went wrong";
 
   return (
     <div
       className={cn(
         "h-full grid grid-rows-[min-content_min-content_auto] mx-5",
+        !isRecording &&
+          messages.length === 0 &&
+          "grid-rows-[min-content_1fr_auto]",
         messages.length > 0 && "grid-rows-[auto_1fr_auto]"
       )}
     >
@@ -241,9 +206,9 @@ const ChatPage = () => {
           </Button>
         </div>
       ) : (
-        <div className="my-5 grid grid-cols-[1fr_auto] items-end gap-1">
+        <div className="my-5">
           <ChatInput
-            disabled={!isConnected}
+            disabled={isConnecting}
             showPlaceholder={false}
             onSubmit={handleSubmit}
             onMicClick={handleStartRecording}
@@ -261,8 +226,7 @@ const ChatPage = () => {
         title="Error occurred, please try again"
         description={errorMessage}
         onOpenChange={() => {
-          setErrorDialog(false);
-          cleanAudioErrors();
+          setAudioError(null);
           setWsError(null);
         }}
       />

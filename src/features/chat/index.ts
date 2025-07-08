@@ -15,9 +15,11 @@ export {
   ChatDialogActionCardRowWithIcon,
   ChatDialogActionCardSection,
 } from "./ui/chat-dialog-cards/chat-dialog-action-card";
-export { ChatDialogPaymentCard } from "./ui/chat-dialog-cards/chat-dialog-payment-card";
+export {
+  ChatDialogPaymentCard,
+  PaymentSelect,
+} from "./ui/chat-dialog-cards/chat-dialog-payment-card";
 export { ChatConfirmDialog } from "./ui/chat-confirm-dialog";
-export { ChatDialog } from "./compose/chat-dialog";
 export { ChatImageMessage } from "./ui/chat-messages/chat-image-message";
 export { ChatInfoListMessage } from "./ui/chat-messages/chat-info-list-message";
 export {
@@ -30,3 +32,6 @@ export { ChatPieChartMessage } from "./ui/chat-messages/chat-pie-chart-message";
 export { ChatSuccessMessage } from "./ui/chat-messages/chat-success-message";
 export { ChatTextMessage } from "./ui/chat-messages/chat-text-message";
 export type { PieChartConfig } from "./model/chart";
+export { ChatContactsMessage } from "./ui/chat-messages/chat-contacts-message";
+export { ChatButtonsList } from "./ui/chat-messages/chat-buttons-list-message";
+export { ChatSpendingInsightsMessage } from "./ui/chat-messages/chat-spending-insights-message";

@@ -4,16 +4,11 @@ import {
   type OperationInfo,
 } from "@/shared/model/intents";
 import { v4 as uuidv4 } from "uuid";
-import {
-  ChatMessageRole,
-  ChatMessageType,
-  useChatStore,
-  type ChatMessage,
-} from "../model/chat-store";
-import { ChatBuyBtcDialog } from "./dialogs/chat-buy-btc-dialog";
-import { ChatMoneyTransferDialog } from "./dialogs/chat-money-transfer-dialog";
-import { ChatScheduledMoneyTransferDialog } from "./dialogs/chat-scheduled-money-transfer-dialog";
 import { memo } from "react";
+import { ChatMessageRole, ChatMessageType, useChatStore, type ChatMessage } from "@/features/chat";
+import { ChatBuyBtcDialog } from "../ui/chat-buy-btc-dialog";
+import { ChatMoneyTransferDialog } from "../ui/chat-money-transfer-dialog";
+import { ChatScheduledMoneyTransferDialog } from "../ui/chat-scheduled-money-transfer-dialog";
 
 interface ChatDialogProps {
   handleConfirm?: (message: ChatMessage, intent: OperationInfo) => void;
@@ -80,6 +75,7 @@ export const ChatDialog = memo(
             onConfirm(
               {
                 text: "Order completed. BTC transferred to your wallet.",
+                intent: dialogIntent,
               },
               inputData
             )
@@ -98,6 +94,7 @@ export const ChatDialog = memo(
             onConfirm(
               {
                 text: "Transfer done. Funds sent.",
+                intent: dialogIntent,
               },
               inputData
             )

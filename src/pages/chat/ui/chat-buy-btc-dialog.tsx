@@ -1,4 +1,13 @@
 import {
+  ChatConfirmDialog,
+  ChatDialogActionCard,
+  ChatDialogActionCardRowTwoItems,
+  ChatDialogActionCardRowWithIcon,
+  ChatDialogActionCardSection,
+  ChatDialogPaymentCard,
+  PaymentSelect,
+} from "@/features/chat";
+import {
   PaymentMethod,
   paymentOptionsMock,
   type PaymentOption,
@@ -9,14 +18,6 @@ import { FormInput } from "@/shared/ui/form-input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
-import { ChatDialogActionCard, ChatDialogPaymentCard } from "../..";
-import { ChatConfirmDialog } from "../../ui/chat-confirm-dialog";
-import {
-  ChatDialogActionCardRowTwoItems,
-  ChatDialogActionCardRowWithIcon,
-  ChatDialogActionCardSection,
-} from "../../ui/chat-dialog-cards/chat-dialog-action-card";
-import { PaymentSelect } from "../../ui/chat-dialog-cards/chat-dialog-payment-card";
 
 type ConfirmData = Partial<BuyBTCOutput["purchase_details"]> & {
   payment: PaymentOption;

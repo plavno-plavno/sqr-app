@@ -1,3 +1,4 @@
+import type { WebSocketConnection } from "@/shared/lib/websocket/websocket-connection";
 import { useAudioStore } from "./audio-store";
 import { useWebSocketStore } from "./websocket-store";
 import { AudioWorkletManager } from "@/shared/lib/audio/audio-worklet-processor";
@@ -15,44 +16,39 @@ export const useAudio = (config: UseAudioProps) => {
   const audioQueue = useAudioStore.use.audioQueue();
   const audioManager = useAudioStore.use.audioManager();
   const audioError = useAudioStore.use.audioError();
-  const audioVoiceError = useAudioStore.use.audioVoiceError();
 
   const setAudioManager = useAudioStore.use.setAudioManager();
   const setIsRecording = useAudioStore.use.setIsRecording();
   const setAudioError = useAudioStore.use.setAudioError();
-  const setAudioVoiceError = useAudioStore.use.setAudioVoiceError();
   const clearAudio = useAudioStore.use.clearAudio();
-
-  const onAudioData = (base64Data: string, voicestop: boolean) => {
-    try {
-      connection?.sendAudioData(base64Data, voicestop);
-    } catch (error) {
-      setAudioVoiceError((error as Error)?.message);
-    }
-  };
-
-  const onVoiceEnd = (isActive: boolean) => {
-    if (isActive) return;
-
-    try {
-      connection?.sendVoiceEndCommand();
-    } catch (error) {
-      setAudioVoiceError((error as Error)?.message);
-    }
-  };
 
   const onError = (error: Error) => {
     setIsRecording(false);
     setAudioError(error.message);
   };
 
-  const cleanAudioErrors = () => {
-    setAudioError(null);
-    setAudioVoiceError(null);
+  const send = (command: (connection: WebSocketConnection) => void) => {
+    try {
+      if (!connection) throw new Error("Socket is not connected");
+      command(connection);
+    } catch (error) {
+      onError(error as Error);
+    }
+  };
+
+  const onAudioData = (base64Data: string, voicestop: boolean) => {
+    send((connection) => connection.sendAudioData(base64Data, voicestop));
+  };
+
+  const onVoiceEnd = (isActive: boolean) => {
+    if (isActive) return;
+    send((connection) => connection.sendVoiceEndCommand());
   };
 
   const startRecording = async () => {
     try {
+      if (!connection) throw new Error("Socket is not connected");
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -83,6 +79,7 @@ export const useAudio = (config: UseAudioProps) => {
       setIsRecording(true);
     } catch (error) {
       console.error("Failed to start recording:", error);
+      onError(error as Error);
     }
   };
 
@@ -96,8 +93,7 @@ export const useAudio = (config: UseAudioProps) => {
     audioQueue,
     audioManager,
     audioError,
-    audioVoiceError,
-    cleanAudioErrors,
+    setAudioError,
     startRecording,
     stopRecording,
   };

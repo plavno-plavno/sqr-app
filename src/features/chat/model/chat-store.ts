@@ -7,6 +7,7 @@ import { IntentType, type IntentResponse } from "@/shared/model/intents";
 export enum ChatMessageType {
   TEXT = "text",
   SUCCESS = "success",
+  CONTACTS = "contacts",
 }
 
 export enum ChatMessageRole {
@@ -37,6 +38,10 @@ export interface ChatMessage {
   body?: Attachment;
   type: ChatMessageType | IntentType;
   role: ChatMessageRole;
+
+  // Only for spending insights message
+  subscriptionsClicked?: boolean;
+  showSubscriptions?: boolean;
 }
 
 export interface ChatDialog {
@@ -65,6 +70,16 @@ interface Actions {
   updateMessage: (chatId: string, message: ChatMessage) => void;
   getMessages: (chatId?: string) => ChatMessage[];
   setDialog: (open: boolean, dialogIntent: IntentResponse | null) => void;
+  setSubscriptionsClicked: (
+    chatId: string,
+    messageId: string,
+    clicked: boolean
+  ) => void;
+  setShowSubscriptions: (
+    chatId: string,
+    messageId: string,
+    show: boolean
+  ) => void;
 }
 
 type Store = State & Actions;
@@ -134,6 +149,30 @@ const useChatStoreBase = create<Store>()(
             open,
             dialogIntent,
           };
+        }),
+      setSubscriptionsClicked: (
+        chatId: string,
+        messageId: string,
+        clicked: boolean
+      ) =>
+        set((state) => {
+          const chat = state.chats[chatId];
+          const message = chat.messages.find((m) => m.id === messageId);
+
+          if (!message) return;
+          message.subscriptionsClicked = clicked;
+        }),
+      setShowSubscriptions: (
+        chatId: string,
+        messageId: string,
+        show: boolean
+      ) =>
+        set((state) => {
+          const chat = state.chats[chatId];
+          const message = chat.messages.find((m) => m.id === messageId);
+
+          if (!message) return;
+          message.showSubscriptions = show;
         }),
     })),
     {

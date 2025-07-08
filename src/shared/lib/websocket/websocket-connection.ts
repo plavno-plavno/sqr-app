@@ -38,55 +38,60 @@ export class WebSocketConnection {
     this.#url = url;
 
     return new Promise((resolve, reject) => {
-      this.#socket = new WebSocket(url);
+      try {
+        this.#socket = new WebSocket(url);
 
-      this.#socket.onopen = () => {
-        console.log("WebSocket connected");
-        const initData = {
-          uid: "35",
-          language: this.#language,
-          task: "transcribe",
-          model: "large-v3",
-          use_vad: true,
-          isStartStream: true,
-          outer_vad_trigger: true,
+        this.#socket.onopen = () => {
+          console.log("WebSocket connected");
+          const initData = {
+            uid: "35",
+            language: this.#language,
+            task: "transcribe",
+            model: "large-v3",
+            use_vad: true,
+            isStartStream: true,
+            outer_vad_trigger: true,
+          };
+          console.log("Sending init data:", initData);
+          this.#socket?.send(JSON.stringify(initData));
         };
-        console.log("Sending init data:", initData);
-        this.#socket?.send(JSON.stringify(initData));
-      };
 
-      this.#socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log("Parsed message:", data);
+        this.#socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log("Parsed message:", data);
 
-          if (data.message === "SERVER_READY") {
-            console.log("Server is ready for audio streaming");
-            this.#isServerReady = true;
-            resolve();
-          } else if (data.segments) {
-            // Это ответ с транскрипцией
-            this.#onResponse?.(data as ServerResponse);
+            if (data.message === "SERVER_READY") {
+              console.log("Server is ready for audio streaming");
+              this.#isServerReady = true;
+              resolve();
+            } else if (data.segments) {
+              // Это ответ с транскрипцией
+              this.#onResponse?.(data as ServerResponse);
+            }
+          } catch (error: unknown) {
+            console.log("Raw message:", event.data);
+            console.error("WebSocket error:", error);
           }
-        } catch (error: unknown) {
-          console.log("Raw message:", event.data);
+        };
+
+        this.#socket.onerror = (error) => {
           console.error("WebSocket error:", error);
-        }
-      };
+          reject(error);
+        };
 
-      this.#socket.onerror = (error) => {
-        console.error("WebSocket error:", error);
+        this.#socket.onclose = (event) => {
+          console.log("WebSocket closed:", event.code, event.reason);
+          // Не сбрасываем isServerReady при закрытии, если это было нормальное закрытие
+          if (event.code !== 1000) {
+            this.#isServerReady = false;
+          }
+          this.#socket = null;
+        };
+      } catch (error) {
+        console.error("Error creating WebSocket:", error);
         reject(error);
-      };
-
-      this.#socket.onclose = (event) => {
-        console.log("WebSocket closed:", event.code, event.reason);
-        // Не сбрасываем isServerReady при закрытии, если это было нормальное закрытие
-        if (event.code !== 1000) {
-          this.#isServerReady = false;
-        }
-        this.#socket = null;
-      };
+      }
     });
   }
 

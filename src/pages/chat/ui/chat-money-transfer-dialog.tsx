@@ -2,22 +2,22 @@ import type { TransferMoneyOutput } from "@/shared/model/intents";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
-import {
-  ChatDialogActionCard,
-  ChatDialogActionCardRowTwoItems,
-  ChatDialogActionCardRowWithIcon,
-  ChatDialogActionCardSection,
-  ChatDialogPaymentCard,
-} from "../..";
-import { ChatConfirmDialog } from "../../ui/chat-confirm-dialog";
 import { FormInput } from "@/shared/ui/form-input";
 import { cn } from "@/shared/lib/css/tailwind";
-import { PaymentSelect } from "../../ui/chat-dialog-cards/chat-dialog-payment-card";
 import {
   PaymentMethod,
   paymentOptionsMock,
   type PaymentOption,
 } from "@/features/finance";
+import {
+  ChatConfirmDialog,
+  ChatDialogActionCard,
+  ChatDialogActionCardRowTwoItems,
+  ChatDialogActionCardRowWithIcon,
+  ChatDialogActionCardSection,
+  ChatDialogPaymentCard,
+  PaymentSelect,
+} from "@/features/chat";
 
 type ConfirmData = Partial<TransferMoneyOutput["transfer_details"]> & {
   payment: PaymentOption;

@@ -1,12 +1,12 @@
 import { CarouselItem } from "@/shared/ui/kit/carousel";
 import { ShiftedCarousel } from "@/shared/ui/shifted-carousel";
-import { type QuickAction } from "../model/action";
+import { type ActionType } from "../model/action";
 import { ActionCard } from "../ui/action-card";
 
 interface ActionsCarouselProps {
-  actions: QuickAction[];
+  actions: ActionType[];
   className?: string;
-  onCardClick: (action: QuickAction) => void;
+  onCardClick: (action: ActionType) => void;
 }
 
 export function ActionsCarousel({

@@ -1,16 +1,17 @@
 import { cn } from "@/shared/lib/css/tailwind";
+import { ArrowBigUp, ArrowBigDown } from "lucide-react";
 
 interface ChatMoneyInfoMessageProps {
-  description: string;
+  title: string;
   amount: string;
-  category?: string;
+  trend?: "up" | "down" | "stable";
   className?: string;
 }
 
 export function ChatMoneyInfoMessage({
-  description,
+  title,
   amount,
-  category,
+  trend,
   className,
 }: ChatMoneyInfoMessageProps) {
   return (
@@ -20,9 +21,10 @@ export function ChatMoneyInfoMessage({
         className
       )}
     >
-      <div className="flex justify-between items-center gap-2">
-        <p className="text-sm font-medium text-primary-foreground">{description}</p>
-        {category && <p className="text-sm font-semibold text-primary-foreground">{category}</p>}
+      <div className="flex justify-between gap-2">
+        <p className="text-sm font-medium text-primary-foreground">{title}</p>
+        {trend === "up" && <ArrowBigUp />}
+        {trend === "down" && <ArrowBigDown />}
       </div>
 
       <p className="text-2xl font-semibold">${amount}</p>

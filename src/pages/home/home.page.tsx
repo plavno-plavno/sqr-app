@@ -1,7 +1,7 @@
 import {
   ActionsCarousel,
-  actionsMock,
-  type QuickAction,
+  quickActionsMock,
+  type ActionType,
 } from "@/features/actions";
 import {
   AttachmentType,
@@ -44,25 +44,36 @@ const HomePage = () => {
         },
       }),
     });
-    navigate(`${href(ROUTES.CHAT, { chatId })}?message=${prompt}`);
+
+    const queryParams = new URLSearchParams();
+    queryParams.set("prompt", prompt);
+    navigate(`${href(ROUTES.CHAT, { chatId })}?${queryParams.toString()}`);
   };
 
-  const handleQuickActionClick = (action: QuickAction) => {
+  const handleQuickActionClick = (action: ActionType) => {
     const chatId = uuidv4();
     createChat(chatId, action.name);
-    addMessage(chatId, {
-      id: uuidv4(),
-      role: ChatMessageRole.USER_TEXT,
-      text: action.prompt,
-      type: ChatMessageType.TEXT,
-    });
-    navigate(`${href(ROUTES.CHAT, { chatId })}?message=${action.prompt}`);
+
+    if (action.messages) {
+      action.messages.forEach((message) => {
+        addMessage(chatId, message);
+      });
+    }
+
+    const queryParams = new URLSearchParams();
+    if (action.prompt) {
+      queryParams.set("prompt", action.prompt);
+    }
+    navigate(`${href(ROUTES.CHAT, { chatId })}?${queryParams.toString()}`);
   };
 
   const handleMicClick = () => {
     const chatId = uuidv4();
     createChat(chatId);
-    navigate(`${href(ROUTES.CHAT, { chatId })}?mic=true`);
+
+    const queryParams = new URLSearchParams();
+    queryParams.set("mic", "true");
+    navigate(`${href(ROUTES.CHAT, { chatId })}?${queryParams.toString()}`);
   };
 
   const handleNewChatClick = () => {
@@ -114,7 +125,7 @@ const HomePage = () => {
       {/* Actions carousel */}
       <ActionsCarousel
         className="mt-5.5"
-        actions={actionsMock}
+        actions={quickActionsMock}
         onCardClick={handleQuickActionClick}
       />
 

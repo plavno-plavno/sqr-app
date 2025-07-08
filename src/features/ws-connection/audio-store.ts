@@ -9,7 +9,6 @@ interface State {
 
   isRecording: boolean;
   audioError: string | null;
-  audioVoiceError: string | null;
 }
 
 interface Actions {
@@ -17,7 +16,6 @@ interface Actions {
   setAudioQueue: (audioQueue: AudioQueueManager | null) => void;
   setIsRecording: (isRecording: boolean) => void;
   setAudioError: (audioError: string | null) => void;
-  setAudioVoiceError: (audioVoiceError: string | null) => void;
   clearAudio: () => void;
 }
 
@@ -28,11 +26,9 @@ const useAudioStoreBase = create<Store>()((set) => ({
   audioQueue: null,
   isRecording: false,
   audioError: null,
-  audioVoiceError: null,
 
   setIsRecording: (isRecording) => set({ isRecording }),
   setAudioError: (audioError) => set({ audioError }),
-  setAudioVoiceError: (audioVoiceError) => set({ audioVoiceError }),
   setAudioManager: (audioManager) => set({ audioManager }),
   setAudioQueue: (audioQueue) => set({ audioQueue }),
   clearAudio: () =>
@@ -40,7 +36,6 @@ const useAudioStoreBase = create<Store>()((set) => ({
       audioManager: null,
       isRecording: false,
       audioError: null,
-      audioVoiceError: null,
     }),
 }));
 

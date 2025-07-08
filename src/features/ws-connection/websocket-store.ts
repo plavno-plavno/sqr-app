@@ -4,12 +4,14 @@ import { create } from "zustand";
 
 interface State {
   connection: WebSocketConnection | null;
+  isConnecting: boolean;
   isConnected: boolean;
   wsError: string | null;
 }
 
 interface Actions {
   setConnection: (connection: WebSocketConnection | null) => void;
+  setIsConnecting: (isConnecting: boolean) => void;
   setIsConnected: (isConnected: boolean) => void;
   setWsError: (wsError: string | null) => void;
 }
@@ -18,10 +20,12 @@ type Store = State & Actions;
 
 const useWebSocketStoreBase = create<Store>()((set) => ({
   connection: null,
+  isConnecting: true,
   isConnected: false,
   wsError: null,
 
   setConnection: (connection) => set({ connection }),
+  setIsConnecting: (isConnecting) => set({ isConnecting }),
   setIsConnected: (isConnected) => set({ isConnected }),
   setWsError: (wsError) => set({ wsError }),
 }));

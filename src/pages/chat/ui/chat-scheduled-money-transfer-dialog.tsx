@@ -1,8 +1,10 @@
-import { PaymentMethod, paymentOptionsMock, type PaymentOption } from "@/features/finance";
+import {
+  PaymentMethod,
+  paymentOptionsMock,
+  type PaymentOption,
+} from "@/features/finance";
 import { cn } from "@/shared/lib/css/tailwind";
-import type {
-  ScheduledTransferOutput
-} from "@/shared/model/intents";
+import type { ScheduledTransferOutput } from "@/shared/model/intents";
 import { DatePicker } from "@/shared/ui/date-picker";
 import { FormInput } from "@/shared/ui/form-input";
 import { Input } from "@/shared/ui/kit/input";
@@ -16,9 +18,9 @@ import {
   ChatDialogActionCardRowWithIcon,
   ChatDialogActionCardSection,
   ChatDialogPaymentCard,
-} from "../..";
-import { ChatConfirmDialog } from "../../ui/chat-confirm-dialog";
-import { PaymentSelect } from "../../ui/chat-dialog-cards/chat-dialog-payment-card";
+  PaymentSelect,
+} from "@/features/chat";
+import { ChatConfirmDialog } from "@/features/chat";
 
 type ConfirmData = Partial<ScheduledTransferOutput["transfer_details"]> & {
   payment: PaymentOption;

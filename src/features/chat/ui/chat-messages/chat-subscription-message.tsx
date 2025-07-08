@@ -1,7 +1,7 @@
 import { cn } from "@/shared/lib/css/tailwind";
 import { Button } from "@/shared/ui/kit/button";
 
-interface ChatMoneySubscriptionMessageProps {
+interface ChatSubscriptionMessageProps {
   title: string;
   amount: string;
   period: string;
@@ -9,13 +9,13 @@ interface ChatMoneySubscriptionMessageProps {
   onDeactivate?: () => void;
 }
 
-export function ChatMoneySubscriptionMessage({
+export function ChatSubscriptionMessage({
   title,
   amount,
   period,
   onDeactivate,
   className,
-}: ChatMoneySubscriptionMessageProps) {
+}: ChatSubscriptionMessageProps) {
   return (
     <div
       className={cn(

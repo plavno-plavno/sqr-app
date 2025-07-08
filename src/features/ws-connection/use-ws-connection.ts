@@ -41,12 +41,15 @@ export const useWSConnection = () => {
 
   const connection = useWebSocketStore.use.connection();
   const isConnected = useWebSocketStore.use.isConnected();
+  const isConnecting = useWebSocketStore.use.isConnecting();
   const wsError = useWebSocketStore.use.wsError();
   const setWsError = useWebSocketStore.use.setWsError();
 
   const getFreeMachine = async (controller: AbortController) => {
     const req = await requests.getFreeMachine({ signal: controller.signal });
     const freeMachine = req?.data;
+
+    if (!freeMachine) throw new Error("No free machine found");
 
     return `wss://${freeMachine.dns}:${freeMachine.port}`;
   };
@@ -115,7 +118,7 @@ export const useWSConnection = () => {
         ChatMessageRole.USER_VOICE,
         ChatMessageRole.USER_TEXT,
       ]);
-      if (!lastUserMessage) return;
+      if (!lastUserMessage || lastUserMessage.isTextCorrected) return;
 
       updateMessage(chatId, {
         ...lastUserMessage,
@@ -216,7 +219,7 @@ export const useWSConnection = () => {
   );
 
   const initWSConnection = useCallback((chatId: string) => {
-    const { setConnection, setIsConnected, setWsError } =
+    const { setConnection, setIsConnected, setWsError, setIsConnecting } =
       useWebSocketStore.getState();
     const controller = new AbortController();
     const ws = new WebSocketConnection(defaultLanguage, defaultPrompt);
@@ -224,6 +227,7 @@ export const useWSConnection = () => {
 
     async function init() {
       try {
+        setIsConnecting(true);
         const url = await getFreeMachine(controller);
 
         if (controller.signal.aborted) return;
@@ -237,6 +241,8 @@ export const useWSConnection = () => {
         setWsError((error as Error).message);
         ws.closeConnection();
         setConnection(null);
+      } finally {
+        setIsConnecting(false);
       }
     }
 
@@ -250,24 +256,38 @@ export const useWSConnection = () => {
     };
   }, []);
 
+  const sendCommand = (command: (connection: WebSocketConnection) => void) => {
+    try {
+      if (!connection) throw new Error("Socket is not connected");
+      command(connection);
+    } catch (error) {
+      setWsError((error as Error).message);
+    }
+  };
+
   const sendTextCommand = (text: string) => {
-    connection?.sendTextCommand(text);
+    sendCommand((connection) => connection.sendTextCommand(text));
   };
 
   const sendConfirmationCommand = (operationInfo: OperationInfo) => {
-    connection?.sendConfirmationCommand(operationInfo);
+    sendCommand((connection) =>
+      connection.sendConfirmationCommand(operationInfo)
+    );
   };
 
   const sendAudioData = (base64Data: string, voicestop: boolean) => {
-    connection?.sendAudioData(base64Data, voicestop);
+    sendCommand((connection) =>
+      connection.sendAudioData(base64Data, voicestop)
+    );
   };
 
   const sendVoiceEndCommand = () => {
-    connection?.sendVoiceEndCommand();
+    sendCommand((connection) => connection.sendVoiceEndCommand());
   };
 
   return {
     isConnected,
+    isConnecting,
     wsError,
     initWSConnection,
     sendTextCommand,
