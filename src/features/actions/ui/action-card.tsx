@@ -1,11 +1,11 @@
 import { cn } from "@/shared/lib/css/tailwind";
 import { IconWrapper } from "@/shared/ui/icon-wrapper";
-import type { QuickAction } from "../model/action";
+import type { ActionType } from "../model/action";
 
 interface ActionCardProps {
-  action: QuickAction;
+  action: ActionType;
   className?: string;
-  onClick?: (action: QuickAction) => void;
+  onClick?: (action: ActionType) => void;
 }
 
 export function ActionCard({ action, className, onClick }: ActionCardProps) {
