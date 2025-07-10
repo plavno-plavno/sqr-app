@@ -5,13 +5,13 @@ export function groupTransactions(
   transactions: Transaction[]
 ): TransactionGroup[] {
   const sortedTransactions = [...transactions].sort(
-    (a, b) => b.date.getTime() - a.date.getTime()
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
   const groupsMap = new Map<string, TransactionGroup>();
 
   for (const transaction of sortedTransactions) {
-    const dateLabel = formatDateForGroup(transaction.date);
+    const dateLabel = formatDateForGroup(new Date(transaction.date));
     const existingGroup = groupsMap.get(dateLabel);
 
     if (existingGroup) {

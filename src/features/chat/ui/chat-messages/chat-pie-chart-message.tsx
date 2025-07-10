@@ -74,23 +74,23 @@ export function ChatPieChartMessage({
       </ChartContainer>
 
       <div className="flex gap-2 flex-wrap">
-        {chartDataColored.map((item) => (
+        {chartDataColored?.map((item) => (
           <div
             key={item?.[nameKey]?.toString()}
             className={cn("flex items-center py-1 px-3 gap-1 rounded-full")}
             style={{
-              backgroundColor: item.fill as string,
+              backgroundColor: item?.fill as string,
             }}
           >
             <span className="text-xs font-medium">
-              {chartConfig?.[item[nameKey].toString()]?.label}
+              {chartConfig?.[item?.[nameKey]?.toString()]?.label}
             </span>
             <span className="text-xs font-semibold">
               {valueSign}
               {item?.[dataKey]}
             </span>
-            {item.trend === "up" && <ChevronUpIcon />}
-            {item.trend === "down" && <ChevronUpIcon className="rotate-180" />}
+            {item?.trend === "up" && <ChevronUpIcon />}
+            {item?.trend === "down" && <ChevronUpIcon className="rotate-180" />}
           </div>
         ))}
       </div>

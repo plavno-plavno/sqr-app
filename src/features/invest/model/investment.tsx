@@ -1,48 +1,44 @@
-import { v4 as uuidv4 } from 'uuid';
-import UsdIcon from '@/shared/assets/icons/usd-icon.svg?react';
-import BtcIcon from '@/shared/assets/icons/bitcoin-icon.svg?react';
+import { v4 as uuidv4 } from "uuid";
+import UsdIcon from "@/shared/assets/icons/usd-icon.svg?react";
+import BtcIcon from "@/shared/assets/icons/bitcoin-icon.svg?react";
 
 export interface Investment {
   id: string;
   symbol: string;
   name: string;
-  price: number;
   amount: number;
   changePercent: number;
-  icon: React.ReactNode;
   currency: string;
+  rate: number; // Exchange rate for price calculation
 }
 
-export interface InvestSummary {
-  amount: number;
-  change: number;
-}
+export const getInvestmentIcon = (symbol: string) => {
+  switch (symbol) {
+    case "USDC":
+      return <UsdIcon />;
+    case "BTC":
+      return <BtcIcon />;
+  }
+};
 
 // Mock data for investments
 export const investMock: Investment[] = [
   {
     id: uuidv4(),
-    symbol: 'USDC',
-    name: 'USD Coin',
-    price: 9.45,
+    symbol: "USDC",
+    name: "USD Coin",
     amount: 9.4,
     changePercent: -0.04,
-    currency: 'USDC',
-    icon: <UsdIcon />,
+    currency: "USDC",
+    rate: 1.0, // USD to USDC exchange rate
   },
   {
     id: uuidv4(),
-    symbol: 'BTC',
-    name: 'Bitcoin',
-    price: 50467.67,
-    amount: 0.4,
+    symbol: "BTC",
+    name: "Bitcoin",
+    amount: 0.05,
     changePercent: -0.04,
-    currency: 'BTC',
-    icon: <BtcIcon />,
+    currency: "BTC",
+    rate: 94567.89, // USD to BTC exchange rate
   },
 ];
-
-export const investSummaryMock: InvestSummary = {
-  amount: 50,
-  change: 0.45,
-}; 

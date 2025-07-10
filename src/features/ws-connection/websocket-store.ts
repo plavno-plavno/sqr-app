@@ -20,7 +20,7 @@ type Store = State & Actions;
 
 const useWebSocketStoreBase = create<Store>()((set) => ({
   connection: null,
-  isConnecting: true,
+  isConnecting: false,
   isConnected: false,
   wsError: null,
 

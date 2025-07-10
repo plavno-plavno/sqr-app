@@ -22,14 +22,16 @@ import {
 } from "@/features/chat";
 import { ChatConfirmDialog } from "@/features/chat";
 
-type ConfirmData = Partial<ScheduledTransferOutput["transfer_details"]> & {
+export type ScheduledTransferConfirmData = Partial<
+  ScheduledTransferOutput["transfer_details"]
+> & {
   payment: PaymentOption;
 };
 
 interface ChatScheduledMoneyTransferDialogProps {
   data: ScheduledTransferOutput;
   open: boolean;
-  onConfirm: (data: ConfirmData) => void;
+  onConfirm: (data: ScheduledTransferConfirmData) => void;
   onCancel: () => void;
 }
 

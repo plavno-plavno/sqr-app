@@ -7,6 +7,7 @@ export enum IntentType {
   SPENDING_INSIGHTS = "spending_insights",
   SPENDING_ANALYTICS = "spending_analytics",
   TRANSFER_MONEY = "transfer_money",
+  GOODBYE = "goodbye",
 }
 
 // Base interfaces for common structures
@@ -199,6 +200,11 @@ export interface TransferMoneyOutput {
   summary: Summary;
 }
 
+// GOODBYE Intent Response Schema
+export interface GoodbyeOutput {
+  conversation_status: string;
+}
+
 export type AbilitiesResponse = {
   intent: IntentType.ABILITIES;
   output: AbilitiesOutput;
@@ -247,6 +253,12 @@ export type TransferMoneyResponse = {
   text?: string;
 };
 
+export type GoodbyeResponse = {
+  intent: IntentType.GOODBYE;
+  output: GoodbyeOutput;
+  text?: string;
+};
+
 export type IntentResponse =
   | AbilitiesResponse
   | BTCPriceResponse
@@ -255,7 +267,8 @@ export type IntentResponse =
   | ScheduledTransferResponse
   | SpendingInsightsResponse
   | SpendingAnalyticsResponse
-  | TransferMoneyResponse;
+  | TransferMoneyResponse
+  | GoodbyeResponse;
 
 export type OperationInfo = {
   intent: IntentType;

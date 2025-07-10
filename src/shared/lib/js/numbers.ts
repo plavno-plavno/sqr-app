@@ -1,5 +1,5 @@
 export const formatBalance = (balance: number) => {
-  return balance % 1 === 0 ? balance.toString() : balance.toFixed(2);
+  return balance % 1 === 0 ? balance.toString() : balance?.toFixed(2) || "0";
 };
 
 export const formatNumber = (number: number, fractionDigits: number) => {
@@ -11,5 +11,5 @@ export const formatNumber = (number: number, fractionDigits: number) => {
 
 export const formatChangePercent = (changePercent: number) => {
   const sign = changePercent >= 0 ? "+" : "";
-  return `${sign} ${changePercent.toFixed(2)}%`;
+  return `${sign} ${changePercent?.toFixed(2) || "0"}%`;
 };

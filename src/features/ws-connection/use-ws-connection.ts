@@ -31,6 +31,7 @@ export const useWSConnection = () => {
   const audioQueue = useAudioStore.use.audioQueue();
   const audioManager = useAudioStore.use.audioManager();
   const setAudioQueue = useAudioStore.use.setAudioQueue();
+  const clearAudio = useAudioStore.use.clearAudio();
 
   const addMessage = useChatStore.use.addMessage();
   const updateMessage = useChatStore.use.updateMessage();
@@ -123,7 +124,7 @@ export const useWSConnection = () => {
       updateMessage(chatId, {
         ...lastUserMessage,
         text: segments.current_user_text,
-        isTextCorrected: true,
+        isTextCorrected: true
       });
       return;
     }
@@ -160,6 +161,18 @@ export const useWSConnection = () => {
         return;
       }
 
+      if (intentResponse.intent === IntentType.GOODBYE) {
+        addMessage(chatId, {
+          id: uuidv4(),
+          type: ChatMessageType.HIDDEN,
+          role: ChatMessageRole.AGENT,
+        });
+        audioManager?.stop();
+        setDialog(false, null);
+        clearAudio();
+        return;
+      }
+ 
       const newMessage = {
         id: uuidv4(),
         type: intentResponse.intent,
@@ -236,13 +249,13 @@ export const useWSConnection = () => {
           handleWSMessage(response, chatId);
         });
         setIsConnected(true);
+        setIsConnecting(false);
       } catch (error) {
         if (axios.isCancel(error)) return;
         setWsError((error as Error).message);
         ws.closeConnection();
-        setConnection(null);
-      } finally {
         setIsConnecting(false);
+        setConnection(null);
       }
     }
 
@@ -253,37 +266,50 @@ export const useWSConnection = () => {
       ws.closeConnection();
       setConnection(null);
       setIsConnected(false);
+      setIsConnecting(false);
     };
   }, []);
 
-  const sendCommand = (command: (connection: WebSocketConnection) => void) => {
-    try {
-      if (!connection) throw new Error("Socket is not connected");
-      command(connection);
-    } catch (error) {
-      setWsError((error as Error).message);
-    }
-  };
+  const sendCommand = useCallback(
+    (command: (connection: WebSocketConnection) => void) => {
+      try {
+        if (!connection) throw new Error("Socket is not connected");
+        command(connection);
+      } catch (error) {
+        setWsError((error as Error).message);
+      }
+    },
+    [connection, setWsError]
+  );
 
-  const sendTextCommand = (text: string) => {
-    sendCommand((connection) => connection.sendTextCommand(text));
-  };
+  const sendTextCommand = useCallback(
+    (text: string) => {
+      sendCommand((connection) => connection.sendTextCommand(text));
+    },
+    [sendCommand]
+  );
 
-  const sendConfirmationCommand = (operationInfo: OperationInfo) => {
-    sendCommand((connection) =>
-      connection.sendConfirmationCommand(operationInfo)
-    );
-  };
+  const sendConfirmationCommand = useCallback(
+    (operationInfo: OperationInfo) => {
+      sendCommand((connection) =>
+        connection.sendConfirmationCommand(operationInfo)
+      );
+    },
+    [sendCommand]
+  );
 
-  const sendAudioData = (base64Data: string, voicestop: boolean) => {
-    sendCommand((connection) =>
-      connection.sendAudioData(base64Data, voicestop)
-    );
-  };
+  const sendAudioData = useCallback(
+    (base64Data: string, voicestop: boolean) => {
+      sendCommand((connection) =>
+        connection.sendAudioData(base64Data, voicestop)
+      );
+    },
+    [sendCommand]
+  );
 
-  const sendVoiceEndCommand = () => {
+  const sendVoiceEndCommand = useCallback(() => {
     sendCommand((connection) => connection.sendVoiceEndCommand());
-  };
+  }, [sendCommand]);
 
   return {
     isConnected,

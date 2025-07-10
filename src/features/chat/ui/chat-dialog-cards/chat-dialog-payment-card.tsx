@@ -10,6 +10,7 @@ import {
 import { SelectGroup } from "@radix-ui/react-select";
 import { ChatDialogCardLayout } from "./chat-dialog-card-layout";
 import { PaymentMethod, type PaymentOption } from "@/features/finance";
+import { memo } from "react";
 
 export function PaymentSelectItem({
   identifier,
@@ -33,53 +34,55 @@ export function PaymentSelectItem({
   );
 }
 
-export function PaymentSelect({
-  options,
-  value,
-  onValueChange,
-  className,
-}: {
-  options: PaymentOption[];
-  value: PaymentOption;
-  onValueChange: (value: PaymentOption) => void;
-  className: string;
-}) {
-  const handleValueChange = (identifier: string) => {
-    const selectedOption = options.find(
-      (option) => option.identifier === identifier
-    );
-    if (selectedOption) {
-      onValueChange(selectedOption);
-    }
-  };
+export const PaymentSelect = memo(
+  ({
+    options,
+    value,
+    onValueChange,
+    className,
+  }: {
+    options: PaymentOption[];
+    value: PaymentOption;
+    onValueChange: (value: PaymentOption) => void;
+    className: string;
+  }) => {
+    const handleValueChange = (identifier: string) => {
+      const selectedOption = options.find(
+        (option) => option.identifier === identifier
+      );
+      if (selectedOption) {
+        onValueChange(selectedOption);
+      }
+    };
 
-  return (
-    <Select value={value.identifier} onValueChange={handleValueChange}>
-      <SelectTrigger className={cn("h-auto p-3", className)}>
-        <PaymentSelectItem
-          identifier={value.identifier}
-          paymentMethod={value.paymentMethod}
-        />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          {options.map((option) => (
-            <SelectItem
-              key={option.identifier}
-              value={option.identifier}
-              className="focus:bg-primary-light grid"
-            >
-              <PaymentSelectItem
-                identifier={option.identifier}
-                paymentMethod={option.paymentMethod}
-              />
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
-  );
-}
+    return (
+      <Select value={value.identifier} onValueChange={handleValueChange}>
+        <SelectTrigger className={cn("h-auto p-3", className)}>
+          <PaymentSelectItem
+            identifier={value.identifier}
+            paymentMethod={value.paymentMethod}
+          />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {options.map((option) => (
+              <SelectItem
+                key={option.identifier}
+                value={option.identifier}
+                className="focus:bg-primary-light grid"
+              >
+                <PaymentSelectItem
+                  identifier={option.identifier}
+                  paymentMethod={option.paymentMethod}
+                />
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    );
+  }
+);
 
 export function ChatDialogPaymentCard({
   title,

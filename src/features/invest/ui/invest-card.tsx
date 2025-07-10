@@ -1,5 +1,5 @@
 import { cn } from "@/shared/lib/css/tailwind";
-import type { Investment } from "../model/investment";
+import { getInvestmentIcon, type Investment } from "../model/investment";
 import { formatChangePercent, formatNumber } from "@/shared/lib/js/numbers";
 
 interface InvestCardProps {
@@ -24,7 +24,7 @@ export function InvestCard({
     >
       <div className="flex items-center gap-2.5">
         <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center">
-          {investment.icon}
+          {getInvestmentIcon(investment.symbol)}
         </div>
         <span className="text-base font-semibold text-foreground">
           {investment.name}
@@ -33,11 +33,11 @@ export function InvestCard({
 
       <div className="flex flex-col items-end gap-[1px]">
         <p className="text-base font-semibold text-foreground">
-          ${formatNumber(investment.price, 2)}
+          ${formatNumber(investment.amount * investment.rate, 2)}
         </p>
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-medium text-foreground/50">
-            {formatNumber(investment.amount, 1)} {investment.currency}
+            {formatNumber(investment.amount, 2)} {investment.currency}
           </span>
           <div className="w-[5px] h-[5px] bg-dot rounded-full" />
           <span className="text-xs font-medium text-foreground/50">

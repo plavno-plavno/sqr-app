@@ -1,7 +1,6 @@
 import {
   AttachmentType,
   ChatInput,
-  type ChatMessage,
   ChatMessageList,
   ChatMessageRole,
   ChatMessageType,
@@ -12,14 +11,13 @@ import { useAudio, useWSConnection } from "@/features/ws-connection";
 import voice from "@/shared/assets/animations/voice.json";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import { cn } from "@/shared/lib/css/tailwind";
-import type { OperationInfo } from "@/shared/model/intents";
 import { type PathParams, ROUTES } from "@/shared/model/routes";
 import { ErrorDialog } from "@/shared/ui/error-dialog";
 import { Header, NewChatHeaderButton } from "@/shared/ui/header";
 import { Button } from "@/shared/ui/kit/button";
 import { SidebarTrigger } from "@/shared/ui/kit/sidebar";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   href,
   Navigate,
@@ -29,8 +27,8 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
-import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
 import { ChatDialog } from "./compose/chat-dialog";
+import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
 
 const ChatPage = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
@@ -54,12 +52,10 @@ const ChatPage = () => {
     wsError,
     initWSConnection,
     sendTextCommand,
-    sendConfirmationCommand,
     setWsError,
   } = useWSConnection();
 
   const {
-    audioManager,
     audioError,
     isRecording,
     startRecording,
@@ -83,6 +79,13 @@ const ChatPage = () => {
     if (!chatId) return;
     return initWSConnection(chatId);
   }, [chatId, initWSConnection]);
+
+  // Stop recording when component unmounts
+  useEffect(() => {
+    return () => {
+      if (isRecording) stopRecording();
+    };
+  }, [stopRecording, isRecording]);
 
   // Activate mic when user clicks on mic button in home page
   useEffect(() => {
@@ -113,19 +116,6 @@ const ChatPage = () => {
       setLastMessageMeta(chatId, { start: "-1", end: "-1" });
     };
   }, [chatId, setLastMessageMeta]);
-
-  const handleDialogConfirm = useCallback(
-    (message: ChatMessage, operationInfo: OperationInfo) => {
-      addMessage(chatId!, message);
-      sendConfirmationCommand(operationInfo);
-      audioManager?.toggleMute(false);
-    },
-    [addMessage, chatId, sendConfirmationCommand, audioManager]
-  );
-
-  const handleDialogClose = useCallback(() => {
-    audioManager?.toggleMute(false);
-  }, [audioManager]);
 
   if (!chatId) {
     return <Navigate to={ROUTES.HOME} />;
@@ -182,9 +172,7 @@ const ChatPage = () => {
 
       <ChatMessageList>
         {messages?.map((message) => (
-          <div id={message.id} key={message.id}>
-            <ChatMessageComponent message={message} />
-          </div>
+          <ChatMessageComponent key={message.id} message={message} />
         ))}
       </ChatMessageList>
 
@@ -216,10 +204,7 @@ const ChatPage = () => {
         </div>
       )}
 
-      <ChatDialog
-        handleConfirm={handleDialogConfirm}
-        handleClose={handleDialogClose}
-      />
+      <ChatDialog />
 
       <ErrorDialog
         open={errorDialogOpen}

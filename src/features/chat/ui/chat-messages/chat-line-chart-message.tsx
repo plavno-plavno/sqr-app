@@ -120,16 +120,16 @@ export function ChatLineChartMessage({
       </ChartContainer>
       {period === PeriodType.MULTIPLE && (
         <div className="flex items-center justify-between">
-          {xAxisData.map((item) => (
+          {xAxisData?.map((item) => (
             <div
-              key={item.type}
+              key={item?.type}
               className={cn(
                 "text-base font-semibold cursor-pointer p-2.5 rounded-full",
-                chartType === item.type && "bg-primary"
+                chartType === item?.type && "bg-primary"
               )}
-              onClick={() => setChartType(item.type as keyof LineChartData)}
+              onClick={() => setChartType(item?.type as keyof LineChartData)}
             >
-              {item.label}
+              {item?.label}
             </div>
           ))}
         </div>

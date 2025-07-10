@@ -2,13 +2,14 @@ import type { WebSocketConnection } from "@/shared/lib/websocket/websocket-conne
 import { useAudioStore } from "./audio-store";
 import { useWebSocketStore } from "./websocket-store";
 import { AudioWorkletManager } from "@/shared/lib/audio/audio-worklet-processor";
+import { useCallback } from "react";
 
 interface UseAudioProps {
   onMicLevelChange?: (level: number) => void;
 }
 
-export const useAudio = (config: UseAudioProps) => {
-  const { onMicLevelChange } = config;
+export const useAudio = (config?: UseAudioProps) => {
+  const { onMicLevelChange } = config || {};
 
   const connection = useWebSocketStore.use.connection();
 
@@ -83,18 +84,21 @@ export const useAudio = (config: UseAudioProps) => {
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = useCallback(() => {
     audioManager?.stop();
     clearAudio();
-  };
+  }, [audioManager, clearAudio]);
+
+  const toggleMute = useCallback((mute: boolean) => {
+    audioManager?.toggleMute(mute);
+  }, [audioManager]);
 
   return {
     isRecording,
-    audioQueue,
-    audioManager,
     audioError,
     setAudioError,
     startRecording,
     stopRecording,
+    toggleMute,
   };
 };

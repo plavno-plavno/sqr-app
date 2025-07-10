@@ -28,7 +28,7 @@ export function ChatSpendingInsightsMessage({
   const hasSubscriptions =
     subscription_analysis &&
     subscription_analysis.total_monthly > 0 &&
-    subscription_analysis.subscriptions.length > 0;
+    subscription_analysis.subscriptions?.length > 0;
 
   const handleSubscriptionsClick = (isDeactivate: boolean) => {
     setShowSubscriptions(chatId, message.id, isDeactivate);
@@ -44,7 +44,7 @@ export function ChatSpendingInsightsMessage({
           <ChatTextMessage
             role={ChatMessageRole.AGENT}
             text={`I also found you have hidden subscriptions 
-            that cost $${subscription_analysis.total_monthly} a month,
+            that cost $${subscription_analysis?.total_monthly} a month,
            want to look into it and disable them?`}
           />
 
@@ -69,12 +69,12 @@ export function ChatSpendingInsightsMessage({
       )}
 
       {showSubscriptions &&
-        subscription_analysis.subscriptions.map((subscription) => (
+        subscription_analysis?.subscriptions?.map((subscription) => (
           <ChatSubscriptionMessage
-            key={subscription.name}
-            title={subscription.name}
-            amount={`$${subscription.amount.toFixed(2)}`}
-            period={subscription.frequency}
+            key={subscription?.name}
+            title={subscription?.name}
+            amount={`$${subscription?.amount?.toFixed(2) || 0}`}
+            period={subscription?.frequency}
           />
         ))}
     </div>

@@ -224,6 +224,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
     );
   }
 
+  if (type === ChatMessageType.HIDDEN) {
+    return null;
+  }
+
   return (
     <p className="text-2xl">
       Unknown message type or intent: {type}, {intent?.intent}

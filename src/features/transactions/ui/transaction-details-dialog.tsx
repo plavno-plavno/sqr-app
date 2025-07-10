@@ -2,6 +2,7 @@ import ImageFallbackIcon from "@/shared/assets/icons/image-fallback-icon.svg?rea
 import { AdaptiveDrawer } from "@/shared/ui/adaptive-drawer";
 import { Button } from "@/shared/ui/kit/button";
 import type { Transaction } from "../model/transaction";
+import { PaymentMethod } from "@/features/finance";
 
 interface TransactionDetailsProps {
   open: boolean;
@@ -16,16 +17,16 @@ function TransactionDetails({
   transaction: Transaction;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { amount, date, username, details } = transaction;
+  const { amount, date, details } = transaction;
 
   return (
     <div className="flex flex-col gap-8 my-7.5">
       <div>
         <h3 className="text-[32px] font-semibold">-${amount}</h3>
         <p className="flex gap-1.5 items-center text-xs text-foreground/50 font-medium">
-          {date.toLocaleDateString()}
+          {new Date(date).toLocaleDateString()}
           <span className="w-[5px] h-[5px] bg-dot rounded-full" />
-          {date.toLocaleTimeString()}
+          {new Date(date).toLocaleTimeString()}
         </p>
       </div>
 
@@ -35,21 +36,30 @@ function TransactionDetails({
             key={name}
             className="flex items-center justify-between bg-background rounded-[14px] p-4"
           >
-            <p className="text-base font-medium">{name}</p>
+            <p className="text-base font-medium">
+              {name === PaymentMethod.CreditCard ||
+              name === PaymentMethod.Crypto
+                ? "Payment"
+                : name}
+            </p>
+
             <div className="text-end">
-              {name === "Recipient" && <p className="font-bold">{username}</p>}
+              {name !== PaymentMethod.CreditCard &&
+                name !== PaymentMethod.Crypto && (
+                  <p className="text-base font-light">{value}</p>
+                )}
 
-              {name !== "Card" && (
-                <p className="text-base font-light">{value}</p>
-              )}
-
-              {name === "Card" && (
+              {(name === PaymentMethod.CreditCard ||
+                name === PaymentMethod.Crypto) && (
                 <div className="flex items-center gap-1">
                   <span className="flex items-center justify-center w-4 h-4 bg-accent rounded-full">
                     <ImageFallbackIcon width={8} height={8} />
                   </span>
                   <span className="text-sm font-semibold">
-                    Credit card ****{value.slice(-4)}
+                    {name === PaymentMethod.CreditCard &&
+                      `Credit card ***${value.slice(-4)}`}
+                    {name === PaymentMethod.Crypto &&
+                      `Crypto wallet ${value.slice(0, 4)}...${value.slice(-4)}`}
                   </span>
                 </div>
               )}

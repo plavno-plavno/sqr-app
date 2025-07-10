@@ -19,14 +19,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 
-type ConfirmData = Partial<BuyBTCOutput["purchase_details"]> & {
+export type BuyBtcConfirmData = Partial<BuyBTCOutput["purchase_details"]> & {
   payment: PaymentOption;
 };
 
 interface ChatBuyBtcDialogProps {
   data: BuyBTCOutput;
   open: boolean;
-  onConfirm: (data: ConfirmData) => void;
+  onConfirm: (data: BuyBtcConfirmData) => void;
   onCancel: () => void;
 }
 
@@ -35,7 +35,7 @@ const formSchema = z.object({
     .number({
       required_error: "Amount is required",
     })
-    .min(0.1, "Minimum amount is 0.1 BTC")
+    .min(0, "Minimum amount is 0 BTC")
     .max(1, "Maximum amount is 1 BTC"),
   payment: z.object({
     identifier: z.string().min(1, "Payment method is required"),

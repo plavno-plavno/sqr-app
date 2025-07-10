@@ -8,3 +8,4 @@ export {
   PaymentMethod,
   type PaymentOption,
 } from "./model/finance-account";
+export { useFinanceStore } from "./model/finance-store";

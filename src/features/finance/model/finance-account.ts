@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 
 export enum PaymentMethod {
-  CreditCard = "Credit card",
+  CreditCard = "Card",
   Crypto = "Crypto",
 }
 

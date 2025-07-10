@@ -11,10 +11,7 @@ import {
   useChatStore,
   type ImageState,
 } from "@/features/chat";
-import {
-  LastTransactionsCarousel,
-  lastTransactionsMock,
-} from "@/features/transactions";
+import { LastTransactionsCarousel, useTransactionStore } from "@/features/transactions";
 import { ROUTES } from "@/shared/model/routes";
 import { Button } from "@/shared/ui/kit/button";
 import Lottie from "lottie-react";
@@ -23,8 +20,12 @@ import { v4 as uuidv4 } from "uuid";
 import sphere from "@/shared/assets/animations/sphere.json";
 import { Header, NewChatHeaderButton } from "@/shared/ui/header";
 import { SidebarTrigger } from "@/shared/ui/kit/sidebar";
+import { useFinanceStore } from "@/features/finance";
+import { formatNumber } from "@/shared/lib/js/numbers";
 
 const HomePage = () => {
+  const balance = useFinanceStore.use.balance();
+  const transactions = useTransactionStore.use.transactions();
   const createChat = useChatStore.use.createChat();
   const addMessage = useChatStore.use.addMessage();
   const navigate = useNavigate();
@@ -93,7 +94,9 @@ const HomePage = () => {
       {/* Balance */}
       <div className="flex flex-col gap-1 pt-4.5">
         <p className="text-sm text-foreground/50 font-semibold">Your balance</p>
-        <h3 className="text-[32px] font-semibold">$5060,45</h3>
+        <h3 className="text-[32px] font-semibold">
+          ${formatNumber(balance, 2)}
+        </h3>
       </div>
 
       {/* AI Circle */}
@@ -119,7 +122,7 @@ const HomePage = () => {
       {/* Last transactions carousel */}
       <LastTransactionsCarousel
         className="mt-4"
-        transactions={lastTransactionsMock}
+        transactions={transactions}
       />
 
       {/* Actions carousel */}

@@ -19,14 +19,14 @@ import {
   PaymentSelect,
 } from "@/features/chat";
 
-type ConfirmData = Partial<TransferMoneyOutput["transfer_details"]> & {
+export type MoneyTransferConfirmData = Partial<TransferMoneyOutput["transfer_details"]> & {
   payment: PaymentOption;
 };
 
 interface ChatMoneyTransferDialogProps {
   data: TransferMoneyOutput;
   open: boolean;
-  onConfirm: (data: ConfirmData) => void;
+  onConfirm: (data: MoneyTransferConfirmData) => void;
   onCancel: () => void;
 }
 

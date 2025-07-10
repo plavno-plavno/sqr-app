@@ -23,11 +23,14 @@ export function TransactionCard({
     >
       <div>
         <p className="flex gap-1.5 items-center text-xs text-foreground/50 font-medium">
-          {transaction.date.toLocaleDateString()}
+          {new Date(transaction.date).toLocaleDateString()}
           <span className="w-[5px] h-[5px] bg-dot rounded-full" />
-          {transaction.date.toLocaleTimeString()}
+          {new Date(transaction.date).toLocaleTimeString()}
         </p>
-        <p className="text-base font-semibold">{transaction.username}</p>
+        <p className="text-base font-semibold">
+          {transaction.details.find((detail) => detail.name === "Recipient")
+            ?.value}
+        </p>
       </div>
 
       <span className="text-2xl font-semibold">-{transaction.amount}$</span>

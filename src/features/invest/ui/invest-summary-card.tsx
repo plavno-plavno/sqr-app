@@ -1,10 +1,12 @@
 import { cn } from "@/shared/lib/css/tailwind";
-import type { InvestSummary } from "../model/investment";
 import ArrowUpIcon from "@/shared/assets/icons/arrow-up-icon.svg?react";
 import { formatNumber } from "@/shared/lib/js/numbers";
 
 interface InvestSummaryCardProps {
-  summary: InvestSummary;
+  summary: {
+    amount: number;
+    change: number;
+  };
   className?: string;
 }
 
@@ -18,9 +20,9 @@ export function InvestSummaryCard({
         Total investments
       </p>
       <p className="text-[32px] font-semibold text-foreground">
-        ${summary.amount}
+        ${formatNumber(summary.amount, 2)}
       </p>
-      
+
       <div className="flex items-center gap-1.5 bg-primary-light rounded-full px-2.5 py-1">
         <ArrowUpIcon />
         <span className="text-sm font-semibold text-foreground">
@@ -29,4 +31,4 @@ export function InvestSummaryCard({
       </div>
     </div>
   );
-} 
+}

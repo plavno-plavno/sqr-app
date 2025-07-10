@@ -8,6 +8,7 @@ export enum ChatMessageType {
   TEXT = "text",
   SUCCESS = "success",
   CONTACTS = "contacts",
+  HIDDEN = "hidden",
 }
 
 export enum ChatMessageRole {
@@ -33,11 +34,12 @@ export interface MessageMeta {
 export interface ChatMessage {
   id: string;
   text?: string;
-  isTextCorrected?: boolean;
   intent?: IntentResponse;
   body?: Attachment;
   type: ChatMessageType | IntentType;
   role: ChatMessageRole;
+
+  isTextCorrected?: boolean;
 
   // Only for spending insights message
   subscriptionsClicked?: boolean;
