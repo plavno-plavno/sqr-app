@@ -8,12 +8,14 @@ import { ContactsSearchInput } from "../ui/contacts-search-input";
 
 interface ContactsSearchProps {
   contacts: Contact[];
+  disabled?: boolean;
   className?: string;
   onContactClick?: (contact: Contact) => void;
 }
 
 export function ContactsSearch({
   contacts,
+  disabled,
   className,
   onContactClick,
 }: ContactsSearchProps) {
@@ -66,6 +68,7 @@ export function ContactsSearch({
               <ContactCard
                 key={contact.id}
                 contact={contact}
+                disabled={disabled}
                 onClick={() => handleContactClick(contact)}
               />
             ))}

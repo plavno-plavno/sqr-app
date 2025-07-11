@@ -201,12 +201,17 @@ export const useWSConnection = () => {
     // Audio response from agent
     if ("audio" in segments) {
       const audioResponse = segments as AudioResponse;
+
+      let newAudioQueue;
+
       if (!audioQueue) {
-        setAudioQueue(
-          new AudioQueueManager(undefined, audioManager || undefined)
-        );
+        newAudioQueue = new AudioQueueManager(undefined, audioManager || undefined);
+        setAudioQueue(newAudioQueue);
+      } else {
+        newAudioQueue = audioQueue;
       }
-      audioQueue?.addToQueue(audioResponse.audio);
+
+      newAudioQueue?.addToQueue(audioResponse);
     }
   };
 

@@ -128,7 +128,7 @@ const HomePage = () => {
       {/* Actions carousel */}
       <ActionsCarousel
         className="mt-5.5"
-        actions={quickActionsMock}
+        actions={quickActionsMock()}
         onCardClick={handleQuickActionClick}
       />
 

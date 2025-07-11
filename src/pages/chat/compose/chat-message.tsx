@@ -8,6 +8,7 @@ import {
   ChatContactsMessage,
   ChatImageMessage,
   ChatLineChartMessage,
+  ChatMessageRole,
   ChatMessageType,
   ChatMoneyInfoMessage,
   ChatMoneyTransferMessage,
@@ -35,7 +36,7 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
-  const { sendTextCommand } = useWSConnection();
+  const { isConnected, sendTextCommand } = useWSConnection();
   const addMessage = useChatStore.use.addMessage();
   const { text, type, role, body, intent } = message;
 
@@ -85,10 +86,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
       <ChatContactsMessage>
         <ContactsCarousel
           contacts={contactsMock}
+          disabled={!isConnected}
           onContactClick={handleContactClick}
         />
         <ContactsSearch
           contacts={contactsMock}
+          disabled={!isConnected}
           onContactClick={handleContactClick}
         />
       </ChatContactsMessage>
@@ -97,12 +100,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   if (type === IntentType.ABILITIES) {
     return (
-      <div className="flex flex-col gap-4">
-        <p className="text-2xl text-agent-message-foreground">
-          Sure, here's a list of possibilities:
-        </p>
+      <>
+        <ChatTextMessage
+          text="Sure, here's a list of possibilities:"
+          role={ChatMessageRole.AGENT}
+        />
         <ChatButtonsList
-          list={abilitiesMock}
+          list={abilitiesMock()}
+          disabled={!isConnected}
           onItemClick={(action) => {
             if (action.messages) {
               action.messages.forEach((message) => {
@@ -115,7 +120,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             }
           }}
         />
-      </div>
+      </>
     );
   }
 

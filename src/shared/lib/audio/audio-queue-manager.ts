@@ -1,7 +1,15 @@
+import type { AudioResponse } from "@/shared/model/websocket";
 import type { AudioWorkletManager } from "./audio-worklet-processor";
 
 export class AudioQueueManager {
-  private audioQueue: string[] = [];
+  // private audioQueue: AudioResponse[] = [];
+  private audioStreams: Map<number, Map<number, AudioResponse>> = new Map();
+  private currentStreamId: number | null = null;
+  private currentChunkId: number = 0;
+  private streamTimeouts: Map<number, NodeJS.Timeout> = new Map();
+  private streamEndMap: Map<number, number> = new Map();
+  private readonly STREAM_TIMEOUT_MS = 1000;
+
   private isPlaying: boolean = false;
   private audioContext: AudioContext | null = null;
   private onLevel?: (level: number) => void;
@@ -32,159 +40,290 @@ export class AudioQueueManager {
     if (!this.audioContext || this.audioWorkletNode) return;
 
     try {
-      await this.audioContext.audioWorklet.addModule('/audio-buffer-processor.js');
-      
-      this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'audio-buffer-processor', {
-        processorOptions: { bufferSize: 8192 }
-      });
+      await this.audioContext.audioWorklet.addModule(
+        "/audio-buffer-processor.js"
+      );
+
+      this.audioWorkletNode = new AudioWorkletNode(
+        this.audioContext,
+        "audio-buffer-processor",
+        {
+          processorOptions: { bufferSize: 8192 },
+        }
+      );
 
       this.audioWorkletNode.port.onmessage = (event) => {
-        if (event.data.type === 'audioData' && this.audioWorkletManager) {
+        if (event.data.type === "audioData" && this.audioWorkletManager) {
           const bufferCopy = event.data.buffer;
           this.audioWorkletManager.updatePlaybackBuffer(bufferCopy);
         }
       };
     } catch (error) {
-      console.error('Failed to initialize AudioWorklet:', error);
+      console.error("Failed to initialize AudioWorklet:", error);
     }
   }
 
-  public addToQueue(audioData: string) {
-    if (!this.audioContext) {
+  private setupStreamTimeout(audioData: AudioResponse) {
+    clearTimeout(this.streamTimeouts.get(audioData.stream_id));
+
+    const timeout = setTimeout(() => {
+      this.streamEndMap.set(audioData.stream_id, audioData.chunk_id);
+    }, this.STREAM_TIMEOUT_MS);
+
+    this.streamTimeouts.set(audioData.stream_id, timeout);
+  }
+
+  public addToQueue(audioData: AudioResponse) {
+    // If stopping, clear all streams and start new stream
+    if (this.isStopping) {
+      this.audioStreams.clear();
+      this.audioStreams.set(
+        audioData.stream_id,
+        new Map([[audioData.chunk_id, audioData]])
+      );
+      this.currentStreamId = audioData.stream_id;
+      this.currentChunkId = audioData.chunk_id;
       return;
     }
-    if (this.isStopping) {
-      this.audioQueue = [];
-      this.audioQueue.push(audioData);
-    } else {
-      this.audioQueue.push(audioData);
-      if (!this.isPlaying) {
+
+    // Add chunk to appropriate stream
+    const streamChunksMap =
+      this.audioStreams.get(audioData.stream_id) || new Map();
+    streamChunksMap.set(audioData.chunk_id, audioData);
+    this.audioStreams.set(audioData.stream_id, streamChunksMap);
+
+    // If this is the first chunk, update current stream id and expected chunk id
+    if (this.currentStreamId === null) {
+      this.currentStreamId = audioData.stream_id;
+      this.currentChunkId = audioData.chunk_id;
+    }
+
+    // Можно будет удалить, когда обновится сервер
+    this.setupStreamTimeout(audioData);
+
+    // If not playing, start playback
+    if (!this.isPlaying) {
+      this.playNext();
+    }
+  }
+
+  private async playNext() {
+    // Check if we can proceed with playback
+    if (!this.checkCanPlay()) return;
+
+    // Handle AudioContext state
+    if (!(await this.handleAudioContextState())) return;
+
+    // Get and validate audio data
+    const audioData = this.getCurrentAudioChunk();
+
+    if (!audioData) return;
+    this.isPlaying = true;
+
+    console.log("audioData", audioData);
+
+    try {
+      // Process audio data and setup complete audio graph
+      const audioNodes = await this.processAndSetupAudioGraph(audioData);
+
+      // Setup level monitoring
+      this.setupLevelMonitoring(audioNodes.analyser);
+
+      // Setup playback handlers and start playback
+      this.setupPlaybackHandlers(audioNodes.source);
+
+      audioNodes.source.start(0);
+    } catch (error) {
+      console.error("Error playing audio segment:", error);
+      this.disconnectAndClearNodes();
+
+      if (this.currentStreamId) {
+        this.audioStreams
+          .get(this.currentStreamId)
+          ?.delete(this.currentChunkId);
         this.playNext();
       }
     }
   }
 
-  private async playNext() {
-    if (this.isStopping) return;
+  private checkCanPlay(): boolean {
+    if (this.isStopping) return false;
 
-    if (this.audioQueue.length === 0) {
+    if (this.audioStreams.size === 0) {
       this.isPlaying = false;
       this.disconnectAndClearNodes();
-      return;
+      return false;
     }
 
     if (!this.audioContext) {
-      this.audioQueue = [];
+      this.audioStreams.clear();
       this.isPlaying = false;
-      return;
+      return false;
     }
+
+    return true;
+  }
+
+  private async handleAudioContextState(): Promise<boolean> {
+    if (!this.audioContext) return false;
 
     if (this.audioContext.state === "suspended") {
       try {
         await this.audioContext.resume();
       } catch (e) {
         console.error("Failed to resume AudioContext:", e);
-        this.audioQueue = [];
+        this.audioStreams.clear();
         this.isPlaying = false;
         this.disconnectAndClearNodes();
         this.onLevel?.(0);
-        return;
+        return false;
       }
     } else if (this.audioContext.state === "closed") {
-      this.audioQueue = [];
+      this.audioStreams.clear();
       this.isPlaying = false;
       this.disconnectAndClearNodes();
-      return;
+      return false;
     }
 
-    this.isPlaying = true;
-    const audioData = this.audioQueue.shift();
+    return true;
+  }
 
-    if (!audioData) {
-      this.playNext();
-      return;
+  private getCurrentAudioChunk(): AudioResponse | null {
+    if (!this.currentStreamId) return null;
+
+    const currentStream = this.audioStreams.get(this.currentStreamId);
+    const nextChunk = currentStream?.get(this.currentChunkId);
+
+    return nextChunk || null;
+  }
+
+  private async processAndSetupAudioGraph(audioData: AudioResponse): Promise<{
+    source: AudioBufferSourceNode;
+    gainNode: GainNode;
+    analyser: AnalyserNode;
+  }> {
+    // Process audio data
+    const arrayBuffer = await this.decodeBase64Audio(audioData.audio);
+    const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+    await this.initializeAudioWorklet();
+
+    // Create audio graph nodes
+    const source = this.audioContext!.createBufferSource();
+    source.buffer = audioBuffer;
+
+    const gainNode = this.audioContext!.createGain();
+    gainNode.gain.setValueAtTime(0.3, this.audioContext!.currentTime);
+
+    const analyser = this.audioContext!.createAnalyser();
+    analyser.fftSize = 256;
+
+    // Store current nodes
+    this.currentSourceNode = source;
+    this.currentGainNode = gainNode;
+    this.currentAnalyserNode = analyser;
+
+    // Connect audio graph
+    source.connect(gainNode);
+    gainNode.connect(analyser);
+    analyser.connect(this.audioContext!.destination);
+
+    if (this.audioWorkletNode) {
+      gainNode.connect(this.audioWorkletNode);
+      this.audioWorkletNode.connect(this.audioContext!.destination);
     }
 
-    try {
-      const arrayBuffer = await this.decodeBase64Audio(audioData);
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-      await this.initializeAudioWorklet();
+    return { source, gainNode, analyser };
+  }
 
-      const source = this.audioContext.createBufferSource();
-      source.buffer = audioBuffer;
+  private setupLevelMonitoring(analyser: AnalyserNode) {
+    if (!this.onLevel) return;
 
-      const gainNode = this.audioContext.createGain();
-      gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    const updateLevel = (currentAnalyser: AnalyserNode) => {
+      if (
+        !this.isPlaying ||
+        this.currentAnalyserNode !== currentAnalyser ||
+        !this.audioContext ||
+        this.audioContext.state !== "running"
+      ) {
+        this.onLevel?.(0);
+        return;
+      }
 
-      const analyser = this.audioContext.createAnalyser();
-      analyser.fftSize = 256;
+      currentAnalyser.getByteTimeDomainData(dataArray);
+      let sumSquares = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const sample = (dataArray[i]! - 128) / 128;
+        sumSquares += sample * sample;
+      }
+      const rms = Math.sqrt(sumSquares / dataArray.length);
 
-      this.currentSourceNode = source;
-      this.currentGainNode = gainNode;
-      this.currentAnalyserNode = analyser;
+      if (this.onLevel) this.onLevel(rms);
 
-      // Подключение аудио графа
-      source.connect(gainNode);
-      gainNode.connect(analyser);
-      analyser.connect(this.audioContext.destination);
+      requestAnimationFrame(() => updateLevel(currentAnalyser));
+    };
+
+    requestAnimationFrame(() => updateLevel(analyser));
+  }
+
+  private getNextStreamId(): number | null {
+    if (this.audioStreams.size === 0) {
+      return null;
+    }
+
+    const streamIds = Array.from(this.audioStreams.keys());
+    const minStreamId = Math.min(...streamIds);
+
+    return minStreamId;
+  }
+
+  private setupPlaybackHandlers(source: AudioBufferSourceNode) {
+    source.onended = () => {
+      this.isPlaying = false;
       if (this.audioWorkletNode) {
-        gainNode.connect(this.audioWorkletNode);
-        this.audioWorkletNode.connect(this.audioContext.destination);
+        this.audioWorkletNode.disconnect();
       }
+      if (this.audioWorkletManager) {
+        this.audioWorkletManager.stopPlayback();
+      }
+      if (!this.isStopping) {
+        // Когда обновиться сервер, нужно будет добавть тут проверку на последний чанк
+        // const currentChunk = this.getNextAudioData();
+        // if (currentChunk.isLast) {
+        // this.audioStreams.delete(this.currentStreamId);
+        // this.currentStreamId = this.getNextStreamId();
+        // this.currentChunkId = 0;
+        // }
 
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      const updateLevel = (currentAnalyser: AnalyserNode) => {
         if (
-          !this.isPlaying ||
-          this.currentAnalyserNode !== currentAnalyser ||
-          !this.audioContext ||
-          this.audioContext.state !== "running"
+          this.currentStreamId &&
+          this.streamEndMap.get(this.currentStreamId) === this.currentChunkId
         ) {
-          this.onLevel?.(0);
-          return;
+          this.audioStreams.delete(this.currentStreamId);
+          this.currentStreamId = this.getNextStreamId();
+          console.log("delete stream", this.currentStreamId);
+          this.currentChunkId = 0;
+        } else {
+          this.currentChunkId++;
         }
 
-        currentAnalyser.getByteTimeDomainData(dataArray);
-        let sumSquares = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          const sample = (dataArray[i]! - 128) / 128;
-          sumSquares += sample * sample;
-        }
-        const rms = Math.sqrt(sumSquares / dataArray.length);
-
-        if (this.onLevel) this.onLevel(rms);
-
-        requestAnimationFrame(() => updateLevel(currentAnalyser));
-      };
-
-      if (this.onLevel) {
-        requestAnimationFrame(() => updateLevel(analyser));
+        this.disconnectAndClearNodes();
+        this.playNext();
       }
-
-      source.onended = () => {
-        if (this.audioWorkletNode) {
-          this.audioWorkletNode.disconnect();
-        }
-        if (this.audioWorkletManager) {
-          this.audioWorkletManager.stopPlayback();
-        }
-        if (!this.isStopping) {
-          this.disconnectAndClearNodes();
-          this.playNext();
-        }
-      };
-
-      source.start(0);
-    } catch (error) {
-      console.error("Error playing audio segment:", error);
-      this.disconnectAndClearNodes();
-      this.playNext();
-    }
+    };
   }
 
   public stop() {
     this.isStopping = true;
-    this.audioQueue = [];
+    this.audioStreams.clear();
+    this.currentStreamId = null;
+    this.currentChunkId = 0;
+
+    this.streamTimeouts.forEach((timeout) => {
+      clearTimeout(timeout);
+    });
+    this.streamTimeouts.clear();
+    this.streamEndMap.clear();
 
     if (
       this.currentGainNode &&
@@ -207,7 +346,7 @@ export class AudioQueueManager {
         this.onLevel?.(0);
         this.isStopping = false;
 
-        if (this.audioQueue.length > 0) {
+        if (this.audioStreams.size > 0) {
           this.playNext();
         }
       }, this.fadeDuration * 1000);
@@ -217,7 +356,7 @@ export class AudioQueueManager {
       this.onLevel?.(0);
       this.isStopping = false;
 
-      if (this.audioQueue.length > 0) {
+      if (this.audioStreams.size > 0) {
         this.playNext();
       }
     }
@@ -284,4 +423,3 @@ export class AudioQueueManager {
     this.onLevel?.(0);
   }
 }
-

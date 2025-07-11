@@ -5,12 +5,14 @@ import { ContactCard } from "../ui/contact-card";
 
 interface ContactsCarouselProps {
   contacts: Contact[];
+  disabled?: boolean;
   className?: string;
   onContactClick: (contact: Contact) => void;
 }
 
 export function ContactsCarousel({
   contacts,
+  disabled,
   className,
   onContactClick,
 }: ContactsCarouselProps) {
@@ -20,6 +22,7 @@ export function ContactsCarousel({
         <CarouselItem className="basis-2/3 pl-2" key={contact.id}>
           <ContactCard
             contact={contact}
+            disabled={disabled}
             onClick={() => onContactClick(contact)}
           />
         </CarouselItem>
