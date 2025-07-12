@@ -8,8 +8,7 @@ interface AudioProcessorOptions {
   onVoiceActivity?: (isActive: boolean) => void; // Новый колбэк для VAD
   vadThreshold?: number; // Порог для определения голоса
   vadSilenceFrames?: number; // Количество тихих фреймов для определения тишины
-  // eslint-disable-next-line
-  audioQueue?: any;
+  onStopAudioQueue?: (() => void) | null;
 }
 export class AudioWorkletManager {
   private audioContext: AudioContext | null = null;
@@ -59,7 +58,7 @@ export class AudioWorkletManager {
       onVoiceActivity: () => {},
       vadThreshold: 0.003,
       vadSilenceFrames: 10,
-      audioQueue: {},
+      onStopAudioQueue: null,
       ...options
     };
   }
@@ -134,8 +133,8 @@ export class AudioWorkletManager {
             this.speechDuration = (Date.now() - this.speechStartTime) / 1000;
           }, 100);
           this.options.onVoiceActivity(true);
-          if (this.options.audioQueue?.current) {
-            this.options.audioQueue.current.stop();
+          if (this.options.onStopAudioQueue) {
+            this.options.onStopAudioQueue();
             this.voicestopFlag = true;
           }
           this.echoNode?.port.postMessage({ isVoiceActive: true });

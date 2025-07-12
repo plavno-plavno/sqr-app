@@ -14,7 +14,6 @@ export const useAudio = (config?: UseAudioProps) => {
   const connection = useWebSocketStore.use.connection();
 
   const isRecording = useAudioStore.use.isRecording();
-  const audioQueue = useAudioStore.use.audioQueue();
   const audioManager = useAudioStore.use.audioManager();
   const audioError = useAudioStore.use.audioError();
 
@@ -68,7 +67,9 @@ export const useAudio = (config?: UseAudioProps) => {
           onError: onError,
           onLevel: onMicLevelChange,
           onVoiceActivity: onVoiceEnd,
-          audioQueue: audioQueue,
+          onStopAudioQueue: () => {
+            useAudioStore.getState().audioQueue?.stop();
+          },
         });
         setAudioManager(newAudioManager);
       } else {
@@ -89,9 +90,12 @@ export const useAudio = (config?: UseAudioProps) => {
     clearAudio();
   }, [audioManager, clearAudio]);
 
-  const toggleMute = useCallback((mute: boolean) => {
-    audioManager?.toggleMute(mute);
-  }, [audioManager]);
+  const toggleMute = useCallback(
+    (mute: boolean) => {
+      audioManager?.toggleMute(mute);
+    },
+    [audioManager]
+  );
 
   return {
     isRecording,

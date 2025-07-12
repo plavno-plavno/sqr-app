@@ -148,7 +148,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     const { transfer_details } = intent.output;
     return (
       <ChatMoneyTransferMessage
-        amount={`$${transfer_details?.amount?.toFixed(2)}`}
+        amount={`$${Number(transfer_details?.amount || 0).toFixed(2)}`}
         recipient={transfer_details?.recipient}
         date={new Date(transfer_details?.scheduled_time)}
       />
@@ -220,7 +220,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <ChatMoneyInfoMessage
               key={index}
               title={category?.name}
-              amount={`${category?.amount?.toFixed(2)}`}
+              amount={`${Number(category?.amount || 0).toFixed(2)}`}
               trend={category?.trend}
             />
           ))}

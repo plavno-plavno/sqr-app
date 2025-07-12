@@ -1,5 +1,10 @@
 import type { AudioResponse } from "@/shared/model/websocket";
-import type { AudioWorkletManager } from "./audio-worklet-processor";
+
+export interface AudioQueueManagerOptions {
+  onLevel?: (level: number) => void;
+  onUpdatePlaybackBuffer?: (buffer: Float32Array) => void;
+  onStopPlayback?: () => void;
+}
 
 export class AudioQueueManager {
   // private audioQueue: AudioResponse[] = [];
@@ -12,24 +17,19 @@ export class AudioQueueManager {
 
   private isPlaying: boolean = false;
   private audioContext: AudioContext | null = null;
-  private onLevel?: (level: number) => void;
+  private options: AudioQueueManagerOptions;
 
   private currentSourceNode: AudioBufferSourceNode | null = null;
   private currentGainNode: GainNode | null = null;
   private currentAnalyserNode: AnalyserNode | null = null;
-  private audioWorkletManager: AudioWorkletManager | null = null;
 
   private fadeDuration: number = 0.7;
   private isStopping: boolean = false;
 
   private audioWorkletNode: AudioWorkletNode | null = null;
 
-  constructor(
-    onLevel?: (level: number) => void,
-    audioWorkletManager?: AudioWorkletManager
-  ) {
-    this.onLevel = onLevel;
-    this.audioWorkletManager = audioWorkletManager || null;
+  constructor(options: AudioQueueManagerOptions = {}) {
+    this.options = options;
     if (typeof AudioContext !== "undefined") {
       this.audioContext = new AudioContext();
       this.audioContext.onstatechange = () => {};
@@ -53,9 +53,9 @@ export class AudioQueueManager {
       );
 
       this.audioWorkletNode.port.onmessage = (event) => {
-        if (event.data.type === "audioData" && this.audioWorkletManager) {
+        if (event.data.type === "audioData" && this.options.onUpdatePlaybackBuffer) {
           const bufferCopy = event.data.buffer;
-          this.audioWorkletManager.updatePlaybackBuffer(bufferCopy);
+          this.options.onUpdatePlaybackBuffer(bufferCopy);
         }
       };
     } catch (error) {
@@ -175,7 +175,7 @@ export class AudioQueueManager {
         this.audioStreams.clear();
         this.isPlaying = false;
         this.disconnectAndClearNodes();
-        this.onLevel?.(0);
+        this.options.onLevel?.(0);
         return false;
       }
     } else if (this.audioContext.state === "closed") {
@@ -203,7 +203,7 @@ export class AudioQueueManager {
     analyser: AnalyserNode;
   }> {
     // Process audio data
-    const arrayBuffer = await this.decodeBase64Audio(audioData.audio);
+    const arrayBuffer = this.decodeBase64Audio(audioData.audio);
     const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
     await this.initializeAudioWorklet();
 
@@ -236,7 +236,7 @@ export class AudioQueueManager {
   }
 
   private setupLevelMonitoring(analyser: AnalyserNode) {
-    if (!this.onLevel) return;
+    if (!this.options.onLevel) return;
 
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
     const updateLevel = (currentAnalyser: AnalyserNode) => {
@@ -246,7 +246,7 @@ export class AudioQueueManager {
         !this.audioContext ||
         this.audioContext.state !== "running"
       ) {
-        this.onLevel?.(0);
+        this.options.onLevel?.(0);
         return;
       }
 
@@ -258,7 +258,7 @@ export class AudioQueueManager {
       }
       const rms = Math.sqrt(sumSquares / dataArray.length);
 
-      if (this.onLevel) this.onLevel(rms);
+      if (this.options.onLevel) this.options.onLevel(rms);
 
       requestAnimationFrame(() => updateLevel(currentAnalyser));
     };
@@ -283,25 +283,26 @@ export class AudioQueueManager {
       if (this.audioWorkletNode) {
         this.audioWorkletNode.disconnect();
       }
-      if (this.audioWorkletManager) {
-        this.audioWorkletManager.stopPlayback();
+      if (this.options.onStopPlayback) {
+        this.options.onStopPlayback();
       }
       if (!this.isStopping) {
-        // Когда обновиться сервер, нужно будет добавть тут проверку на последний чанк
-        // const currentChunk = this.getNextAudioData();
-        // if (currentChunk.isLast) {
-        // this.audioStreams.delete(this.currentStreamId);
-        // this.currentStreamId = this.getNextStreamId();
-        // this.currentChunkId = 0;
-        // }
+        // Remove current chunk from stream to prevent memory leaks
+        if (this.currentStreamId) {
+          const currentStream = this.audioStreams.get(this.currentStreamId);
+          currentStream?.delete(this.currentChunkId);
+        }
 
+        // Check if current stream has ended
         if (
           this.currentStreamId &&
           this.streamEndMap.get(this.currentStreamId) === this.currentChunkId
         ) {
+          // Move to next stream
           this.audioStreams.delete(this.currentStreamId);
+          this.streamTimeouts.delete(this.currentStreamId);
+          this.streamEndMap.delete(this.currentStreamId);
           this.currentStreamId = this.getNextStreamId();
-          console.log("delete stream", this.currentStreamId);
           this.currentChunkId = 0;
         } else {
           this.currentChunkId++;
@@ -343,7 +344,7 @@ export class AudioQueueManager {
       setTimeout(() => {
         this.isPlaying = false;
         this.disconnectAndClearNodes();
-        this.onLevel?.(0);
+        this.options.onLevel?.(0);
         this.isStopping = false;
 
         if (this.audioStreams.size > 0) {
@@ -353,7 +354,7 @@ export class AudioQueueManager {
     } else {
       this.isPlaying = false;
       this.disconnectAndClearNodes();
-      this.onLevel?.(0);
+      this.options.onLevel?.(0);
       this.isStopping = false;
 
       if (this.audioStreams.size > 0) {
@@ -362,7 +363,7 @@ export class AudioQueueManager {
     }
   }
 
-  private async decodeBase64Audio(base64: string): Promise<ArrayBuffer> {
+  private decodeBase64Audio(base64: string): ArrayBuffer {
     const base64WithoutHeader = base64.split(",")[1] || base64;
     const byteCharacters = atob(base64WithoutHeader);
     const byteNumbers = new Array(byteCharacters.length);
@@ -420,6 +421,6 @@ export class AudioQueueManager {
     } else {
       this.audioContext = null;
     }
-    this.onLevel?.(0);
+    this.options.onLevel?.(0);
   }
 }
