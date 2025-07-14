@@ -49,16 +49,6 @@ export const useAudio = (config?: UseAudioProps) => {
     try {
       if (!connection) throw new Error("Socket is not connected");
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: false,
-          channelCount: 1, // Используем только один канал
-          sampleRate: 16000, // Устанавливаем частоту дискретизации
-        },
-      });
-
       let newAudioManager;
 
       if (!audioManager) {
@@ -76,7 +66,7 @@ export const useAudio = (config?: UseAudioProps) => {
         newAudioManager = audioManager;
       }
 
-      await newAudioManager?.initialize(stream);
+      await newAudioManager?.initialize();
       await newAudioManager?.start();
       setIsRecording(true);
     } catch (error) {

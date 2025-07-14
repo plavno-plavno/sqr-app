@@ -205,14 +205,7 @@ export const useWSConnection = () => {
       let newAudioQueue;
 
       if (!audioQueue) {
-        newAudioQueue = new AudioQueueManager({
-          onUpdatePlaybackBuffer: (buffer) => {
-            useAudioStore.getState().audioManager?.updatePlaybackBuffer(buffer);
-          },
-          onStopPlayback: () => {
-            useAudioStore.getState().audioManager?.stopPlayback();
-          },
-        });
+        newAudioQueue = new AudioQueueManager();
         setAudioQueue(newAudioQueue);
       } else {
         newAudioQueue = audioQueue;

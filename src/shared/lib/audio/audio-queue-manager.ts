@@ -2,12 +2,9 @@ import type { AudioResponse } from "@/shared/model/websocket";
 
 export interface AudioQueueManagerOptions {
   onLevel?: (level: number) => void;
-  onUpdatePlaybackBuffer?: (buffer: Float32Array) => void;
-  onStopPlayback?: () => void;
 }
 
 export class AudioQueueManager {
-  // private audioQueue: AudioResponse[] = [];
   private audioStreams: Map<number, Map<number, AudioResponse>> = new Map();
   private currentStreamId: number | null = null;
   private currentChunkId: number = 0;
@@ -26,40 +23,11 @@ export class AudioQueueManager {
   private fadeDuration: number = 0.7;
   private isStopping: boolean = false;
 
-  private audioWorkletNode: AudioWorkletNode | null = null;
-
   constructor(options: AudioQueueManagerOptions = {}) {
     this.options = options;
     if (typeof AudioContext !== "undefined") {
       this.audioContext = new AudioContext();
       this.audioContext.onstatechange = () => {};
-    }
-  }
-
-  private async initializeAudioWorklet() {
-    if (!this.audioContext || this.audioWorkletNode) return;
-
-    try {
-      await this.audioContext.audioWorklet.addModule(
-        "/audio-buffer-processor.js"
-      );
-
-      this.audioWorkletNode = new AudioWorkletNode(
-        this.audioContext,
-        "audio-buffer-processor",
-        {
-          processorOptions: { bufferSize: 8192 },
-        }
-      );
-
-      this.audioWorkletNode.port.onmessage = (event) => {
-        if (event.data.type === "audioData" && this.options.onUpdatePlaybackBuffer) {
-          const bufferCopy = event.data.buffer;
-          this.options.onUpdatePlaybackBuffer(bufferCopy);
-        }
-      };
-    } catch (error) {
-      console.error("Failed to initialize AudioWorklet:", error);
     }
   }
 
@@ -205,7 +173,6 @@ export class AudioQueueManager {
     // Process audio data
     const arrayBuffer = this.decodeBase64Audio(audioData.audio);
     const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
-    await this.initializeAudioWorklet();
 
     // Create audio graph nodes
     const source = this.audioContext!.createBufferSource();
@@ -226,11 +193,6 @@ export class AudioQueueManager {
     source.connect(gainNode);
     gainNode.connect(analyser);
     analyser.connect(this.audioContext!.destination);
-
-    if (this.audioWorkletNode) {
-      gainNode.connect(this.audioWorkletNode);
-      this.audioWorkletNode.connect(this.audioContext!.destination);
-    }
 
     return { source, gainNode, analyser };
   }
@@ -280,12 +242,7 @@ export class AudioQueueManager {
   private setupPlaybackHandlers(source: AudioBufferSourceNode) {
     source.onended = () => {
       this.isPlaying = false;
-      if (this.audioWorkletNode) {
-        this.audioWorkletNode.disconnect();
-      }
-      if (this.options.onStopPlayback) {
-        this.options.onStopPlayback();
-      }
+      
       if (!this.isStopping) {
         // Remove current chunk from stream to prevent memory leaks
         if (this.currentStreamId) {
@@ -374,9 +331,6 @@ export class AudioQueueManager {
   }
 
   private disconnectAndClearNodes() {
-    if (this.audioWorkletNode) {
-      this.audioWorkletNode.disconnect();
-    }
     if (this.currentSourceNode) {
       try {
         this.currentSourceNode.stop();
@@ -400,7 +354,6 @@ export class AudioQueueManager {
       }
     }
 
-    this.audioWorkletNode = null;
     this.currentSourceNode = null;
     this.currentGainNode = null;
     this.currentAnalyserNode = null;

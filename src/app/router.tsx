@@ -38,6 +38,10 @@ export const router = createBrowserRouter([
         path: ROUTES.DEMO,
         lazy: () => import("@/pages/demo/demo.page"),
       },
+      {
+        path: ROUTES.MICROPHONE_TEST,
+        lazy: () => import("@/pages/test-noize-cancelation/noize-cancelation.page"),
+      },
     ],
   },
 ]);

@@ -2,18 +2,18 @@ import { MicVAD } from "@ricky0123/vad-web"
 
 interface AudioProcessorOptions {
   sampleRate?: number;
-  onAudioData?: (data: string, voicestop: boolean) => void; // Изменили тип на string для base64
+  onAudioData?: (data: string, voicestop: boolean) => void;
   onError?: (error: Error) => void;
-  onLevel?: (level: number) => void; // Новый колбэк
-  onVoiceActivity?: (isActive: boolean) => void; // Новый колбэк для VAD
-  vadThreshold?: number; // Порог для определения голоса
-  vadSilenceFrames?: number; // Количество тихих фреймов для определения тишины
+  onLevel?: (level: number) => void;
+  onVoiceActivity?: (isActive: boolean) => void;
+  vadThreshold?: number;
+  vadSilenceFrames?: number;
   onStopAudioQueue?: (() => void) | null;
 }
+
 export class AudioWorkletManager {
   private audioContext: AudioContext | null = null;
   private workletNode: AudioWorkletNode | null = null;
-  private echoNode: AudioWorkletNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private options: Required<AudioProcessorOptions>;
   public isVoiceActive: boolean = false;
@@ -23,26 +23,10 @@ export class AudioWorkletManager {
   private analyserNode: AnalyserNode | null = null;
   private silenceThreshold: number = 0.015;
   private speechThreshold: number = 0.03;
-  // private lastLevel: number = 0;
   private silenceFrames: number = 0;
   private readonly SILENCE_FRAMES_THRESHOLD = 10;
-  private playbackBuffer: Float32Array | null = null;
-  private micBuffer: Float32Array | null = null;
   private readonly BUFFER_SIZE = 1024;
-  private readonly ECHO_THRESHOLD = 0.85; // Повышаем порог схожести
-  private readonly CROSS_CORRELATION_WINDOW = 500;
-  private readonly MIN_AMPLITUDE_THRESHOLD = 0.02; // Повышаем порог амплитуды
-  // private readonly MAX_DELAY = 1000;
-  // private readonly MIN_SIMILARITY_DURATION = 0.2; // Увеличиваем время проверки
-  // private similarityCounter: number = 0;
-  // private lastSimilarityTime: number = 0;
   private mediaStream: MediaStream | null = null;
-  private isPlaying: boolean = false;
-  private playbackHistory: Float32Array[] = [];
-  private readonly HISTORY_SIZE = 10;
-  private readonly MIN_ECHO_DURATION = 0.1; // Минимальная длительность эха
-  private echoStartTime: number = 0;
-  private isEchoDetected: boolean = false;
   private speechStartTime: number = 0;
   public speechDuration: number = 0;
   public isUserFinished: boolean | null = null;
@@ -63,13 +47,12 @@ export class AudioWorkletManager {
     };
   }
 
-  async initialize(stream: MediaStream): Promise<void> {
+  async initialize(): Promise<void> {
     try {
       this.audioContext = new AudioContext();
       await this.audioContext.audioWorklet.addModule('/audio-processor.js');
-      await this.audioContext.audioWorklet.addModule('/echo-processor.js');
       
-      // Настройки аудио с шумоподавлением
+      // Audio constraints with built-in echo cancellation
       const audioConstraints = {
         echoCancellation: true,
         noiseSuppression: true,
@@ -83,25 +66,24 @@ export class AudioWorkletManager {
         latency: 0.1
       };
 
-      this.mediaStream = stream;
-      const audioTracks = this.mediaStream.getAudioTracks();
-      audioTracks.forEach(track => {
-        track.applyConstraints(audioConstraints);
+      // Get user media with proper constraints
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: audioConstraints
       });
 
-      // Создаем цепочку обработки аудио
+      // Create audio processing chain
       this.source = this.audioContext.createMediaStreamSource(this.mediaStream);
 
-      // Создаем анализатор для определения уровня звука
+      // Create analyser for sound level detection
       this.analyserNode = this.audioContext.createAnalyser();
       this.analyserNode.fftSize = this.BUFFER_SIZE;
       this.analyserNode.smoothingTimeConstant = 0.3;
 
-      // Создаем узел усиления для адаптивной чувствительности
+      // Create gain node for adaptive sensitivity
       this.gainNode = this.audioContext.createGain();
       this.gainNode.gain.value = 1.0;
 
-      // Добавляем фильтр для шумоподавления
+      // Add noise gate filter
       const noiseGate = this.audioContext.createDynamicsCompressor();
       noiseGate.threshold.value = -40;
       noiseGate.knee.value = 15;
@@ -109,13 +91,13 @@ export class AudioWorkletManager {
       noiseGate.attack.value = 0;
       noiseGate.release.value = 0.25;
 
-      // Добавляем фильтр для подавления низкочастотного шума
+      // Add low-pass filter for noise suppression
       const lowpassFilter = this.audioContext.createBiquadFilter();
       lowpassFilter.type = 'lowpass';
       lowpassFilter.frequency.value = 3000;
       lowpassFilter.Q.value = 0.7;
 
-      // Добавляем фильтр высоких частот
+      // Add high-pass filter
       const highpassFilter = this.audioContext.createBiquadFilter();
       highpassFilter.type = 'highpass';
       highpassFilter.frequency.value = 200;
@@ -137,7 +119,6 @@ export class AudioWorkletManager {
             this.options.onStopAudioQueue();
             this.voicestopFlag = true;
           }
-          this.echoNode?.port.postMessage({ isVoiceActive: true });
         },
         onSpeechEnd: () => {
           console.log('Speech ended');
@@ -150,7 +131,6 @@ export class AudioWorkletManager {
           }
           console.log(`Speech duration: ${this.speechDuration.toFixed(1)}s`);
           this.options.onVoiceActivity(false);
-          this.echoNode?.port.postMessage({ isVoiceActive: false });
         },
         stream: this.mediaStream,
         positiveSpeechThreshold: 0.8,
@@ -162,20 +142,8 @@ export class AudioWorkletManager {
       await this.vad.start();
       
       this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
-      
-      // Базовые настройки echo-processor
-      this.echoNode = new AudioWorkletNode(this.audioContext, 'echo-processor', {
-        parameterData: {
-          delayTime: 0.1,
-          feedback: 0.2,
-          wetLevel: 0.2,
-          dryLevel: 0.8,
-          silenceThreshold: 0.015,
-          silenceFrames: 15
-        }
-      });
 
-      // Собираем цепочку обработки
+      // Build processing chain
       this.source
         .connect(this.analyserNode)
         .connect(noiseGate)
@@ -184,34 +152,22 @@ export class AudioWorkletManager {
         .connect(this.gainNode)
         .connect(this.workletNode);
       
-      this.workletNode.connect(this.echoNode);
-      this.echoNode.connect(this.audioContext.destination);
+      this.workletNode.connect(this.audioContext.destination);
 
-      // Добавляем обработчик сообщений
+      // Add message handler
       this.workletNode.port.onmessage = (event) => {
         const inputData = event.data;
         const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext!.sampleRate);
         const base64Data = this.float32ToBase64(audioData16kHz);
         
-        // Отправляем данные только если пользователь активно говорит и микрофон не заглушен
+        // Send data only if user is actively speaking and microphone is not muted
         if (this.isVoiceActive && !this.isMuted) {
           this.options.onAudioData(base64Data, this.voicestopFlag);
           if (this.voicestopFlag) this.voicestopFlag = false;
         }
-
-        // Обработка эха только если есть воспроизведение и микрофон не заглушен
-        if (this.isPlaying && this.playbackBuffer && !this.isMuted) {
-          this.micBuffer = new Float32Array(inputData);
-          const similarity = this.compareBuffers(this.playbackBuffer, this.micBuffer);
-          if (similarity > this.ECHO_THRESHOLD) {
-            this.gainNode!.gain.setTargetAtTime(0.1, this.audioContext!.currentTime, 0.01);
-          } else {
-            this.gainNode!.gain.setTargetAtTime(1.0, this.audioContext!.currentTime, 0.01);
-          }
-        }
       };
 
-      // Запускаем мониторинг уровня звука
+      // Start level monitoring
       this.startLevelMonitoring();
 
     } catch (error) {
@@ -227,9 +183,9 @@ export class AudioWorkletManager {
     const updateLevel = () => {
       if (!this.analyserNode || !this.gainNode || !this.audioContext) return;
 
-      // Если микрофон заглушен, пропускаем обработку, но продолжаем цикл
+      // If microphone is muted, skip processing but continue the cycle
       if (this.isMuted) {
-        this.options.onLevel(0); // Отправляем нулевой уровень для анимации
+        this.options.onLevel(0);
         requestAnimationFrame(updateLevel);
         return;
       }
@@ -241,23 +197,17 @@ export class AudioWorkletManager {
         sumSquares += sample * sample;
       }
       const rms = Math.sqrt(sumSquares / dataArray.length);
-      // this.lastLevel = rms;
 
-      // Адаптивная чувствительность
+      // Adaptive sensitivity
       if (rms > this.speechThreshold) {
-        // Пользователь начал говорить
-        // this.isUserSpeaking = true;
         this.silenceFrames = 0;
         this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.01);
       } else if (rms < this.silenceThreshold) {
-        // Возможно тишина
         this.silenceFrames++;
         if (this.silenceFrames > this.SILENCE_FRAMES_THRESHOLD) {
-          // this.isUserSpeaking = false;
           this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.1);
         }
       } else {
-        // Промежуточный уровень
         this.silenceFrames = 0;
       }
 
@@ -329,7 +279,6 @@ export class AudioWorkletManager {
     });
     this.vad?.pause();
     this.workletNode?.disconnect();
-    this.echoNode?.disconnect();
     this.source?.disconnect();
     this.gainNode?.disconnect();
     this.analyserNode?.disconnect();
@@ -337,153 +286,10 @@ export class AudioWorkletManager {
     this.mediaStream = null;
     this.audioContext = null;
     this.workletNode = null;
-    this.echoNode = null;
     this.source = null;
     this.vad = null;
     this.gainNode = null;
     this.analyserNode = null;
-  }
-
-  private compareBuffers(playback: Float32Array, mic: Float32Array): number {
-    // Нормализуем буферы
-    const normalizedPlayback = this.normalizeBuffer(playback);
-    const normalizedMic = this.normalizeBuffer(mic);
-
-    // Проверяем амплитуды
-    const playbackAmplitude = this.getAmplitude(normalizedPlayback);
-    const micAmplitude = this.getAmplitude(normalizedMic);
-    
-    if (playbackAmplitude < this.MIN_AMPLITUDE_THRESHOLD || micAmplitude < this.MIN_AMPLITUDE_THRESHOLD) {
-      this.resetEchoDetection();
-      return 0;
-    }
-
-    // Проверяем соотношение амплитуд
-    const amplitudeRatio = Math.min(playbackAmplitude, micAmplitude) / Math.max(playbackAmplitude, micAmplitude);
-    if (amplitudeRatio < 0.3) { // Если амплитуды сильно различаются, это не эхо
-      this.resetEchoDetection();
-      return 0;
-    }
-
-    // Ищем задержку и схожесть для каждого буфера в истории
-    let maxSimilarity = 0;
-    let bestDelay = 0;
-
-    // Добавляем текущий буфер в историю
-    this.playbackHistory.push(normalizedPlayback);
-    if (this.playbackHistory.length > this.HISTORY_SIZE) {
-      this.playbackHistory.shift();
-    }
-
-    // Проверяем каждый буфер в истории
-    for (const historyBuffer of this.playbackHistory) {
-      const { delay, similarity } = this.findDelayAndSimilarity(historyBuffer, normalizedMic);
-      if (similarity > maxSimilarity) {
-        maxSimilarity = similarity;
-        bestDelay = delay;
-      }
-    }
-
-    const currentTime = this.audioContext?.currentTime ?? 0;
-
-    // Проверяем длительность эха
-    if (maxSimilarity > this.ECHO_THRESHOLD) {
-      if (!this.isEchoDetected) {
-        this.echoStartTime = currentTime;
-        this.isEchoDetected = true;
-      }
-      
-      // Проверяем, прошло ли достаточно времени
-      if (currentTime - this.echoStartTime >= this.MIN_ECHO_DURATION) {
-        console.log('Echo detected:', maxSimilarity, 'Delay:', bestDelay);
-        return maxSimilarity;
-      }
-    } else {
-      this.resetEchoDetection();
-    }
-
-    return 0;
-  }
-
-  private resetEchoDetection() {
-    this.isEchoDetected = false;
-    this.echoStartTime = 0;
-  }
-
-  private findDelayAndSimilarity(playback: Float32Array, mic: Float32Array): { delay: number, similarity: number } {
-    let maxCorrelation = -1;
-    let bestDelay = 0;
-    
-    // Ищем задержку через кросс-корреляцию
-    for (let delay = 0; delay < this.CROSS_CORRELATION_WINDOW; delay++) {
-      let correlation = 0;
-      let count = 0;
-      
-      for (let i = 0; i < mic.length - delay; i++) {
-        correlation += mic[i]! * playback[i + delay]!;
-        count++;
-      }
-      
-      correlation /= count;
-      
-      if (correlation > maxCorrelation) {
-        maxCorrelation = correlation;
-        bestDelay = delay;
-      }
-    }
-
-    // Если корреляция слишком слабая, считаем что это не эхо
-    if (maxCorrelation < 0.4) { // Повышаем порог корреляции
-      return { delay: 0, similarity: 0 };
-    }
-
-    // Вычисляем схожесть с учетом задержки
-    let sumSquaredDiff = 0;
-    let sumSquaredPlayback = 0;
-    let validSamples = 0;
-    
-    for (let i = 0; i < mic.length; i++) {
-      const playbackIndex = i + bestDelay;
-      if (playbackIndex < playback.length) {
-        const diff = mic[i]! - playback[playbackIndex]!;
-        sumSquaredDiff += diff * diff;
-        sumSquaredPlayback += playback[playbackIndex]! * playback[playbackIndex]!;
-        validSamples++;
-      }
-    }
-    
-    if (validSamples < this.BUFFER_SIZE * 0.5) {
-      return { delay: 0, similarity: 0 };
-    }
-
-    const similarity = 1 - Math.sqrt(sumSquaredDiff / sumSquaredPlayback);
-    return { delay: bestDelay, similarity };
-  }
-
-  private normalizeBuffer(buffer: Float32Array): Float32Array {
-    const max = Math.max(...buffer.map(Math.abs));
-    if (max === 0) return buffer;
-    return buffer.map(x => x / max);
-  }
-
-  private getAmplitude(buffer: Float32Array): number {
-    let sum = 0;
-    for (let i = 0; i < buffer.length; i++) {
-      sum += Math.abs(buffer[i]!);
-    }
-    return sum / buffer.length;
-  }
-
-  public updatePlaybackBuffer(buffer: Float32Array) {
-    this.playbackBuffer = buffer;
-    this.isPlaying = true;
-  }
-
-  public stopPlayback() {
-    this.isPlaying = false;
-    this.playbackBuffer = null;
-    this.playbackHistory = [];
-    this.resetEchoDetection();
   }
 
   public toggleMute(mute?: boolean): void {
