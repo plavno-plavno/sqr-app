@@ -29,6 +29,8 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { ChatDialog } from "./compose/chat-dialog";
 import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
+import { useLanguageStore } from "@/features/language";
+import { defaultPrompt } from "@/shared/mock/prompt";
 
 const ChatPage = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
@@ -40,6 +42,8 @@ const ChatPage = () => {
   const addMessage = useChatStore.use.addMessage();
   const setLastMessageMeta = useChatStore.use.setLastMessageMeta();
   const createChat = useChatStore.use.createChat();
+
+  const language = useLanguageStore.use.language();
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
 
@@ -77,8 +81,8 @@ const ChatPage = () => {
   // Initialize WebSocket connection
   useEffect(() => {
     if (!chatId) return;
-    return initWSConnection(chatId);
-  }, [chatId, initWSConnection]);
+    return initWSConnection(chatId, language.code, defaultPrompt);
+  }, [chatId, language.code, initWSConnection]);
 
   // Stop recording when component unmounts
   useEffect(() => {

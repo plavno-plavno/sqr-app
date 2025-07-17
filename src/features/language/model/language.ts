@@ -1,4 +1,9 @@
-export const languageOptions = [
+export interface LanguageOption {
+  name: string;
+  code: string;
+}
+
+export const availableLanguages: LanguageOption[] = [
   { name: "English", code: "en" },
   { name: "Japanese", code: "ja" },
   { name: "Chinese", code: "zh" },
@@ -33,4 +38,4 @@ export const languageOptions = [
   { name: "Vietnamese", code: "vi" },
 ];
 
-export const defaultLanguage = languageOptions[0].code;
+export const defaultLanguage = availableLanguages[0].code;

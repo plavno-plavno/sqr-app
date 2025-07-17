@@ -1,19 +1,21 @@
 import { cn } from "@/shared/lib/css/tailwind";
 import { AdaptiveDrawer } from "@/shared/ui/adaptive-drawer";
 import { Button } from "@/shared/ui/kit/button";
+import { SearchInput } from "@/shared/ui/search-input";
 import { useState } from "react";
 import { type Contact } from "../model/contacts";
 import { ContactCard } from "../ui/contact-card";
-import { ContactsSearchInput } from "../ui/contacts-search-input";
 
 interface ContactsSearchProps {
   contacts: Contact[];
+  disabled?: boolean;
   className?: string;
   onContactClick?: (contact: Contact) => void;
 }
 
 export function ContactsSearch({
   contacts,
+  disabled,
   className,
   onContactClick,
 }: ContactsSearchProps) {
@@ -52,7 +54,7 @@ export function ContactsSearch({
         title="Select a contact"
         className="h-[80vh]"
         drawerHeaderContent={
-          <ContactsSearchInput
+          <SearchInput
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search contacts..."
@@ -66,6 +68,7 @@ export function ContactsSearch({
               <ContactCard
                 key={contact.id}
                 contact={contact}
+                disabled={disabled}
                 onClick={() => handleContactClick(contact)}
               />
             ))}

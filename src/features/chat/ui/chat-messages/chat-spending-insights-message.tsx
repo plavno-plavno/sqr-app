@@ -73,7 +73,7 @@ export function ChatSpendingInsightsMessage({
           <ChatSubscriptionMessage
             key={subscription?.name}
             title={subscription?.name}
-            amount={`$${subscription?.amount?.toFixed(2) || 0}`}
+            amount={`$${Number(subscription?.amount || 0).toFixed(2)}`}
             period={subscription?.frequency}
           />
         ))}

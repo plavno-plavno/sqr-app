@@ -3,12 +3,14 @@ import { Button } from "@/shared/ui/kit/button";
 
 interface ChatButtonsListProps<T extends { id: string; name: string }> {
   list: T[];
+  disabled?: boolean;
   className?: string;
   onItemClick?: (item: T) => void;
 }
 
 export function ChatButtonsList<T extends { id: string; name: string }>({
   list,
+  disabled,
   className,
   onItemClick,
 }: ChatButtonsListProps<T>) {
@@ -18,6 +20,7 @@ export function ChatButtonsList<T extends { id: string; name: string }>({
         <Button
           variant="secondary"
           key={item?.id}
+          disabled={disabled}
           className="w-full py-4 bg-background shadow-none justify-center"
           onClick={() => onItemClick?.(item)}
         >

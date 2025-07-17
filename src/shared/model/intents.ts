@@ -93,7 +93,7 @@ export interface DailyBudgetOutput {
 // SCHEDULED_TRANSFER Intent Response Schema
 export interface ScheduledTransferOutput {
   transfer_details: {
-    amount: number;
+    amount: number | string;
     currency: string;
     recipient: string;
     scheduled_time: string; // ISO format
@@ -126,7 +126,7 @@ export interface SpendingInsightsOutput {
     total_monthly: number;
     subscriptions: Array<{
       name: string;
-      amount: number;
+      amount: number | string;
       frequency: string;
       category: string;
     }>;
@@ -151,7 +151,7 @@ export interface SpendingAnalyticsOutput {
     total_spent: number;
     categories: Array<{
       name: string;
-      amount: number;
+      amount: number | string;
       percentage: number;
       trend: "up" | "down" | "stable";
     }>;
@@ -185,7 +185,7 @@ export interface SpendingAnalyticsOutput {
 // TRANSFER_MONEY Intent Response Schema
 export interface TransferMoneyOutput {
   transfer_details: {
-    amount: number;
+    amount: number | string;
     currency: string;
     recipient: string;
     transaction_id: string;

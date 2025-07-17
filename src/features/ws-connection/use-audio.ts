@@ -14,7 +14,6 @@ export const useAudio = (config?: UseAudioProps) => {
   const connection = useWebSocketStore.use.connection();
 
   const isRecording = useAudioStore.use.isRecording();
-  const audioQueue = useAudioStore.use.audioQueue();
   const audioManager = useAudioStore.use.audioManager();
   const audioError = useAudioStore.use.audioError();
 
@@ -50,16 +49,6 @@ export const useAudio = (config?: UseAudioProps) => {
     try {
       if (!connection) throw new Error("Socket is not connected");
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: false,
-          channelCount: 1, // Используем только один канал
-          sampleRate: 16000, // Устанавливаем частоту дискретизации
-        },
-      });
-
       let newAudioManager;
 
       if (!audioManager) {
@@ -68,14 +57,16 @@ export const useAudio = (config?: UseAudioProps) => {
           onError: onError,
           onLevel: onMicLevelChange,
           onVoiceActivity: onVoiceEnd,
-          audioQueue: audioQueue,
+          onStopAudioQueue: () => {
+            useAudioStore.getState().audioQueue?.stop();
+          },
         });
         setAudioManager(newAudioManager);
       } else {
         newAudioManager = audioManager;
       }
 
-      await newAudioManager?.initialize(stream);
+      await newAudioManager?.initialize();
       await newAudioManager?.start();
       setIsRecording(true);
     } catch (error) {
@@ -89,9 +80,12 @@ export const useAudio = (config?: UseAudioProps) => {
     clearAudio();
   }, [audioManager, clearAudio]);
 
-  const toggleMute = useCallback((mute: boolean) => {
-    audioManager?.toggleMute(mute);
-  }, [audioManager]);
+  const toggleMute = useCallback(
+    (mute: boolean) => {
+      audioManager?.toggleMute(mute);
+    },
+    [audioManager]
+  );
 
   return {
     isRecording,

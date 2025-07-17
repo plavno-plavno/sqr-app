@@ -23,7 +23,7 @@ const userMessage = (text: string): ChatMessage => ({
   isTextCorrected: true,
 });
 
-export const AllActionsMock: ActionType[] = [
+export const allActionsMock = (): ActionType[] => [
   {
     id: uuidv4(),
     name: "Show Abilities",
@@ -55,9 +55,7 @@ export const AllActionsMock: ActionType[] = [
     name: "Show my expenses",
     title: "Expenses",
     prompt: "Show my spending analytics for whole year",
-    messages: [
-      userMessage("Show my spending analytics for whole year"),
-    ],
+    messages: [userMessage("Show my spending analytics for whole year")],
   },
   {
     id: uuidv4(),
@@ -77,36 +75,32 @@ export const AllActionsMock: ActionType[] = [
     name: "Expense analysis",
     title: "Expense analysis",
     prompt: "Where my money is going?",
-    messages: [
-      userMessage("Where my money is going?"),
-    ],
+    messages: [userMessage("Where my money is going?")],
   },
   {
     id: uuidv4(),
     name: "Daily budget",
     title: "Daily budget",
     prompt: "Setup my daily budget",
-    messages: [
-      userMessage("Setup my daily budget"),
-    ],
+    messages: [userMessage("Setup my daily budget")],
   },
   {
     id: uuidv4(),
     name: "Cost estimation",
     title: "Cost estimation",
     prompt: "Help me to estimate the cost",
-    messages: [
-      userMessage("Help me to estimate the cost"),
-    ],
+    messages: [userMessage("Help me to estimate the cost")],
   },
 ];
 
-export const quickActionsMock = AllActionsMock.filter((action) =>
-  ["Show Abilities", "Quick Transfer", "Show my expenses", "Invest"].includes(
-    action.name
-  )
-);
+export const quickActionsMock = (): ActionType[] =>
+  allActionsMock().filter((action) =>
+    ["Show Abilities", "Quick Transfer", "Show my expenses", "Invest"].includes(
+      action.name
+    )
+  );
 
-export const abilitiesMock = AllActionsMock.filter(
-  (action) => !["Show Abilities"].includes(action.name)
-);
+export const abilitiesMock = (): ActionType[] =>
+  allActionsMock().filter(
+    (action) => !["Show Abilities"].includes(action.name)
+  );
