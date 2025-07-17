@@ -8,9 +8,6 @@ export class AudioQueueManager {
   private audioStreams: Map<number, Map<number, AudioResponse>> = new Map();
   private currentStreamId: number | null = null;
   private currentChunkId: number = 0;
-  private streamTimeouts: Map<number, NodeJS.Timeout> = new Map();
-  private streamEndMap: Map<number, number> = new Map();
-  private readonly STREAM_TIMEOUT_MS = 1000;
 
   private isPlaying: boolean = false;
   private audioContext: AudioContext | null = null;
@@ -31,14 +28,24 @@ export class AudioQueueManager {
     }
   }
 
-  private setupStreamTimeout(audioData: AudioResponse) {
-    clearTimeout(this.streamTimeouts.get(audioData.stream_id));
+  private processAudioChunk(audioData: AudioResponse) {
+    // Check if this is a terminating chunk and mark current max chunk as last
+    if (audioData.chunk_id === -1) {
+      const streamChunksMap = this.audioStreams.get(audioData.stream_id);
 
-    const timeout = setTimeout(() => {
-      this.streamEndMap.set(audioData.stream_id, audioData.chunk_id);
-    }, this.STREAM_TIMEOUT_MS);
+      if (!streamChunksMap || streamChunksMap.size === 0) return;
 
-    this.streamTimeouts.set(audioData.stream_id, timeout);
+      const maxChunkId = Math.max(...streamChunksMap.keys());
+      const maxChunk = streamChunksMap.get(maxChunkId);
+      if (maxChunk) maxChunk.isLast = true;
+      return;
+    }
+
+    // Add regular chunk to appropriate stream
+    const streamChunksMap =
+      this.audioStreams.get(audioData.stream_id) || new Map();
+    streamChunksMap.set(audioData.chunk_id, audioData);
+    this.audioStreams.set(audioData.stream_id, streamChunksMap);
   }
 
   public addToQueue(audioData: AudioResponse) {
@@ -54,20 +61,14 @@ export class AudioQueueManager {
       return;
     }
 
-    // Add chunk to appropriate stream
-    const streamChunksMap =
-      this.audioStreams.get(audioData.stream_id) || new Map();
-    streamChunksMap.set(audioData.chunk_id, audioData);
-    this.audioStreams.set(audioData.stream_id, streamChunksMap);
+    // Process audio chunk (handle completion if needed)
+    this.processAudioChunk(audioData);
 
     // If this is the first chunk, update current stream id and expected chunk id
     if (this.currentStreamId === null) {
       this.currentStreamId = audioData.stream_id;
       this.currentChunkId = audioData.chunk_id;
     }
-
-    // Можно будет удалить, когда обновится сервер
-    this.setupStreamTimeout(audioData);
 
     // If not playing, start playback
     if (!this.isPlaying) {
@@ -98,19 +99,12 @@ export class AudioQueueManager {
       this.setupLevelMonitoring(audioNodes.analyser);
 
       // Setup playback handlers and start playback
-      this.setupPlaybackHandlers(audioNodes.source);
+      audioNodes.source.onended = () => this.onPlaybackEnd();
 
       audioNodes.source.start(0);
     } catch (error) {
       console.error("Error playing audio segment:", error);
-      this.disconnectAndClearNodes();
-
-      if (this.currentStreamId) {
-        this.audioStreams
-          .get(this.currentStreamId)
-          ?.delete(this.currentChunkId);
-        this.playNext();
-      }
+      this.onPlaybackEnd();
     }
   }
 
@@ -239,36 +233,32 @@ export class AudioQueueManager {
     return minStreamId;
   }
 
-  private setupPlaybackHandlers(source: AudioBufferSourceNode) {
-    source.onended = () => {
-      this.isPlaying = false;
-      
-      if (!this.isStopping) {
-        // Remove current chunk from stream to prevent memory leaks
-        if (this.currentStreamId) {
-          const currentStream = this.audioStreams.get(this.currentStreamId);
-          currentStream?.delete(this.currentChunkId);
-        }
+  private onPlaybackEnd() {
+    this.isPlaying = false;
 
-        // Check if current stream has ended
-        if (
-          this.currentStreamId &&
-          this.streamEndMap.get(this.currentStreamId) === this.currentChunkId
-        ) {
-          // Move to next stream
-          this.audioStreams.delete(this.currentStreamId);
-          this.streamTimeouts.delete(this.currentStreamId);
-          this.streamEndMap.delete(this.currentStreamId);
-          this.currentStreamId = this.getNextStreamId();
-          this.currentChunkId = 0;
-        } else {
-          this.currentChunkId++;
-        }
+    if (this.isStopping) return;
 
-        this.disconnectAndClearNodes();
-        this.playNext();
+    if (this.currentStreamId) {
+      const currentStream = this.audioStreams.get(this.currentStreamId);
+
+      if (!currentStream) return;
+
+      const playedChunkId = this.currentChunkId;
+      const playedChunk = currentStream.get(playedChunkId);
+
+      if (playedChunk?.isLast) {
+        this.audioStreams.delete(this.currentStreamId);
+        this.currentStreamId = this.getNextStreamId();
+        this.currentChunkId = 0;
+      } else {
+        this.currentChunkId++;
       }
-    };
+
+      currentStream.delete(playedChunkId);
+    }
+
+    this.disconnectAndClearNodes();
+    this.playNext();
   }
 
   public stop() {
@@ -276,12 +266,6 @@ export class AudioQueueManager {
     this.audioStreams.clear();
     this.currentStreamId = null;
     this.currentChunkId = 0;
-
-    this.streamTimeouts.forEach((timeout) => {
-      clearTimeout(timeout);
-    });
-    this.streamTimeouts.clear();
-    this.streamEndMap.clear();
 
     if (
       this.currentGainNode &&

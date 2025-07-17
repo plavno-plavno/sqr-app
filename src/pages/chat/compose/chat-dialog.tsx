@@ -88,7 +88,7 @@ export const ChatDialog = memo(() => {
   const handleTransaction = (inputData: MoneyTransferConfirmData) => {
     addTransaction({
       id: Date.now(),
-      amount: inputData.amount || 0,
+      amount: Number(inputData.amount || 0),
       date: new Date().toISOString(),
       details: [
         { name: "Recipient", value: inputData.recipient || "" },
@@ -139,7 +139,7 @@ export const ChatDialog = memo(() => {
             ...(dialogIntent.output as TransferMoneyOutput).transfer_details,
             ...inputData,
           });
-          subtractFromBalance(inputData.amount || 0);
+          subtractFromBalance(Number(inputData.amount || 0));
         }}
         onCancel={onCancel}
       />

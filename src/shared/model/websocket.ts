@@ -13,6 +13,7 @@ export type AudioResponse = {
   chunk_id: number;
   stream_id: number;
   audio: string;
+  isLast?: boolean;
 };
 // Only for old version. Can be removed in future
 export type AudioSegmentResponse = {

@@ -1,4 +1,5 @@
-import { SettingsList, settingsMock } from "@/features/settings";
+import { settingsMock } from "@/features/settings";
+import { SettingsList } from "./compose/settings-list";
 import { Header } from "@/shared/ui/header";
 import { SidebarTrigger } from "@/shared/ui/kit/sidebar";
 

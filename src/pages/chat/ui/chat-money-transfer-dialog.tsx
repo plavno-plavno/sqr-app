@@ -59,7 +59,7 @@ export function ChatMoneyTransferDialog({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: data.transfer_details.amount,
+      amount: Number(data.transfer_details.amount),
       recipient: data.transfer_details.recipient,
       payment: {
         identifier: paymentOptionsMock[0].identifier,

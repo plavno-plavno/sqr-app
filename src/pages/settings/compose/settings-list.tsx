@@ -1,6 +1,8 @@
+import { LanguageSearch } from "@/features/language";
+import { SettingsItem, type SettingsItemType } from "@/features/settings";
 import { cn } from "@/shared/lib/css/tailwind";
-import { SettingsItem } from "../ui/settings-item";
-import type { SettingsItemType } from "../model/settings";
+import { LanguagesIcon } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
 
 interface SettingsListProps {
   items: SettingsItemType[];
@@ -22,6 +24,17 @@ export function SettingsList({
           onClick={() => onItemClick?.(item)}
         />
       ))}
+      <LanguageSearch
+        trigger={
+          <SettingsItem
+            item={{
+              id: uuidv4(),
+              title: "Change language",
+              icon: <LanguagesIcon />,
+            }}
+          />
+        }
+      />
     </div>
   );
 }

@@ -103,7 +103,7 @@ export class AudioWorkletManager {
       highpassFilter.frequency.value = 200;
       highpassFilter.Q.value = 0.7;
 
-      // Initialize VAD
+      // Initialize VAD with high threshold to prevent self-echo
       this.vad = await MicVAD.new({
         onSpeechStart: () => {
           console.log('Speech started');
@@ -133,8 +133,8 @@ export class AudioWorkletManager {
           this.options.onVoiceActivity(false);
         },
         stream: this.mediaStream,
-        positiveSpeechThreshold: 0.8,
-        negativeSpeechThreshold: 0.8,
+        positiveSpeechThreshold: 0.85,
+        negativeSpeechThreshold: 0.85,
         redemptionFrames: 15, // ~1.5 seconds of silence tolerance
         preSpeechPadFrames: 4,
       });
@@ -157,7 +157,7 @@ export class AudioWorkletManager {
       // Add message handler
       this.workletNode.port.onmessage = (event) => {
         const inputData = event.data;
-        const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext!.sampleRate);
+        const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext?.sampleRate ?? 16000);
         const base64Data = this.float32ToBase64(audioData16kHz);
         
         // Send data only if user is actively speaking and microphone is not muted

@@ -30,7 +30,7 @@ export const MainLayout = ({
   onPromptChange,
   onHandleShowSubtitles,
 }: PropsWithChildren<MainLayoutProps>) => {
-  const languageLabel = languageOptions.find(option => option.value === language)?.label;
+  const languageLabel = languageOptions.find(option => option.code === language)?.name;
   const promptLabel = promptOptions.find(option => option.value === prompt)?.label;
 
   return (
@@ -69,8 +69,8 @@ export const MainLayout = ({
             <SelectContent>
               <SelectGroup>
                 {languageOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                  <SelectItem key={option.code} value={option.code}>
+                    {option.name}
                   </SelectItem>
                 ))}
               </SelectGroup>

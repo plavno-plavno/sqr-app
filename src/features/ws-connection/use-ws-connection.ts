@@ -6,8 +6,6 @@ import {
 import { requests } from "@/shared/api";
 import { AudioQueueManager } from "@/shared/lib/audio/audio-queue-manager";
 import { WebSocketConnection } from "@/shared/lib/websocket/websocket-connection";
-import { defaultLanguage } from "@/shared/mock/languages";
-import { defaultPrompt } from "@/shared/mock/prompt";
 import {
   IntentType,
   type IntentResponse,
@@ -124,7 +122,7 @@ export const useWSConnection = () => {
       updateMessage(chatId, {
         ...lastUserMessage,
         text: segments.current_user_text,
-        isTextCorrected: true
+        isTextCorrected: true,
       });
       return;
     }
@@ -172,7 +170,7 @@ export const useWSConnection = () => {
         clearAudio();
         return;
       }
- 
+
       const newMessage = {
         id: uuidv4(),
         type: intentResponse.intent,
@@ -236,44 +234,47 @@ export const useWSConnection = () => {
     }
   );
 
-  const initWSConnection = useCallback((chatId: string) => {
-    const { setConnection, setIsConnected, setWsError, setIsConnecting } =
-      useWebSocketStore.getState();
-    const controller = new AbortController();
-    const ws = new WebSocketConnection(defaultLanguage, defaultPrompt);
-    setConnection(ws);
+  const initWSConnection = useCallback(
+    (chatId: string, language: string, prompt: string) => {
+      const { setConnection, setIsConnected, setWsError, setIsConnecting } =
+        useWebSocketStore.getState();
+      const controller = new AbortController();
+      const ws = new WebSocketConnection(language, prompt);
+      setConnection(ws);
 
-    async function init() {
-      try {
-        setIsConnecting(true);
-        const url = await getFreeMachine(controller);
+      async function init() {
+        try {
+          setIsConnecting(true);
+          const url = await getFreeMachine(controller);
 
-        if (controller.signal.aborted) return;
+          if (controller.signal.aborted) return;
 
-        await ws.initSocket(url, (response) => {
-          handleWSMessage(response, chatId);
-        });
-        setIsConnected(true);
-        setIsConnecting(false);
-      } catch (error) {
-        if (axios.isCancel(error)) return;
-        setWsError((error as Error).message);
-        ws.closeConnection();
-        setIsConnecting(false);
-        setConnection(null);
+          await ws.initSocket(url, (response) => {
+            handleWSMessage(response, chatId);
+          });
+          setIsConnected(true);
+          setIsConnecting(false);
+        } catch (error) {
+          if (axios.isCancel(error)) return;
+          setWsError((error as Error).message);
+          ws.closeConnection();
+          setIsConnecting(false);
+          setConnection(null);
+        }
       }
-    }
 
-    init();
+      init();
 
-    return () => {
-      controller.abort();
-      ws.closeConnection();
-      setConnection(null);
-      setIsConnected(false);
-      setIsConnecting(false);
-    };
-  }, []);
+      return () => {
+        controller.abort();
+        ws.closeConnection();
+        setConnection(null);
+        setIsConnected(false);
+        setIsConnecting(false);
+      };
+    },
+    []
+  );
 
   const sendCommand = useCallback(
     (command: (connection: WebSocketConnection) => void) => {

@@ -1,7 +1,7 @@
 import { cn } from "@/shared/lib/css/tailwind";
 import SearchIcon from "@/shared/assets/icons/search-icon.svg?react";
 
-export function ContactsSearchInput({
+export function SearchInput({
   className,
   ...props
 }: React.ComponentProps<"input"> & { className?: string }) {
@@ -20,4 +20,4 @@ export function ContactsSearchInput({
       />
     </div>
   );
-}
+} 
