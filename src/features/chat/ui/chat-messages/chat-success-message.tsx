@@ -19,7 +19,7 @@ export function ChatSuccessMessage({
         <CheckIcon />
       </IconWrapper>
       <div className="flex flex-col gap-4">
-        <p className="text-2xl text-agent-message-foreground">{text}</p>
+        <p className="text-2xl text-agent-message-foreground whitespace-pre-wrap">{text}</p>
         {children}
       </div>
     </div>

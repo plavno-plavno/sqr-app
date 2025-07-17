@@ -1,37 +1,33 @@
-import type { TransferMoneyOutput } from "@/shared/model/intents";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm, type SubmitHandler } from "react-hook-form";
-import { z } from "zod";
-import { FormInput } from "@/shared/ui/form-input";
-import { cn } from "@/shared/lib/css/tailwind";
+import {
+  ChatConfirmDialog,
+  ChatDialogActionCard,
+  ChatDialogActionCardRowTwoItems,
+  ChatDialogActionCardSection,
+  ChatDialogPaymentCard,
+  PaymentSelect
+} from "@/features/chat";
 import {
   PaymentMethod,
   paymentOptionsMock,
   type PaymentOption,
 } from "@/features/finance";
-import {
-  ChatConfirmDialog,
-  ChatDialogActionCard,
-  ChatDialogActionCardRowTwoItems,
-  ChatDialogActionCardRowWithIcon,
-  ChatDialogActionCardSection,
-  ChatDialogPaymentCard,
-  PaymentSelect,
-} from "@/features/chat";
+import { FormInput } from "@/shared/ui/form-input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm, type SubmitHandler } from "react-hook-form";
+import { z } from "zod";
 
-export type MoneyTransferConfirmData = Partial<TransferMoneyOutput["transfer_details"]> & {
+export type TransferWithDetailsConfirmData = {} & {
   payment: PaymentOption;
 };
 
-interface ChatMoneyTransferDialogProps {
-  data: TransferMoneyOutput;
+interface ChatTransferWithDetailsDialogProps {
   open: boolean;
-  onConfirm: (data: MoneyTransferConfirmData) => void;
+  onConfirm: (data: TransferWithDetailsConfirmData) => void;
   onCancel: () => void;
 }
 
 const formSchema = z.object({
-  recipient: z.string().min(1, "Recipient is required"),
+  details: z.string().min(1, "Details are required"),
   amount: z.coerce
     .number({
       required_error: "Amount is required",
@@ -45,12 +41,11 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function ChatMoneyTransferDialog({
-  data,
+export function ChatTransferWithDetailsDialog({
   open,
   onConfirm,
   onCancel,
-}: ChatMoneyTransferDialogProps) {
+}: ChatTransferWithDetailsDialogProps) {
   const {
     register,
     handleSubmit,
@@ -59,8 +54,8 @@ export function ChatMoneyTransferDialog({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: Number(data.transfer_details.amount || 0),
-      recipient: data.transfer_details.recipient,
+      details: "",
+      amount: 0,
       payment: {
         identifier: paymentOptionsMock[0].identifier,
         paymentMethod: paymentOptionsMock[0].paymentMethod,
@@ -68,12 +63,12 @@ export function ChatMoneyTransferDialog({
     },
   });
 
-  const onSubmit: SubmitHandler<FormValues> = (formData) => {
-    const res = formSchema.safeParse(formData);
+  const onSubmit: SubmitHandler<FormValues> = (data) => {
+    const res = formSchema.safeParse(data);
 
     if (!res.success) return;
 
-    onConfirm(formData);
+    onConfirm(data);
   };
 
   return (
@@ -89,27 +84,17 @@ export function ChatMoneyTransferDialog({
       )}
     >
       <ChatDialogActionCard>
-        <ChatDialogActionCardSection title="Recipient">
-          <ChatDialogActionCardRowWithIcon
-            className={cn(
-              errors.recipient?.message ? "items-start" : "items-center"
-            )}
-            firstLine={
-              <FormInput
-                className="text-2xl font-semibold p-0"
-                variant="ghost"
-                error={errors.recipient?.message}
-                {...register("recipient")}
-              />
-            }
+        <ChatDialogActionCardSection title="Transfer Details" className="flex flex-col gap-2">
+          <FormInput
+            variant="ghost"
+            type="text"
+            className="text-2xl font-semibold truncate p-0"
+            error={errors.details?.message}
+            {...register("details")}
           />
         </ChatDialogActionCardSection>
         <ChatDialogActionCardSection title="Amount">
           <ChatDialogActionCardRowTwoItems
-            className={cn(
-              "gap-2",
-              errors.amount?.message ? "items-baseline" : "items-end"
-            )}
             leftValue={
               <FormInput
                 variant="ghost"
@@ -124,7 +109,7 @@ export function ChatMoneyTransferDialog({
                 {...register("amount")}
               />
             }
-            rightValue={data.transfer_details.amount}
+            rightValue={500}
           />
         </ChatDialogActionCardSection>
       </ChatDialogActionCard>

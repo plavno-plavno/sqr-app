@@ -128,11 +128,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.BTC_PRICE &&
     intent?.intent === IntentType.BTC_PRICE
   ) {
-    const { current_price, price_points } = intent.output;
     return (
       <ChatLineChartMessage
-        currentPrice={current_price}
-        chartData={price_points}
+        currentPrice={intent?.output?.current_price}
+        chartData={intent?.output?.price_points}
         period={PeriodType.SINGLE}
         valueKey="price"
         xAxisKey="timestamp"
@@ -145,12 +144,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.SCHEDULED_TRANSFER &&
     intent?.intent === IntentType.SCHEDULED_TRANSFER
   ) {
-    const { transfer_details } = intent.output;
+    const transferDetails = intent?.output?.transfer_details;
     return (
       <ChatMoneyTransferMessage
-        amount={`$${Number(transfer_details?.amount || 0).toFixed(2)}`}
-        recipient={transfer_details?.recipient}
-        date={new Date(transfer_details?.scheduled_time)}
+        amount={`$${Number(transferDetails?.amount || 0).toFixed(2)}`}
+        recipient={transferDetails?.recipient}
+        date={new Date(transferDetails?.scheduled_time)}
       />
     );
   }
@@ -159,16 +158,16 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.DAILY_BUDGET &&
     intent?.intent === IntentType.DAILY_BUDGET
   ) {
-    const { budget_summary } = intent.output;
+    const budgetSummary = intent?.output?.budget_summary;
     return (
       <div className="flex flex-col gap-2">
         <ChatMoneyInfoMessage
           title="Your current balance"
-          amount={budget_summary?.available_balance?.toString()}
+          amount={budgetSummary?.available_balance?.toString()}
         />
         <ChatMoneyInfoMessage
           title="To stay within budget, you need to spend per day"
-          amount={budget_summary?.daily_limit?.toString()}
+          amount={budgetSummary?.daily_limit?.toString()}
         />
       </div>
     );
@@ -178,12 +177,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.SPENDING_INSIGHTS &&
     intent?.intent === IntentType.SPENDING_INSIGHTS
   ) {
-    const { summary, top_categories } = intent.output;
+    const summary = intent?.output?.summary;
+    const top_categories = intent?.output?.top_categories;
     return (
       <ChatSpendingInsightsMessage
         chatId={chatId!}
         message={message}
-        spendingInsights={intent.output}
+        spendingInsights={intent?.output}
         chartElement={
           <ChatPieChartMessage
             title="Expenses for"
@@ -210,8 +210,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.SPENDING_ANALYTICS &&
     intent?.intent === IntentType.SPENDING_ANALYTICS
   ) {
-    const { spending_analysis } = intent.output;
-
+    const spending_analysis = intent?.output?.spending_analysis;
     return (
       <div className="flex flex-col gap-4">
         {text && <ChatTextMessage text={text} role={role} />}

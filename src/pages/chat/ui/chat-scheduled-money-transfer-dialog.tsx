@@ -75,7 +75,7 @@ export function ChatScheduledMoneyTransferDialog({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: Number(data.transfer_details.amount),
+      amount: Number(data.transfer_details.amount || 0),
       recipient: data.transfer_details.recipient,
       scheduled_day: new Date(data.transfer_details.scheduled_time),
       scheduled_hour: new Date(data.transfer_details.scheduled_time)
