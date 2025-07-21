@@ -132,10 +132,11 @@ export class AudioWorkletManager {
           console.log(`Speech duration: ${this.speechDuration.toFixed(1)}s`);
           this.options.onVoiceActivity(false);
         },
+        model: 'v5',
         stream: this.mediaStream,
-        positiveSpeechThreshold: 0.85,
-        negativeSpeechThreshold: 0.85,
-        redemptionFrames: 15, // ~1.5 seconds of silence tolerance
+        positiveSpeechThreshold: 0.4,
+        negativeSpeechThreshold: 0.1,
+        redemptionFrames: 20, // ~2 seconds of silence tolerance
         preSpeechPadFrames: 4,
       });
 
