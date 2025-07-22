@@ -23,8 +23,8 @@ import { SidebarTrigger } from "@/shared/ui/kit/sidebar";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
 import { useEffect, useRef } from "react";
 import {
+  data,
   href,
-  Navigate,
   useLocation,
   useNavigate,
   useParams,
@@ -36,6 +36,26 @@ import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
 import { useLanguageStore } from "@/features/language";
 import { defaultPrompt } from "@/shared/mock/prompt";
 import { useEffectEvent } from "use-effect-event";
+
+export async function loader({
+  params,
+}: {
+  params: PathParams[typeof ROUTES.CHAT];
+}) {
+  const { chatId } = params;
+
+  if (!chatId) {
+    throw data("Chat ID is required", { status: 400 });
+  }
+
+  const chats = useChatStore?.getState()?.chats;
+
+  if (chats && !(chatId in chats)) {
+    throw data("Chat not found", { status: 404 });
+  }
+
+  return { chatId };
+}
 
 const ChatPage = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
@@ -108,7 +128,7 @@ const ChatPage = () => {
   // Clean effect with minimal dependencies
   useEffect(() => {
     if (!isConnected || !micEnabled) return; // Only depend on micEnabled
-    
+
     handleMicActivation();
   }, [isConnected, micEnabled]);
 
@@ -134,10 +154,6 @@ const ChatPage = () => {
     };
   }, [chatId, setLastMessageMeta]);
 
-  if (!chatId) {
-    return <Navigate to={ROUTES.HOME} />;
-  }
-
   const handleSubmit = (prompt: string, image?: ImageState) => {
     const newMessage = {
       id: uuidv4(),
@@ -153,7 +169,7 @@ const ChatPage = () => {
     };
 
     sendTextCommand(prompt);
-    addMessage(chatId, newMessage);
+    addMessage(chatId!, newMessage);
   };
 
   const handleStartRecording = () => {
@@ -166,8 +182,8 @@ const ChatPage = () => {
     navigate(`${href(ROUTES.CHAT, { chatId })}`);
   };
 
-  const chatTitle = chats[chatId]?.title || "";
-  const messages = chats[chatId]?.messages || [];
+  const chatTitle = chats[chatId!]?.title || "";
+  const messages = chats[chatId!]?.messages || [];
   const errorDialogOpen = !!wsError || !!audioError;
   const errorMessage = wsError || audioError || "Something went wrong";
 

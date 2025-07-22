@@ -1,10 +1,12 @@
 import { ROUTES } from "@/shared/model/routes";
+import { GlobalErrorBoundary } from "./global-error-boundary";
 import { createBrowserRouter } from "react-router-dom";
 import { App } from "./app";
 
 export const router = createBrowserRouter([
   {
     element: <App />,
+    errorElement: <GlobalErrorBoundary />,
     children: [
       {
         path: ROUTES.HOME,
@@ -40,7 +42,12 @@ export const router = createBrowserRouter([
       },
       {
         path: ROUTES.MICROPHONE_TEST,
-        lazy: () => import("@/pages/test-noize-cancelation/noize-cancelation.page"),
+        lazy: () =>
+          import("@/pages/test-noize-cancelation/noize-cancelation.page"),
+      },
+      {
+        path: "*",
+        lazy: () => import("@/pages/not-found/not-found.page"),
       },
     ],
   },
