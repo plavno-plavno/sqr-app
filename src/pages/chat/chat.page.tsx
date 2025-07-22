@@ -7,7 +7,11 @@ import {
   type ImageState,
   useChatStore,
 } from "@/features/chat";
-import { useAudio, useAudioStore, useWSConnection } from "@/features/ws-connection";
+import {
+  useAudio,
+  useAudioStore,
+  useWSConnection,
+} from "@/features/ws-connection";
 import voice from "@/shared/assets/animations/voice.json";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import { cn } from "@/shared/lib/css/tailwind";
@@ -31,6 +35,7 @@ import { ChatDialog } from "./compose/chat-dialog";
 import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
 import { useLanguageStore } from "@/features/language";
 import { defaultPrompt } from "@/shared/mock/prompt";
+import { useEffectEvent } from "use-effect-event";
 
 const ChatPage = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
@@ -94,13 +99,18 @@ const ChatPage = () => {
     };
   }, [stopRecording]);
 
-  // Activate mic when user clicks on mic button in home page
-  useEffect(() => {
-    if (!isConnected || !micEnabled) return;
-
+  const handleMicActivation = useEffectEvent(() => {
+    console.log("startRecording");
     startRecording();
     navigate(location.pathname, { replace: true });
-  }, [micEnabled, isConnected, startRecording, navigate, location.pathname]);
+  });
+
+  // Clean effect with minimal dependencies
+  useEffect(() => {
+    if (!isConnected || !micEnabled) return; // Only depend on micEnabled
+    
+    handleMicActivation();
+  }, [isConnected, micEnabled]);
 
   // Send message if user input message in home page
   useEffect(() => {

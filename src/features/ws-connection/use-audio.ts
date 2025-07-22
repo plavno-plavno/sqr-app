@@ -22,32 +22,45 @@ export const useAudio = (config?: UseAudioProps) => {
   const setAudioError = useAudioStore.use.setAudioError();
   const clearAudio = useAudioStore.use.clearAudio();
 
-  const onError = (error: Error) => {
-    setIsRecording(false);
-    setAudioError(error.message);
-  };
+  const onError = useCallback(
+    (error: Error) => {
+      setIsRecording(false);
+      setAudioError(error.message);
+    },
+    [setIsRecording, setAudioError]
+  );
 
-  const send = (command: (connection: WebSocketConnection) => void) => {
+  const send = useCallback(
+    (command: (connection: WebSocketConnection) => void) => {
+      try {
+        if (!connection) throw new Error("Socket is not connected");
+        command(connection);
+      } catch (error) {
+        onError(error as Error);
+      }
+    },
+    [connection, onError]
+  );
+
+  const onAudioData = useCallback(
+    (base64Data: string, voicestop: boolean) => {
+      send((connection) => connection.sendAudioData(base64Data, voicestop));
+    },
+    [send]
+  );
+
+  const onVoiceEnd = useCallback(
+    (isActive: boolean) => {
+      if (isActive) return;
+      send((connection) => connection.sendVoiceEndCommand());
+    },
+    [send]
+  );
+
+  const startRecording = useCallback(async () => {
     try {
       if (!connection) throw new Error("Socket is not connected");
-      command(connection);
-    } catch (error) {
-      onError(error as Error);
-    }
-  };
-
-  const onAudioData = (base64Data: string, voicestop: boolean) => {
-    send((connection) => connection.sendAudioData(base64Data, voicestop));
-  };
-
-  const onVoiceEnd = (isActive: boolean) => {
-    if (isActive) return;
-    send((connection) => connection.sendVoiceEndCommand());
-  };
-
-  const startRecording = async () => {
-    try {
-      if (!connection) throw new Error("Socket is not connected");
+      if (isRecording) return;
 
       let newAudioManager;
 
@@ -62,18 +75,29 @@ export const useAudio = (config?: UseAudioProps) => {
           },
         });
         setAudioManager(newAudioManager);
+
+        await newAudioManager.initialize();
+        await newAudioManager.start();
       } else {
-        newAudioManager = audioManager;
+        await audioManager.start();
       }
 
-      await newAudioManager?.initialize();
-      await newAudioManager?.start();
       setIsRecording(true);
     } catch (error) {
       console.error("Failed to start recording:", error);
       onError(error as Error);
     }
-  };
+  }, [
+    connection,
+    audioManager,
+    isRecording,
+    setAudioManager,
+    onAudioData,
+    onError,
+    onMicLevelChange,
+    onVoiceEnd,
+    setIsRecording,
+  ]);
 
   const stopRecording = useCallback(async () => {
     await audioManager?.stop();
