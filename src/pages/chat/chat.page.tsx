@@ -7,7 +7,7 @@ import {
   type ImageState,
   useChatStore,
 } from "@/features/chat";
-import { useAudio, useWSConnection } from "@/features/ws-connection";
+import { useAudio, useAudioStore, useWSConnection } from "@/features/ws-connection";
 import voice from "@/shared/assets/animations/voice.json";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import { cn } from "@/shared/lib/css/tailwind";
@@ -87,9 +87,12 @@ const ChatPage = () => {
   // Stop recording when component unmounts
   useEffect(() => {
     return () => {
-      if (isRecording) stopRecording();
+      // Check current recording state from store instead of closure
+      if (useAudioStore.getState().isRecording) {
+        stopRecording();
+      }
     };
-  }, [stopRecording, isRecording]);
+  }, [stopRecording]);
 
   // Activate mic when user clicks on mic button in home page
   useEffect(() => {

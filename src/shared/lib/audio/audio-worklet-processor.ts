@@ -133,10 +133,12 @@ export class AudioWorkletManager {
           this.options.onVoiceActivity(false);
         },
         model: 'v5',
+        baseAssetPath: "/",
+        onnxWASMBasePath: "/",
         stream: this.mediaStream,
         positiveSpeechThreshold: 0.4,
         negativeSpeechThreshold: 0.1,
-        redemptionFrames: 20, // ~2 seconds of silence tolerance
+        redemptionFrames: 25, // ~2.5 seconds of silence tolerance
         preSpeechPadFrames: 4,
       });
 
@@ -271,7 +273,7 @@ export class AudioWorkletManager {
     }
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
     if (this.speechTimer) {
       clearInterval(this.speechTimer);
     }
@@ -283,7 +285,7 @@ export class AudioWorkletManager {
     this.source?.disconnect();
     this.gainNode?.disconnect();
     this.analyserNode?.disconnect();
-    this.audioContext?.close();
+    await this.audioContext?.close();
     this.mediaStream = null;
     this.audioContext = null;
     this.workletNode = null;

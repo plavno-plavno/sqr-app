@@ -107,7 +107,7 @@ export const useWSConnection = () => {
     setLastMessageMeta(chatId, { start, end });
   };
 
-  const handleAgentResponse = (
+  const handleAgentResponse = async (
     chatId: string,
     segments: AudioResponse | TranslationResponse | IntentResponse
   ) => {
@@ -165,7 +165,7 @@ export const useWSConnection = () => {
           type: ChatMessageType.HIDDEN,
           role: ChatMessageRole.AGENT,
         });
-        audioManager?.stop();
+        await audioManager?.stop();
         setDialog(false, null);
         clearAudio();
         return;

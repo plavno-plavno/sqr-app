@@ -75,8 +75,8 @@ export const useAudio = (config?: UseAudioProps) => {
     }
   };
 
-  const stopRecording = useCallback(() => {
-    audioManager?.stop();
+  const stopRecording = useCallback(async () => {
+    await audioManager?.stop();
     clearAudio();
   }, [audioManager, clearAudio]);
 
