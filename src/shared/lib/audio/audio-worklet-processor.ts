@@ -138,7 +138,7 @@ export class AudioWorkletManager {
         stream: this.mediaStream,
         positiveSpeechThreshold: 0.4,
         negativeSpeechThreshold: 0.1,
-        redemptionFrames: 25, // ~2.5 seconds of silence tolerance
+        redemptionFrames: 20, // ~2 seconds of silence tolerance
         preSpeechPadFrames: 4,
       });
 
