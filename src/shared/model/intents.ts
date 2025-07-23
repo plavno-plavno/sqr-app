@@ -8,6 +8,7 @@ export enum IntentType {
   SPENDING_ANALYTICS = "spending_analytics",
   TRANSFER_MONEY = "transfer_money",
   GOODBYE = "goodbye",
+  INVESTMENT = "investment",
 }
 
 // Base interfaces for common structures
@@ -205,6 +206,29 @@ export interface GoodbyeOutput {
   conversation_status: string;
 }
 
+// INVESTMENT Intent Response Schema
+export interface InvestmentOutput {
+  investment_details: {
+    stock_symbol: string;
+    investment_amount: number;
+    current_price: number;
+    shares_to_purchase: number;
+    currency: string;
+    transaction_id: string;
+    timestamp: string; // ISO format
+  };
+  market_info: {
+    current_price: number;
+    price_change_24h: number;
+    price_change_percent: number;
+    market_trend: "bullish" | "bearish" | "neutral";
+    volume: number;
+    market_cap: number;
+  };
+  warnings: Warning[];
+  summary: Summary;
+}
+
 export type AbilitiesResponse = {
   intent: IntentType.ABILITIES;
   output: AbilitiesOutput;
@@ -259,6 +283,12 @@ export type GoodbyeResponse = {
   text?: string;
 };
 
+export type InvestmentResponse = {
+  intent: IntentType.INVESTMENT;
+  output: InvestmentOutput;
+  text?: string;
+};
+
 export type IntentResponse =
   | AbilitiesResponse
   | BTCPriceResponse
@@ -268,7 +298,8 @@ export type IntentResponse =
   | SpendingInsightsResponse
   | SpendingAnalyticsResponse
   | TransferMoneyResponse
-  | GoodbyeResponse;
+  | GoodbyeResponse
+  | InvestmentResponse;
 
 export type OperationInfo = {
   intent: IntentType;

@@ -66,7 +66,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
   if (
     type === ChatMessageType.SUCCESS &&
     text &&
-    intent?.intent === IntentType.BUY_BTC
+    (intent?.intent === IntentType.BUY_BTC ||
+      intent?.intent === IntentType.INVESTMENT)
   ) {
     return (
       <ChatSuccessMessage text={text}>

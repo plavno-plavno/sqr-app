@@ -27,8 +27,10 @@ export function GlobalErrorBoundary() {
           <>
             {error.message}
             {CONFIG.DEV && (
-              <pre className="text-xs text-left bg-muted p-4 rounded mb-4 overflow-auto">
-                <code>{error.stack}</code>
+              <pre className="text-xs text-left bg-muted p-4 rounded mb-4 w-full">
+                <code className="whitespace-pre-wrap">
+                  {error.stack}
+                </code>
               </pre>
             )}
           </>

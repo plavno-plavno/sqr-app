@@ -14,9 +14,11 @@ import {
 } from "@/shared/model/intents";
 import type {
   AudioResponse,
+  PromptType,
   ServerResponse,
   TextResponse,
   TranslationResponse,
+  VocalizerType,
 } from "@/shared/model/websocket";
 import axios from "axios";
 import { useEffectEvent } from "use-effect-event";
@@ -151,6 +153,7 @@ export const useWSConnection = () => {
 
       if (
         intentResponse.intent === IntentType.BUY_BTC ||
+        intentResponse.intent === IntentType.INVESTMENT ||
         intentResponse.intent === IntentType.TRANSFER_MONEY ||
         intentResponse.intent === IntentType.SCHEDULED_TRANSFER
       ) {
@@ -184,6 +187,8 @@ export const useWSConnection = () => {
 
     // Text response from agent
     if ("text" in segments) {
+      // TODO: Remove this after server fix
+      if (segments.text.startsWith("Switched to")) return;
       const { text, start, end } = segments;
 
       const newMessage = {
@@ -317,6 +322,31 @@ export const useWSConnection = () => {
     sendCommand((connection) => connection.sendVoiceEndCommand());
   }, [sendCommand]);
 
+  const sendSwitchVocalizerCommand = useCallback(
+    (vocalizerType: VocalizerType) => {
+      sendCommand((connection) =>
+        connection.sendSwitchVocalizerCommand(vocalizerType)
+      );
+    },
+    [sendCommand]
+  );
+
+  const sendSwitchPromptCommand = useCallback(
+    (prompt: PromptType) => {
+      sendCommand((connection) => connection.sendSwitchPromptCommand(prompt));
+    },
+    [sendCommand]
+  );
+
+  const sendToggleIntentCommand = useCallback(
+    (isEnabled: boolean) => {
+      sendCommand((connection) =>
+        connection.sendToggleIntentCommand(isEnabled)
+      );
+    },
+    [sendCommand]
+  );
+
   return {
     isConnected,
     isConnecting,
@@ -326,6 +356,9 @@ export const useWSConnection = () => {
     sendConfirmationCommand,
     sendAudioData,
     sendVoiceEndCommand,
+    sendSwitchVocalizerCommand,
+    sendSwitchPromptCommand,
+    sendToggleIntentCommand,
     setWsError,
   };
 };

@@ -43,9 +43,7 @@ export function ChatSpendingInsightsMessage({
         <>
           <ChatTextMessage
             role={ChatMessageRole.AGENT}
-            text={`I also found you have hidden subscriptions 
-            that cost $${subscription_analysis?.total_monthly} a month,
-           want to look into it and disable them?`}
+            text={`I also found you have hidden subscriptions that cost $${subscription_analysis?.total_monthly} a month, want to look into it and disable them?`}
           />
 
           {!subscriptionsClicked && (

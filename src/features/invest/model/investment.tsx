@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import UsdIcon from "@/shared/assets/icons/usd-icon.svg?react";
 import BtcIcon from "@/shared/assets/icons/bitcoin-icon.svg?react";
+import { Coins } from "lucide-react";
 
 export interface Investment {
   id: string;
@@ -18,6 +19,8 @@ export const getInvestmentIcon = (symbol: string) => {
       return <UsdIcon />;
     case "BTC":
       return <BtcIcon />;
+    default:
+      return <Coins />;
   }
 };
 

@@ -24,6 +24,7 @@ import {
 import { ChatScheduledMoneyTransferDialog } from "../ui/chat-scheduled-money-transfer-dialog";
 import { useFinanceStore } from "@/features/finance";
 import { useInvestmentStore } from "@/features/invest";
+import { ChatInvestDialog } from "../ui/chat-invest-dialog";
 
 const getConfirmInfo = (intent: IntentResponse) => {
   const { output, intent: intentType } = intent;
@@ -115,7 +116,39 @@ export const ChatDialog = memo(() => {
             inputData
           );
           subtractFromBalance(inputData.total_cost || 0);
-          buyCoins("BTC", inputData.btc_amount || 0);
+          buyCoins({
+            name: "Bitcoin",
+            symbol: "BTC",
+            amount: inputData.btc_amount || 0,
+            rate: dialogIntent?.output?.market_info?.btc_price,
+          });
+        }}
+        onCancel={onCancel}
+      />
+    );
+  }
+
+  if (dialogIntent?.intent === IntentType.INVESTMENT) {
+    const investmentDetails = dialogIntent?.output?.investment_details;
+    return (
+      <ChatInvestDialog
+        data={dialogIntent.output}
+        open={open}
+        onConfirm={(inputData) => {
+          onConfirm(
+            {
+              text: `Order completed. Bought ${inputData.shares_to_purchase} of ${investmentDetails?.stock_symbol} for ${inputData.investment_amount} ${investmentDetails?.currency}`,
+              intent: dialogIntent,
+            },
+            inputData
+          );
+          subtractFromBalance(inputData.investment_amount || 0);
+          buyCoins({
+            name: investmentDetails?.stock_symbol,
+            symbol: investmentDetails?.stock_symbol,
+            amount: inputData.shares_to_purchase,
+            rate: dialogIntent?.output?.market_info?.current_price,
+          });
         }}
         onCancel={onCancel}
       />

@@ -1,5 +1,9 @@
 import type { OperationInfo } from "@/shared/model/intents";
-import type { ServerResponse } from "@/shared/model/websocket";
+import {
+  PromptType,
+  type ServerResponse,
+  VocalizerType,
+} from "@/shared/model/websocket";
 
 export class WebSocketConnection {
   #socket: WebSocket | null = null;
@@ -64,6 +68,8 @@ export class WebSocketConnection {
             if (data.message === "SERVER_READY") {
               console.log("Server is ready for audio streaming");
               this.#isServerReady = true;
+              // TODO: Remove this after server fix
+              this.sendSwitchPromptCommand(PromptType.BANKING);
               resolve();
             } else if (data.segments) {
               // Это ответ с транскрипцией
@@ -143,6 +149,32 @@ export class WebSocketConnection {
       command: true,
       commandName: "confirm_operation",
       operation_info: operationInfo,
+    };
+    this.send(packet);
+  }
+
+  sendSwitchVocalizerCommand(vocalizerType: VocalizerType) {
+    const packet = {
+      command: true,
+      commandName: "switch_vocalizer",
+      vocalizer_type: vocalizerType,
+    };
+    this.send(packet);
+  }
+
+  sendSwitchPromptCommand(prompt: PromptType) {
+    const packet = {
+      command: true,
+      commandName: "switch_prompt",
+      prompt_set: prompt,
+    };
+    this.send(packet);
+  }
+
+  sendToggleIntentCommand(isEnabled: boolean) {
+    const packet = {
+      command: true,
+      commandName: isEnabled ? "enable_intent" : "skip_intent",
     };
     this.send(packet);
   }

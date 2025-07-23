@@ -6,6 +6,20 @@ interface Segment {
   end: string;
 }
 
+export enum VocalizerType {
+  HUME = "hume",
+  MINIMAX = "minimax",
+  ELEVENLABS = "elevenlabs",
+}
+
+export enum PromptType {
+  DEFAULT = "default",
+  CASUAL = "casual",
+  MEDIC = "medic",
+  TALENT = "talent",
+  BANKING = "banking",
+}
+
 export type UserTextResponse = { current_user_text: string };
 export type TextResponse = Segment[];
 export type TranslationResponse = Record<string, string>;

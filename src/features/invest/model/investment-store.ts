@@ -1,38 +1,9 @@
 import { createSelectors } from "@/shared/lib/js/zustand";
+import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { v4 as uuidv4 } from "uuid";
 import { investMock, type Investment } from "./investment";
-
-// Create a function to get coin data
-const getCoinData = (symbol: string): Partial<Investment> => {
-  const coinData: Record<string, Partial<Investment>> = {
-    USDC: {
-      name: "USD Coin",
-      rate: 1.0,
-      changePercent: -0.04,
-    },
-    BTC: {
-      name: "Bitcoin",
-      rate: 94567.89,
-      changePercent: -0.04,
-    },
-    AAPL: {
-      name: "Apple Inc.",
-      rate: 224.37,
-      changePercent: 0.12,
-    },
-  };
-
-  return (
-    coinData[symbol] || {
-      name: symbol,
-      rate: 1.0,
-      changePercent: 0.0,
-    }
-  );
-};
 
 interface State {
   investments: Investment[];
@@ -46,7 +17,7 @@ interface Actions {
     investmentId: string,
     updates: Partial<Investment>
   ) => void;
-  buyCoins: (symbol: string, amount: number) => void;
+  buyCoins: (coinData: Partial<Investment>) => void;
   getTotalValueInUSD: () => number;
 }
 
@@ -83,27 +54,27 @@ const useInvestmentStoreBase = create<Store>()(
           }
         }),
 
-      buyCoins: (symbol: string, amount: number) =>
+      buyCoins: (coinData: Partial<Investment>) =>
         set((state) => {
+          console.log(coinData);
           // Check if investment with this symbol already exists
           const existingInvestment = state.investments.find(
-            (inv) => inv.symbol === symbol
+            (inv) => inv.symbol === coinData?.symbol
           );
 
           if (existingInvestment) {
             // Add to existing investment
-            existingInvestment.amount += amount;
+            existingInvestment.amount += coinData?.amount || 0;
           } else {
             // Create new investment
-            const coinData = getCoinData(symbol);
             const newInvestment: Investment = {
               id: uuidv4(),
-              symbol,
-              currency: symbol,
-              amount,
-              name: coinData.name || symbol,
-              rate: coinData.rate || 1.0,
-              changePercent: coinData.changePercent || 0.0,
+              symbol: coinData?.symbol || "",
+              currency: coinData?.symbol || "",
+              amount: coinData?.amount || 0,
+              name: coinData?.name || coinData?.symbol || "",
+              rate: coinData?.rate || 1.0,
+              changePercent: Math.random() - 0.5, // Generate random percent between -0.5 and 0.5
             };
             state.investments.push(newInvestment);
           }
