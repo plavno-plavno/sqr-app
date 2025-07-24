@@ -69,7 +69,7 @@ export class WebSocketConnection {
               console.log("Server is ready for audio streaming");
               this.#isServerReady = true;
               // TODO: Remove this after server fix
-              this.sendSwitchPromptCommand(PromptType.BANKING);
+              this.sendSwitchPromptCommand(PromptType.DEFAULT);
               resolve();
             } else if (data.segments) {
               // Это ответ с транскрипцией
