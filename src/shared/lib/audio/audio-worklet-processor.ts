@@ -13,11 +13,12 @@ interface AudioProcessorOptions {
 
 export class AudioWorkletManager {
   private audioContext: AudioContext | null = null;
+  private frames: number = 0;
   private workletNode: AudioWorkletNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private options: Required<AudioProcessorOptions>;
   public isVoiceActive: boolean = false;
-  private vad: MicVAD | null = null;
+  public vad: MicVAD | null = null;
   private voicestopFlag: boolean = false;
   private gainNode: GainNode | null = null;
   private analyserNode: AnalyserNode | null = null;
@@ -27,7 +28,7 @@ export class AudioWorkletManager {
   private readonly SILENCE_FRAMES_THRESHOLD = 10;
   private readonly BUFFER_SIZE = 1024;
   private mediaStream: MediaStream | null = null;
-  private speechStartTime: number = 0;
+  // private speechStartTime: number = 0;
   public speechDuration: number = 0;
   public isUserFinished: boolean | null = null;
   private speechTimer: ReturnType<typeof setInterval> | null = null;
@@ -105,41 +106,41 @@ export class AudioWorkletManager {
 
       // Initialize VAD with high threshold to prevent self-echo
       this.vad = await MicVAD.new({
-        onSpeechStart: () => {
-          console.log('Speech started');
-          this.isVoiceActive = true;
-          this.speechStartTime = Date.now();
-          this.speechDuration = 0;
-          this.isUserFinished = null;
-          this.speechTimer = setInterval(() => {
-            this.speechDuration = (Date.now() - this.speechStartTime) / 1000;
-          }, 100);
-          this.options.onVoiceActivity(true);
-          if (this.options.onStopAudioQueue) {
-            this.options.onStopAudioQueue();
-            this.voicestopFlag = true;
+        onFrameProcessed: (probabilities) => {
+          if (probabilities.isSpeech > 0.4) {
+            this.isVoiceActive = true;
+            this.isUserFinished = null;
+            this.frames = 0; // reset frames of silence tolerance
+            console.log('SPEECH START======================')
+            // console.log('frames', frame)
+            this.options.onVoiceActivity(true);
+            if (this.options.onStopAudioQueue) {
+              this.options.onStopAudioQueue();
+              this.voicestopFlag = true;
+            }
+          } else if (probabilities.notSpeech > 0.95) {
+            this.frames++; // add frames of silence tolerance
+            if (this.isVoiceActive && this.frames > 20) {
+              console.log('=========================SPEECH END')
+              this.isVoiceActive = false;
+              this.isUserFinished = true;
+              this.speechTimer = null;
+              this.options.onVoiceActivity(false);
+            }
           }
-        },
-        onSpeechEnd: () => {
-          console.log('Speech ended');
-          this.isVoiceActive = false;
-          this.isUserFinished = true;
-          if (this.speechTimer) {
-            clearInterval(this.speechTimer);
-            this.speechTimer = null;
-            this.speechDuration = 0;
-          }
-          console.log(`Speech duration: ${this.speechDuration.toFixed(1)}s`);
-          this.options.onVoiceActivity(false);
         },
         model: 'v5',
+        stream: this.mediaStream,
         baseAssetPath: "/",
         onnxWASMBasePath: "/",
-        stream: this.mediaStream,
-        positiveSpeechThreshold: 0.4,
-        negativeSpeechThreshold: 0.1,
-        redemptionFrames: 20, // ~2 seconds of silence tolerance
-        preSpeechPadFrames: 4,
+        // Идеальные настройки
+        positiveSpeechThreshold: 0.5,
+        negativeSpeechThreshold: 0.35,
+        redemptionFrames: 24, // ~2 seconds of silence tolerance
+        preSpeechPadFrames: 3,
+        minSpeechFrames: 9,
+        frameSamples: 512,
+        // userSpeakingThreshold: 0.6,
       });
 
       await this.vad.start();
