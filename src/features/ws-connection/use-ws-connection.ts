@@ -28,7 +28,6 @@ import { useAudioStore } from "./audio-store";
 import { useCallback } from "react";
 
 export const useWSConnection = () => {
-  const audioQueue = useAudioStore.use.audioQueue();
   const audioManager = useAudioStore.use.audioManager();
   const setAudioQueue = useAudioStore.use.setAudioQueue();
   const clearAudio = useAudioStore.use.clearAudio();
@@ -204,17 +203,15 @@ export const useWSConnection = () => {
     // Audio response from agent
     if ("audio" in segments) {
       const audioResponse = segments as AudioResponse;
-
-      let newAudioQueue;
-
-      if (!audioQueue) {
-        newAudioQueue = new AudioQueueManager();
+      const currentAudioQueue = useAudioStore.getState().audioQueue;
+      
+      if (!currentAudioQueue) {
+        const newAudioQueue = new AudioQueueManager();
         setAudioQueue(newAudioQueue);
+        newAudioQueue.addToQueue(audioResponse);
       } else {
-        newAudioQueue = audioQueue;
+        currentAudioQueue.addToQueue(audioResponse);
       }
-
-      newAudioQueue?.addToQueue(audioResponse);
     }
   };
 

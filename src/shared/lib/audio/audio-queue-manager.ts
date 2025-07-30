@@ -20,6 +20,9 @@ export class AudioQueueManager {
   private fadeDuration: number = 0.7;
   private isStopping: boolean = false;
 
+  // Мьютекс для предотвращения race conditions при воспроизведении
+  private isPlaybackScheduled: boolean = false;
+
   constructor(options: AudioQueueManagerOptions = {}) {
     this.options = options;
     if (typeof AudioContext !== "undefined") {
@@ -70,9 +73,12 @@ export class AudioQueueManager {
       this.currentChunkId = audioData.chunk_id;
     }
 
-    // If not playing, start playback
-    if (!this.isPlaying) {
-      this.playNext();
+    // If not playing and not scheduled, start playback
+    if (!this.isPlaying && !this.isPlaybackScheduled) {
+      this.isPlaybackScheduled = true;
+      this.playNext().finally(() => {
+        this.isPlaybackScheduled = false;
+      });
     }
   }
 
@@ -236,7 +242,7 @@ export class AudioQueueManager {
   private onPlaybackEnd() {
     this.isPlaying = false;
 
-    if (this.isStopping) return;
+    if (this.isStopping || this.isPlaybackScheduled) return;
 
     if (this.currentStreamId) {
       const currentStream = this.audioStreams.get(this.currentStreamId);
@@ -258,7 +264,11 @@ export class AudioQueueManager {
     }
 
     this.disconnectAndClearNodes();
-    this.playNext();
+    
+    this.isPlaybackScheduled = true;
+    this.playNext().finally(() => {
+      this.isPlaybackScheduled = false;
+    });
   }
 
   public stop() {
