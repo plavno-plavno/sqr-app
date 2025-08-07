@@ -6,7 +6,7 @@ export const requests = {
   getFreeMachine: async (
     config?: AxiosRequestConfig
   ): AxiosPromise<FreeMachine> =>
-    apiClient.get("/scaler/find-free-machine/medic", config),
+    apiClient.get("/scaler/find-free-machine/finance", config),
 };
 
 export type RequestsEnum = keyof typeof requests;
