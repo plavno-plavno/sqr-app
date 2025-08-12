@@ -105,9 +105,8 @@ const ChatPage = () => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    if (!chatId) return;
-    return initWSConnection(chatId, language.code, defaultPrompt);
-  }, [chatId, language.code, initWSConnection]);
+    return initWSConnection(language.code, defaultPrompt);
+  }, [language.code, initWSConnection]);
 
   // Stop recording when component unmounts
   useEffect(() => {
@@ -176,7 +175,8 @@ const ChatPage = () => {
     startRecording();
   };
 
-  const handleNewChatClick = () => {
+  const handleNewChatClick = async () => {
+    await stopRecording();
     const chatId = uuidv4();
     createChat(chatId);
     navigate(`${href(ROUTES.CHAT, { chatId })}`);

@@ -26,8 +26,11 @@ import { v4 as uuidv4 } from "uuid";
 import { useWebSocketStore } from "./websocket-store";
 import { useAudioStore } from "./audio-store";
 import { useCallback } from "react";
+import type { PathParams, ROUTES } from "@/shared/model/routes";
+import { useParams } from "react-router-dom";
 
 export const useWSConnection = () => {
+  const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
   const audioManager = useAudioStore.use.audioManager();
   const setAudioQueue = useAudioStore.use.setAudioQueue();
   const clearAudio = useAudioStore.use.clearAudio();
@@ -54,7 +57,7 @@ export const useWSConnection = () => {
     return `wss://${freeMachine.dns}:${freeMachine.port}`;
   };
 
-  const getLastMessageByRole = (chatId: string, roles: ChatMessageRole[]) => {
+  const getLastMessageByRole = (roles: ChatMessageRole[]) => {
     const messages = getMessages(chatId);
     for (let i = messages.length - 1; i >= 0; i--) {
       const message = messages[i];
@@ -63,9 +66,11 @@ export const useWSConnection = () => {
     return null;
   };
 
-  const handleUserTranscription = (chatId: string, segments: TextResponse) => {
+  const handleUserTranscription = (segments: TextResponse) => {
+    if (!chatId) return;
+
     const messages = getMessages(chatId);
-    const lastMessageMeta = getLastMessageMeta(chatId) || {
+    const lastMessageMeta = getLastMessageMeta(chatId!) || {
       start: -1,
       end: -1,
     };
@@ -109,12 +114,13 @@ export const useWSConnection = () => {
   };
 
   const handleAgentResponse = async (
-    chatId: string,
     segments: AudioResponse | TranslationResponse | IntentResponse
   ) => {
+    if (!chatId) return;
+
     // Last user message
     if ("current_user_text" in segments) {
-      const lastUserMessage = getLastMessageByRole(chatId, [
+      const lastUserMessage = getLastMessageByRole([
         ChatMessageRole.USER_VOICE,
         ChatMessageRole.USER_TEXT,
       ]);
@@ -204,7 +210,7 @@ export const useWSConnection = () => {
     if ("audio" in segments) {
       const audioResponse = segments as AudioResponse;
       const currentAudioQueue = useAudioStore.getState().audioQueue;
-      
+
       if (!currentAudioQueue) {
         const newAudioQueue = new AudioQueueManager();
         setAudioQueue(newAudioQueue);
@@ -215,68 +221,59 @@ export const useWSConnection = () => {
     }
   };
 
-  const handleWSMessage = useEffectEvent(
-    (response: ServerResponse, chatId?: string) => {
-      if (!chatId) return;
-      if (!("segments" in response)) return;
-      if (typeof response.segments !== "object") return;
+  const handleWSMessage = useEffectEvent((response: ServerResponse) => {
+    if (!("segments" in response)) return;
+    if (typeof response.segments !== "object") return;
 
-      // User transcription response
-      if (
-        response.type === "transcription" &&
-        Array.isArray(response.segments)
-      ) {
-        handleUserTranscription(chatId, response.segments);
-      }
+    // User transcription response
+    if (response.type === "transcription" && Array.isArray(response.segments)) {
+      handleUserTranscription(response.segments);
+    }
 
-      // Agent response
-      if (response.type === "agent" && !Array.isArray(response.segments)) {
-        handleAgentResponse(chatId, response.segments);
+    // Agent response
+    if (response.type === "agent" && !Array.isArray(response.segments)) {
+      handleAgentResponse(response.segments);
+    }
+  });
+
+  const initWSConnection = useCallback((language: string, prompt: string) => {
+    const { setConnection, setIsConnected, setWsError, setIsConnecting } =
+      useWebSocketStore.getState();
+    const controller = new AbortController();
+    const ws = new WebSocketConnection(language, prompt);
+    setConnection(ws);
+
+    async function init() {
+      try {
+        setIsConnecting(true);
+        const url = await getFreeMachine(controller);
+
+        if (controller.signal.aborted) return;
+
+        await ws.initSocket(url, (response) => {
+          handleWSMessage(response);
+        });
+        setIsConnected(true);
+        setIsConnecting(false);
+      } catch (error) {
+        if (axios.isCancel(error)) return;
+        setWsError((error as Error).message);
+        ws.closeConnection();
+        setIsConnecting(false);
+        setConnection(null);
       }
     }
-  );
 
-  const initWSConnection = useCallback(
-    (chatId: string, language: string, prompt: string) => {
-      const { setConnection, setIsConnected, setWsError, setIsConnecting } =
-        useWebSocketStore.getState();
-      const controller = new AbortController();
-      const ws = new WebSocketConnection(language, prompt);
-      setConnection(ws);
+    init();
 
-      async function init() {
-        try {
-          setIsConnecting(true);
-          const url = await getFreeMachine(controller);
-
-          if (controller.signal.aborted) return;
-
-          await ws.initSocket(url, (response) => {
-            handleWSMessage(response, chatId);
-          });
-          setIsConnected(true);
-          setIsConnecting(false);
-        } catch (error) {
-          if (axios.isCancel(error)) return;
-          setWsError((error as Error).message);
-          ws.closeConnection();
-          setIsConnecting(false);
-          setConnection(null);
-        }
-      }
-
-      init();
-
-      return () => {
-        controller.abort();
-        ws.closeConnection();
-        setConnection(null);
-        setIsConnected(false);
-        setIsConnecting(false);
-      };
-    },
-    []
-  );
+    return () => {
+      controller.abort();
+      ws.closeConnection();
+      setConnection(null);
+      setIsConnected(false);
+      setIsConnecting(false);
+    };
+  }, []);
 
   const sendCommand = useCallback(
     (command: (connection: WebSocketConnection) => void) => {

@@ -1,5 +1,6 @@
 import { ChatHistoryList, useChatStore } from "@/features/chat";
 import { AppSidebar } from "@/features/sidebar";
+import { useAudio } from "@/features/ws-connection";
 import { ROUTES } from "@/shared/model/routes";
 import { SidebarProvider, useSidebar } from "@/shared/ui/kit/sidebar";
 import { href, Outlet, useMatch, useNavigate } from "react-router-dom";
@@ -9,8 +10,10 @@ function AppContent() {
   const createChat = useChatStore.use.createChat();
   const navigate = useNavigate();
   const { toggleSidebar } = useSidebar();
+  const { stopRecording } = useAudio();
 
-  const onNewChatClick = () => {
+  const onNewChatClick = async () => {
+    await stopRecording();
     const chatId = uuidv4();
     createChat(chatId);
     navigate(`${href(ROUTES.CHAT, { chatId })}`);

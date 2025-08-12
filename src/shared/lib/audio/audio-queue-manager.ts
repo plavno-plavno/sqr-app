@@ -170,9 +170,8 @@ export class AudioQueueManager {
     gainNode: GainNode;
     analyser: AnalyserNode;
   }> {
-    // Process audio data
-    const arrayBuffer = this.decodeBase64Audio(audioData.audio);
-    const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+    // Build AudioBuffer from base64 PCM payload
+    const audioBuffer = this.createAudioBufferFromBase64PCM(audioData.audio, 22050, 1);
 
     // Create audio graph nodes
     const source = this.audioContext!.createBufferSource();
@@ -195,6 +194,33 @@ export class AudioQueueManager {
     analyser.connect(this.audioContext!.destination);
 
     return { source, gainNode, analyser };
+  }
+
+  private createAudioBufferFromBase64PCM(
+    base64: string,
+    sampleRate: number = 22050,
+    channels: number = 1
+  ): AudioBuffer {
+    // Decode base64 to raw bytes
+    const arrayBuffer = this.decodeBase64Audio(base64);
+
+    // Convert Int16 PCM -> Float32 [-1, 1]
+    const int16View = new Int16Array(arrayBuffer);
+    const float32 = new Float32Array(int16View.length);
+    for (let i = 0; i < int16View.length; i++) {
+      // Normalize to [-1, 1]
+      float32[i] = int16View[i]! / 32768;
+    }
+
+    // Create AudioBuffer and copy to channels (duplicate mono if channels > 1)
+    const audioBuffer = this.audioContext!.createBuffer(
+      channels,
+      float32.length,
+      sampleRate
+    );
+    audioBuffer.copyToChannel(float32, 0);
+
+    return audioBuffer;
   }
 
   private setupLevelMonitoring(analyser: AnalyserNode) {
@@ -264,7 +290,7 @@ export class AudioQueueManager {
     }
 
     this.disconnectAndClearNodes();
-    
+
     this.isPlaybackScheduled = true;
     this.playNext().finally(() => {
       this.isPlaybackScheduled = false;
@@ -315,13 +341,13 @@ export class AudioQueueManager {
   }
 
   private decodeBase64Audio(base64: string): ArrayBuffer {
-    const base64WithoutHeader = base64.split(",")[1] || base64;
-    const byteCharacters = atob(base64WithoutHeader);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    const binary = atob(base64);
+    const buffer = new ArrayBuffer(binary.length);
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
     }
-    return new Uint8Array(byteNumbers).buffer;
+    return buffer;
   }
 
   private disconnectAndClearNodes() {
