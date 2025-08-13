@@ -85,6 +85,39 @@ The chat system processes structured intents defined in `src/shared/model/intent
 - Type-safe intent responses with standardized schemas
 - Each intent has structured output format with warnings, summaries, and specific data
 
+### Audio Server Protocol
+The application communicates with an audio server via WebSocket with the following protocol:
+
+**Audio Chunk Format:**
+```typescript
+interface AudioResponse {
+  audio: string | null;     // Base64 encoded Int16 PCM data (64KB chunks)
+  chunk_id: number;         // Chunk sequence number (starts from 0, sequential)
+  stream_id: number;        // Audio stream identifier (sequential, no gaps)
+}
+```
+
+**Audio Stream Lifecycle:**
+1. **User Input**: User speaks or types a message to the AI agent
+2. **Server Response**: Server processes input and returns:
+   - Text response/intent data
+   - Audio stream as chunked data
+3. **Audio Chunks**: Regular chunks with `audio` data and sequential IDs
+4. **Stream Termination**: Final chunk with `{ audio: null, chunk_id: -1, stream_id: number }`
+
+**Important Audio Characteristics:**
+- **Sample Rate**: 22050 Hz
+- **Format**: Int16 PCM (16-bit signed integers)
+- **Chunk Size**: Currently 64KB (planned to be reduced in future)
+- **Delivery Order**: Chunks may arrive out of order due to network, but IDs are always sequential
+- **No Gaps**: `stream_id` and `chunk_id` sequences are continuous without missing numbers
+- **Complete Streams**: Each audio response is a complete recording (not real-time streaming)
+
+**Data Integrity Requirements:**
+- **Zero Data Loss**: All audio chunks must be preserved and played back
+- **Correct Sequencing**: Out-of-order chunks must be reordered by `chunk_id`
+- **Seamless Playback**: No audible gaps between chunks within a stream
+
 ### Development Notes
 - Path mapping configured with `@/*` pointing to `src/*`
 - SSL enabled for HTTPS development server (required for voice features)
