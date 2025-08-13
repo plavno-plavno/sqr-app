@@ -4,6 +4,8 @@ import {
   useChatStore,
   type ChatMessage,
 } from "@/features/chat";
+import { useFinanceStore } from "@/features/finance";
+import { useInvestmentStore } from "@/features/invest";
 import { getRandomDetails, useTransactionStore } from "@/features/transactions";
 import { useAudio, useWSConnection } from "@/features/ws-connection";
 import {
@@ -17,14 +19,12 @@ import { memo } from "react";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { ChatBuyBtcDialog } from "../ui/chat-buy-btc-dialog";
+import { ChatInvestDialog } from "../ui/chat-invest-dialog";
 import {
   ChatMoneyTransferDialog,
   type MoneyTransferConfirmData,
 } from "../ui/chat-money-transfer-dialog";
 import { ChatScheduledMoneyTransferDialog } from "../ui/chat-scheduled-money-transfer-dialog";
-import { useFinanceStore } from "@/features/finance";
-import { useInvestmentStore } from "@/features/invest";
-import { ChatInvestDialog } from "../ui/chat-invest-dialog";
 
 const getConfirmInfo = (intent: IntentResponse) => {
   const { output, intent: intentType } = intent;
@@ -105,7 +105,7 @@ export const ChatDialog = memo(() => {
   if (dialogIntent?.intent === IntentType.BUY_BTC) {
     return (
       <ChatBuyBtcDialog
-        data={dialogIntent.output}
+        data={dialogIntent?.output}
         open={open}
         onConfirm={(inputData) => {
           onConfirm(
@@ -132,7 +132,7 @@ export const ChatDialog = memo(() => {
     const investmentDetails = dialogIntent?.output?.investment_details;
     return (
       <ChatInvestDialog
-        data={dialogIntent.output}
+        data={dialogIntent?.output}
         open={open}
         onConfirm={(inputData) => {
           onConfirm(
@@ -158,7 +158,7 @@ export const ChatDialog = memo(() => {
   if (dialogIntent?.intent === IntentType.TRANSFER_MONEY) {
     return (
       <ChatMoneyTransferDialog
-        data={dialogIntent.output}
+        data={dialogIntent?.output}
         open={open}
         onConfirm={(inputData) => {
           onConfirm(
@@ -169,7 +169,7 @@ export const ChatDialog = memo(() => {
             inputData
           );
           handleTransaction({
-            ...(dialogIntent.output as TransferMoneyOutput).transfer_details,
+            ...(dialogIntent?.output as TransferMoneyOutput).transfer_details,
             ...inputData,
           });
           subtractFromBalance(Number(inputData.amount || 0));
@@ -182,7 +182,7 @@ export const ChatDialog = memo(() => {
   if (dialogIntent?.intent === IntentType.SCHEDULED_TRANSFER) {
     return (
       <ChatScheduledMoneyTransferDialog
-        data={dialogIntent.output}
+        data={dialogIntent?.output}
         open={open}
         onConfirm={(inputData) => {
           onConfirm(
@@ -191,9 +191,9 @@ export const ChatDialog = memo(() => {
               intent: {
                 ...dialogIntent,
                 output: {
-                  ...dialogIntent.output,
+                  ...dialogIntent?.output,
                   transfer_details: {
-                    ...dialogIntent.output.transfer_details,
+                    ...dialogIntent?.output?.transfer_details,
                     ...inputData,
                   },
                 },

@@ -9,6 +9,7 @@ export enum IntentType {
   TRANSFER_MONEY = "transfer_money",
   GOODBYE = "goodbye",
   INVESTMENT = "investment",
+  NONE = "none",
 }
 
 // Base interfaces for common structures
@@ -229,64 +230,68 @@ export interface InvestmentOutput {
   summary: Summary;
 }
 
-export type AbilitiesResponse = {
+export type AgentResponseBase = {
+  data: object;
+  text: string;
+  voice_tone: string;
+  requires_followup: boolean;
+  missing_fields: string[];
+  error?: boolean;
+};
+
+export type AbilitiesResponse = AgentResponseBase & {
   intent: IntentType.ABILITIES;
   output: AbilitiesOutput;
-  text?: string;
 };
 
-export type BTCPriceResponse = {
+export type BTCPriceResponse = AgentResponseBase & {
   intent: IntentType.BTC_PRICE;
   output: BTCPriceOutput;
-  text?: string;
 };
 
-export type BuyBTCResponse = {
+export type BuyBTCResponse = AgentResponseBase & {
   intent: IntentType.BUY_BTC;
   output: BuyBTCOutput;
-  text?: string;
 };
 
-export type DailyBudgetResponse = {
+export type DailyBudgetResponse = AgentResponseBase & {
   intent: IntentType.DAILY_BUDGET;
   output: DailyBudgetOutput;
-  text?: string;
 };
 
-export type ScheduledTransferResponse = {
+export type ScheduledTransferResponse = AgentResponseBase & {
   intent: IntentType.SCHEDULED_TRANSFER;
   output: ScheduledTransferOutput;
-  text?: string;
 };
 
-export type SpendingInsightsResponse = {
+export type SpendingInsightsResponse = AgentResponseBase & {
   intent: IntentType.SPENDING_INSIGHTS;
   output: SpendingInsightsOutput;
-  text?: string;
 };
 
-export type SpendingAnalyticsResponse = {
+export type SpendingAnalyticsResponse = AgentResponseBase & {
   intent: IntentType.SPENDING_ANALYTICS;
   output: SpendingAnalyticsOutput;
-  text?: string;
 };
 
-export type TransferMoneyResponse = {
+export type TransferMoneyResponse = AgentResponseBase & {
   intent: IntentType.TRANSFER_MONEY;
   output: TransferMoneyOutput;
-  text?: string;
 };
 
-export type GoodbyeResponse = {
+export type GoodbyeResponse = AgentResponseBase & {
   intent: IntentType.GOODBYE;
   output: GoodbyeOutput;
-  text?: string;
 };
 
-export type InvestmentResponse = {
+export type InvestmentResponse = AgentResponseBase & {
   intent: IntentType.INVESTMENT;
   output: InvestmentOutput;
-  text?: string;
+};
+
+export type InvestmentResponseNone = AgentResponseBase & {
+  intent: IntentType.NONE;
+  output: object;
 };
 
 export type IntentResponse =
@@ -299,7 +304,8 @@ export type IntentResponse =
   | SpendingAnalyticsResponse
   | TransferMoneyResponse
   | GoodbyeResponse
-  | InvestmentResponse;
+  | InvestmentResponse
+  | InvestmentResponseNone;
 
 export type OperationInfo = {
   intent: IntentType;

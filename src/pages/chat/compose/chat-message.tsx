@@ -29,6 +29,7 @@ import {
 } from "@/features/contacts";
 import { abilitiesMock } from "@/features/actions";
 import { Button } from "@/shared/ui/kit/button";
+import { isNonEmptyObject } from "@/shared/lib/js/common";
 
 interface ChatMessageProps {
   message: ChatMessage;
@@ -129,6 +130,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.BTC_PRICE &&
     intent?.intent === IntentType.BTC_PRICE
   ) {
+    if (!isNonEmptyObject(intent?.output)) return null;
+
     return (
       <ChatLineChartMessage
         currentPrice={intent?.output?.current_price}
@@ -145,6 +148,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.SCHEDULED_TRANSFER &&
     intent?.intent === IntentType.SCHEDULED_TRANSFER
   ) {
+    if (!isNonEmptyObject(intent?.output)) return null;
+
     const transferDetails = intent?.output?.transfer_details;
     return (
       <ChatMoneyTransferMessage
@@ -159,6 +164,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.DAILY_BUDGET &&
     intent?.intent === IntentType.DAILY_BUDGET
   ) {
+    if (!isNonEmptyObject(intent?.output)) return null;
+
     const budgetSummary = intent?.output?.budget_summary;
     return (
       <div className="flex flex-col gap-2">
@@ -178,6 +185,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.SPENDING_INSIGHTS &&
     intent?.intent === IntentType.SPENDING_INSIGHTS
   ) {
+    if (!isNonEmptyObject(intent?.output)) return null;
+
     const summary = intent?.output?.summary;
     const top_categories = intent?.output?.top_categories;
     return (
@@ -211,6 +220,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.SPENDING_ANALYTICS &&
     intent?.intent === IntentType.SPENDING_ANALYTICS
   ) {
+    if (!isNonEmptyObject(intent?.output)) return null;
+
     const spending_analysis = intent?.output?.spending_analysis;
     return (
       <div className="flex flex-col gap-4">
@@ -229,9 +240,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     );
   }
 
-  if (type === ChatMessageType.HIDDEN) {
+  if (intent?.intent === IntentType.NONE || type === ChatMessageType.HIDDEN)
     return null;
-  }
 
   return (
     <p className="text-2xl">
