@@ -18,7 +18,7 @@ export class DynamicVoicePauseDetector {
    */
   constructor({
     confidenceThreshold = 0.8,
-    minPauseMs = 1200,
+    minPauseMs = 700,
     maxPauseMs = 2500,
     windowSize = 5,
     onAgentCanSpeak = () => {},
