@@ -24,7 +24,7 @@ export type MoneyTransferConfirmData = Partial<TransferMoneyOutput["transfer_det
 };
 
 interface ChatMoneyTransferDialogProps {
-  data: TransferMoneyOutput;
+  data: Partial<TransferMoneyOutput>;
   open: boolean;
   onConfirm: (data: MoneyTransferConfirmData) => void;
   onCancel: () => void;
@@ -59,8 +59,8 @@ export function ChatMoneyTransferDialog({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: Number(data.transfer_details.amount || 0),
-      recipient: data.transfer_details.recipient,
+      amount: Number(data?.transfer_details?.amount || 0),
+      recipient: data?.transfer_details?.recipient || "",
       payment: {
         identifier: paymentOptionsMock[0].identifier,
         paymentMethod: paymentOptionsMock[0].paymentMethod,
@@ -124,7 +124,7 @@ export function ChatMoneyTransferDialog({
                 {...register("amount")}
               />
             }
-            rightValue={data.transfer_details.amount}
+            rightValue={data?.transfer_details?.amount || 0}
           />
         </ChatDialogActionCardSection>
       </ChatDialogActionCard>

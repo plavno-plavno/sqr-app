@@ -4,7 +4,6 @@ import {
   useChatStore,
 } from "@/features/chat";
 import { requests } from "@/shared/api";
-import { AudioQueueManager } from "@/shared/lib/audio/audio-queue-manager";
 import { WebSocketConnection } from "@/shared/lib/websocket/websocket-connection";
 import {
   IntentType,
@@ -32,7 +31,6 @@ import { isNonEmptyObject } from "@/shared/lib/js/common";
 export const useWSConnection = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
   const audioManager = useAudioStore.use.audioManager();
-  const setAudioQueue = useAudioStore.use.setAudioQueue();
   const clearAudio = useAudioStore.use.clearAudio();
 
   const addMessage = useChatStore.use.addMessage();
@@ -140,7 +138,7 @@ export const useWSConnection = () => {
       "output" in segments &&
       segments.intent === IntentType.SPENDING_ANALYTICS &&
       (segments.output as SpendingAnalyticsOutput)?.spending_analysis
-        ?.categories.length === 0
+        ?.categories?.length === 0
     ) {
       const newMessage = {
         id: uuidv4(),
@@ -210,18 +208,18 @@ export const useWSConnection = () => {
     }
 
     // Audio response from agent
-    if ("audio" in segments) {
-      const audioResponse = segments as AudioResponse;
-      const currentAudioQueue = useAudioStore.getState().audioQueue;
+    // if ("audio" in segments) {
+    //   const audioResponse = segments as AudioResponse;
+    //   const currentAudioQueue = useAudioStore.getState().audioQueue;
 
-      if (!currentAudioQueue) {
-        const newAudioQueue = new AudioQueueManager();
-        setAudioQueue(newAudioQueue);
-        newAudioQueue.addToQueue(audioResponse);
-      } else {
-        currentAudioQueue.addToQueue(audioResponse);
-      }
-    }
+    //   if (!currentAudioQueue) {
+    //     const newAudioQueue = new AudioQueueManager();
+    //     setAudioQueue(newAudioQueue);
+    //     newAudioQueue.addToQueue(audioResponse);
+    //   } else {
+    //     currentAudioQueue.addToQueue(audioResponse);
+    //   }
+    // }
   };
 
   const handleWSMessage = useEffectEvent((response: ServerResponse) => {

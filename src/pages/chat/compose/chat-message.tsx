@@ -134,8 +134,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
     return (
       <ChatLineChartMessage
-        currentPrice={intent?.output?.current_price}
-        chartData={intent?.output?.price_points}
+        currentPrice={intent?.output?.current_price || 0}
+        chartData={intent?.output?.price_points || []}
         period={PeriodType.SINGLE}
         valueKey="price"
         xAxisKey="timestamp"
@@ -154,8 +154,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return (
       <ChatMoneyTransferMessage
         amount={`$${Number(transferDetails?.amount || 0).toFixed(2)}`}
-        recipient={transferDetails?.recipient}
-        date={new Date(transferDetails?.scheduled_time)}
+        recipient={transferDetails?.recipient || ""}
+        date={new Date(transferDetails?.scheduled_time || new Date())}
       />
     );
   }
@@ -171,11 +171,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
       <div className="flex flex-col gap-2">
         <ChatMoneyInfoMessage
           title="Your current balance"
-          amount={budgetSummary?.available_balance?.toString()}
+          amount={budgetSummary?.available_balance?.toString() || "0"}
         />
         <ChatMoneyInfoMessage
           title="To stay within budget, you need to spend per day"
-          amount={budgetSummary?.daily_limit?.toString()}
+          amount={budgetSummary?.daily_limit?.toString() || "0"}
         />
       </div>
     );
@@ -188,8 +188,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     if (!isNonEmptyObject(intent?.output)) return null;
 
     const summary = intent?.output?.summary;
-    const categories =
-      intent?.output?.categories || intent?.output?.top_categories;
+    const categories = intent?.output?.top_categories;
     return (
       <ChatSpendingInsightsMessage
         chatId={chatId!}
@@ -198,15 +197,17 @@ export function ChatMessage({ message }: ChatMessageProps) {
         chartElement={
           <ChatPieChartMessage
             title="Expenses for"
-            titleBoldPart={summary?.month}
-            chartData={categories}
-            amount={summary?.total_spent?.toString()}
+            titleBoldPart={summary?.month || ""}
+            chartData={categories || []}
+            amount={summary?.total_spent?.toString() || "0"}
             chartConfig={
               categories?.reduce((acc, category, index) => {
-                acc[category?.category] = {
-                  label: category?.category,
-                  color: `var(--chart-${index + 1})`,
-                };
+                if (category?.category) {
+                  acc[category.category] = {
+                    label: category.category,
+                    color: `var(--chart-${index + 1})`,
+                  };
+                }
                 return acc;
               }, {} as PieChartConfig) || {}
             }
@@ -231,7 +232,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {spending_analysis?.categories?.map((category, index) => (
           <ChatMoneyInfoMessage
             key={index}
-            title={category?.name}
+            title={category?.name || ""}
             amount={`${Number(category?.amount || 0).toFixed(2)}`}
             trend={category?.trend}
           />

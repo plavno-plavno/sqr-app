@@ -29,7 +29,7 @@ export type ScheduledTransferConfirmData = Partial<
 };
 
 interface ChatScheduledMoneyTransferDialogProps {
-  data: ScheduledTransferOutput;
+  data: Partial<ScheduledTransferOutput>;
   open: boolean;
   onConfirm: (data: ScheduledTransferConfirmData) => void;
   onCancel: () => void;
@@ -75,10 +75,10 @@ export function ChatScheduledMoneyTransferDialog({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: Number(data.transfer_details.amount || 0),
-      recipient: data.transfer_details.recipient,
-      scheduled_day: new Date(data.transfer_details.scheduled_time),
-      scheduled_hour: new Date(data.transfer_details.scheduled_time)
+      amount: Number(data?.transfer_details?.amount || 0),
+      recipient: data?.transfer_details?.recipient || "",
+      scheduled_day: new Date(data?.transfer_details?.scheduled_time || new Date()),
+      scheduled_hour: new Date(data?.transfer_details?.scheduled_time || new Date())
         .toISOString()
         .slice(11, 16),
       payment: {
@@ -181,7 +181,7 @@ export function ChatScheduledMoneyTransferDialog({
                   {...register("amount")}
                 />
               }
-              rightValue={data.transfer_details.amount}
+              rightValue={data?.transfer_details?.amount || 0}
             />
           </ChatDialogActionCardSection>
         </ChatDialogActionCardSection>

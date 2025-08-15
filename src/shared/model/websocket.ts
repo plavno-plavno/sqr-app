@@ -18,6 +18,8 @@ export enum PromptType {
   MEDIC = "medic",
   TALENT = "talent",
   BANKING = "banking",
+  FORMAL = "formal",
+  MCDONALDS = "mcdonalds",
 }
 
 export type TextResponse = Segment[];

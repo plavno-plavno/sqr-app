@@ -70,6 +70,7 @@ export class WebSocketConnection {
               this.#isServerReady = true;
               // TODO: Remove this after server fix
               this.sendSwitchPromptCommand(PromptType.DEFAULT);
+              this.sendToggleAudio(false);
               resolve();
             } else if (data.segments) {
               // Это ответ с транскрипцией
@@ -175,6 +176,14 @@ export class WebSocketConnection {
     const packet = {
       command: true,
       commandName: isEnabled ? "enable_intent" : "skip_intent",
+    };
+    this.send(packet);
+  }
+
+  sendToggleAudio(isEnabled: boolean) {
+    const packet = {
+      command: true,
+      action: isEnabled ? "enable_audio" : "disable_audio",
     };
     this.send(packet);
   }

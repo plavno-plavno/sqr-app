@@ -24,7 +24,7 @@ export type BuyBtcConfirmData = Partial<BuyBTCOutput["purchase_details"]> & {
 };
 
 interface ChatBuyBtcDialogProps {
-  data: BuyBTCOutput;
+  data: Partial<BuyBTCOutput>;
   open: boolean;
   onConfirm: (data: BuyBtcConfirmData) => void;
   onCancel: () => void;
@@ -60,7 +60,7 @@ export function ChatBuyBtcDialog({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      btc_amount: data.purchase_details.btc_amount || 0,
+      btc_amount: data?.purchase_details?.btc_amount || 0,
       payment: {
         identifier: paymentOptionsMock[0].identifier,
         paymentMethod: paymentOptionsMock[0].paymentMethod,
@@ -70,7 +70,7 @@ export function ChatBuyBtcDialog({
 
   const btc_amount = watch("btc_amount");
   const totalCost = btc_amount
-    ? Math.round(+btc_amount * +data.market_info.btc_price)
+    ? Math.round(+btc_amount * +(data?.market_info?.btc_price || 0))
     : 0;
 
   const onSubmit: SubmitHandler<FormValues> = (data) => {
@@ -122,7 +122,7 @@ export function ChatBuyBtcDialog({
         <ChatDialogActionCardSection title="Amount">
           <ChatDialogActionCardRowTwoItems
             leftValue={totalCost}
-            rightValue={data.purchase_details.current_price}
+            rightValue={data?.purchase_details?.current_price || 0}
           />
         </ChatDialogActionCardSection>
       </ChatDialogActionCard>
