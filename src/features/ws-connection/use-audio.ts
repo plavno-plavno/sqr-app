@@ -1,15 +1,15 @@
+import { AudioWorkletManager } from "@/shared/lib/audio/audio-worklet-processor";
 import type { WebSocketConnection } from "@/shared/lib/websocket/websocket-connection";
+import { useCallback } from "react";
 import { useAudioStore } from "./audio-store";
 import { useWebSocketStore } from "./websocket-store";
-import { AudioWorkletManager } from "@/shared/lib/audio/audio-worklet-processor";
-import { useCallback } from "react";
 
 interface UseAudioProps {
-  onMicLevelChange?: (level: number) => void;
+  onLevel?: (level: number) => void;
 }
 
 export const useAudio = (config?: UseAudioProps) => {
-  const { onMicLevelChange } = config || {};
+  const { onLevel } = config || {};
 
   const connection = useWebSocketStore.use.connection();
 
@@ -49,13 +49,9 @@ export const useAudio = (config?: UseAudioProps) => {
     [send]
   );
 
-  const onVoiceEnd = useCallback(
-    (isActive: boolean) => {
-      if (isActive) return;
-      send((connection) => connection.sendVoiceEndCommand());
-    },
-    [send]
-  );
+  const onVoiceEnd = useCallback(() => {
+    send((connection) => connection.sendVoiceEndCommand());
+  }, [send]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -66,10 +62,10 @@ export const useAudio = (config?: UseAudioProps) => {
 
       if (!audioManager) {
         newAudioManager = new AudioWorkletManager({
-          onAudioData: onAudioData,
-          onError: onError,
-          onLevel: onMicLevelChange,
-          onVoiceActivity: onVoiceEnd,
+          onAudioData,
+          onError,
+          onLevel,
+          onVoiceEnd,
           onStopAudioQueue: () => {
             useAudioStore.getState().audioQueue?.stop();
           },
@@ -94,7 +90,7 @@ export const useAudio = (config?: UseAudioProps) => {
     setAudioManager,
     onAudioData,
     onError,
-    onMicLevelChange,
+    onLevel,
     onVoiceEnd,
     setIsRecording,
   ]);

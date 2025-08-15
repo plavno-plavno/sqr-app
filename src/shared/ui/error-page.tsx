@@ -31,7 +31,7 @@ export const ErrorPage: React.FC<ErrorPageProps> = ({
         <h1 className="text-2xl font-semibold text-foreground mb-4">{title}</h1>
       )}
       {description && (
-        <p className="text-muted-foreground mb-8">{description}</p>
+        <div className="text-muted-foreground mb-8">{description}</div>
       )}
       <div className="flex flex-col gap-2 w-full">
         <Link to={ROUTES.HOME} className="block">

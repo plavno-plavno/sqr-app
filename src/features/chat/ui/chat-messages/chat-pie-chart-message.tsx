@@ -13,7 +13,7 @@ interface ChatPieChartMessageProps {
   title: string;
   titleBoldPart: string;
   amount: string;
-  chartData: PieChartData[];
+  chartData?: PieChartData[];
   chartConfig: PieChartConfig;
   dataKey: string;
   nameKey: string;
@@ -36,7 +36,7 @@ export function ChatPieChartMessage({
     (item) =>
       ({
         ...item,
-        fill: chartConfig?.[item[nameKey].toString()]?.color,
+        fill: chartConfig?.[item[nameKey]?.toString()]?.color,
       } as Record<string, string | number | boolean>)
   );
 
@@ -74,9 +74,9 @@ export function ChatPieChartMessage({
       </ChartContainer>
 
       <div className="flex gap-2 flex-wrap">
-        {chartDataColored?.map((item) => (
+        {chartDataColored?.map((item, index) => (
           <div
-            key={item?.[nameKey]?.toString()}
+            key={item?.[nameKey]?.toString() || index}
             className={cn("flex items-center py-1 px-3 gap-1 rounded-full")}
             style={{
               backgroundColor: item?.fill as string,

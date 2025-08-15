@@ -188,7 +188,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
     if (!isNonEmptyObject(intent?.output)) return null;
 
     const summary = intent?.output?.summary;
-    const top_categories = intent?.output?.top_categories;
+    const categories =
+      intent?.output?.categories || intent?.output?.top_categories;
     return (
       <ChatSpendingInsightsMessage
         chatId={chatId!}
@@ -198,15 +199,17 @@ export function ChatMessage({ message }: ChatMessageProps) {
           <ChatPieChartMessage
             title="Expenses for"
             titleBoldPart={summary?.month}
-            chartData={top_categories}
+            chartData={categories}
             amount={summary?.total_spent?.toString()}
-            chartConfig={top_categories?.reduce((acc, category, index) => {
-              acc[category?.category] = {
-                label: category?.category,
-                color: `var(--chart-${index + 1})`,
-              };
-              return acc;
-            }, {} as PieChartConfig)}
+            chartConfig={
+              categories?.reduce((acc, category, index) => {
+                acc[category?.category] = {
+                  label: category?.category,
+                  color: `var(--chart-${index + 1})`,
+                };
+                return acc;
+              }, {} as PieChartConfig) || {}
+            }
             dataKey="amount"
             nameKey="category"
             valueSign="$"
@@ -224,18 +227,15 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
     const spending_analysis = intent?.output?.spending_analysis;
     return (
-      <div className="flex flex-col gap-4">
-        {text && <ChatTextMessage text={text} role={role} />}
-        <div className="flex flex-col gap-2">
-          {spending_analysis?.categories?.map((category, index) => (
-            <ChatMoneyInfoMessage
-              key={index}
-              title={category?.name}
-              amount={`${Number(category?.amount || 0).toFixed(2)}`}
-              trend={category?.trend}
-            />
-          ))}
-        </div>
+      <div className="flex flex-col gap-2">
+        {spending_analysis?.categories?.map((category, index) => (
+          <ChatMoneyInfoMessage
+            key={index}
+            title={category?.name}
+            amount={`${Number(category?.amount || 0).toFixed(2)}`}
+            trend={category?.trend}
+          />
+        ))}
       </div>
     );
   }

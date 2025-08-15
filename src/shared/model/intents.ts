@@ -112,7 +112,13 @@ export interface ScheduledTransferOutput {
 
 // SPENDING_INSIGHTS Intent Response Schema
 export interface SpendingInsightsOutput {
-  top_categories: Array<{
+  top_categories?: Array<{
+    category: string;
+    amount: number;
+    percentage: number;
+    trend: "up" | "down" | "stable";
+  }>;
+  categories?: Array<{
     category: string;
     amount: number;
     percentage: number;
