@@ -12,3 +12,9 @@ export const isMobileDevice = () => {
     return navigator.userAgent.match(toMatchItem);
   });
 };
+
+export const isNonEmptyObject = (obj: unknown) =>
+  obj != null &&
+  typeof obj === "object" &&
+  !Array.isArray(obj) &&
+  Object.keys(obj).length > 0;

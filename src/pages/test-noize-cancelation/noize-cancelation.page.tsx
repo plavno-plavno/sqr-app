@@ -144,8 +144,8 @@ const MicrophoneTestPage = () => {
             setIsLoading(false);
           },
           onLevel: setMicLevel,
-          onVoiceActivity: (isActive) => {
-            console.log("Voice activity:", isActive);
+          onVoiceEnd: () => {
+            console.log("Voice end");
           },
         });
       }

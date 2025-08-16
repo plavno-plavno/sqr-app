@@ -91,7 +91,7 @@ const ChatPage = () => {
     stopRecording,
     setAudioError,
   } = useAudio({
-    onMicLevelChange: (level) => {
+    onLevel: (level) => {
       if (!lottieRef.current) return;
 
       const totalFrames = lottieRef.current?.getDuration(true);

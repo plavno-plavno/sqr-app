@@ -18,11 +18,11 @@ export enum PromptType {
   MEDIC = "medic",
   TALENT = "talent",
   BANKING = "banking",
+  FORMAL = "formal",
+  MCDONALDS = "mcdonalds",
 }
 
-export type UserTextResponse = { current_user_text: string };
 export type TextResponse = Segment[];
-export type TranslationResponse = Record<string, string>;
 export type AudioResponse = {
   chunk_id: number;
   stream_id: number;
@@ -39,9 +39,7 @@ export type ResponseType = "agent" | "transcription";
 export type ServerResponse = {
   uid: string;
   segments:
-    | UserTextResponse
     | TextResponse
-    | TranslationResponse
     | AudioResponse
     | IntentResponse;
   type: ResponseType;

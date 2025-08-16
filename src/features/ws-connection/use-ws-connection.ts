@@ -16,7 +16,6 @@ import type {
   PromptType,
   ServerResponse,
   TextResponse,
-  TranslationResponse,
   VocalizerType,
 } from "@/shared/model/websocket";
 import axios from "axios";
@@ -28,6 +27,7 @@ import { useCallback } from "react";
 import type { PathParams, ROUTES } from "@/shared/model/routes";
 import { useParams } from "react-router-dom";
 import { AudioQueueManager } from "@/shared/lib/audio/audio-queue-manager";
+import { isNonEmptyObject } from "@/shared/lib/js/common";
 
 export const useWSConnection = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
@@ -113,12 +113,12 @@ export const useWSConnection = () => {
   };
 
   const handleAgentResponse = async (
-    segments: AudioResponse | TranslationResponse | IntentResponse
+    segments: AudioResponse | IntentResponse
   ) => {
     if (!chatId) return;
 
     // Last user message
-    if ("current_user_text" in segments) {
+    if ("data" in segments && "current_user_text" in segments.data) {
       const lastUserMessage = getLastMessageByRole([
         ChatMessageRole.USER_VOICE,
         ChatMessageRole.USER_TEXT,
@@ -127,7 +127,7 @@ export const useWSConnection = () => {
 
       updateMessage(chatId, {
         ...lastUserMessage,
-        text: segments.current_user_text,
+        text: segments.data.current_user_text as string,
         isTextCorrected: true,
       });
       return;
@@ -139,7 +139,7 @@ export const useWSConnection = () => {
       "output" in segments &&
       segments.intent === IntentType.SPENDING_ANALYTICS &&
       (segments.output as SpendingAnalyticsOutput)?.spending_analysis
-        ?.categories.length === 0
+        ?.categories?.length === 0
     ) {
       const newMessage = {
         id: uuidv4(),
@@ -149,6 +149,24 @@ export const useWSConnection = () => {
       };
       addMessage(chatId, newMessage);
       return;
+    }
+
+    // Text response from agent
+    if (
+      "intent" in segments &&
+      "text" in segments &&
+      segments.text.length > 0
+    ) {
+      // TODO: Remove this after server fix
+      if (segments.text.startsWith("Switched to")) return;
+
+      const newMessage = {
+        id: uuidv4(),
+        type: ChatMessageType.TEXT,
+        role: ChatMessageRole.AGENT,
+        text: segments.text,
+      };
+      addMessage(chatId, newMessage);
     }
 
     // Intent response from agent
@@ -161,6 +179,7 @@ export const useWSConnection = () => {
         intentResponse.intent === IntentType.TRANSFER_MONEY ||
         intentResponse.intent === IntentType.SCHEDULED_TRANSFER
       ) {
+        if (!isNonEmptyObject(intentResponse?.output)) return;
         setDialog(true, intentResponse);
         audioManager?.toggleMute(true);
         return;
@@ -187,22 +206,6 @@ export const useWSConnection = () => {
       };
       addMessage(chatId, newMessage);
       return;
-    }
-
-    // Text response from agent
-    if ("text" in segments) {
-      // TODO: Remove this after server fix
-      if (segments.text.startsWith("Switched to")) return;
-      const { text, start, end } = segments;
-
-      const newMessage = {
-        id: uuidv4(),
-        type: ChatMessageType.TEXT,
-        role: ChatMessageRole.AGENT,
-        text,
-        meta: { start, end },
-      };
-      addMessage(chatId, newMessage);
     }
 
     // Audio response from agent

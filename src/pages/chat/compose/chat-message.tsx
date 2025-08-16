@@ -29,6 +29,7 @@ import {
 } from "@/features/contacts";
 import { abilitiesMock } from "@/features/actions";
 import { Button } from "@/shared/ui/kit/button";
+import { isNonEmptyObject } from "@/shared/lib/js/common";
 
 interface ChatMessageProps {
   message: ChatMessage;
@@ -129,10 +130,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.BTC_PRICE &&
     intent?.intent === IntentType.BTC_PRICE
   ) {
+    if (!isNonEmptyObject(intent?.output)) return null;
+
     return (
       <ChatLineChartMessage
-        currentPrice={intent?.output?.current_price}
-        chartData={intent?.output?.price_points}
+        currentPrice={intent?.output?.current_price || 0}
+        chartData={intent?.output?.price_points || []}
         period={PeriodType.SINGLE}
         valueKey="price"
         xAxisKey="timestamp"
@@ -145,12 +148,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.SCHEDULED_TRANSFER &&
     intent?.intent === IntentType.SCHEDULED_TRANSFER
   ) {
+    if (!isNonEmptyObject(intent?.output)) return null;
+
     const transferDetails = intent?.output?.transfer_details;
     return (
       <ChatMoneyTransferMessage
         amount={`$${Number(transferDetails?.amount || 0).toFixed(2)}`}
-        recipient={transferDetails?.recipient}
-        date={new Date(transferDetails?.scheduled_time)}
+        recipient={transferDetails?.recipient || ""}
+        date={new Date(transferDetails?.scheduled_time || new Date())}
       />
     );
   }
@@ -159,16 +164,18 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.DAILY_BUDGET &&
     intent?.intent === IntentType.DAILY_BUDGET
   ) {
+    if (!isNonEmptyObject(intent?.output)) return null;
+
     const budgetSummary = intent?.output?.budget_summary;
     return (
       <div className="flex flex-col gap-2">
         <ChatMoneyInfoMessage
           title="Your current balance"
-          amount={budgetSummary?.available_balance?.toString()}
+          amount={budgetSummary?.available_balance?.toString() || "0"}
         />
         <ChatMoneyInfoMessage
           title="To stay within budget, you need to spend per day"
-          amount={budgetSummary?.daily_limit?.toString()}
+          amount={budgetSummary?.daily_limit?.toString() || "0"}
         />
       </div>
     );
@@ -178,8 +185,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.SPENDING_INSIGHTS &&
     intent?.intent === IntentType.SPENDING_INSIGHTS
   ) {
+    if (!isNonEmptyObject(intent?.output)) return null;
+
     const summary = intent?.output?.summary;
-    const top_categories = intent?.output?.top_categories;
+    const categories = intent?.output?.top_categories;
     return (
       <ChatSpendingInsightsMessage
         chatId={chatId!}
@@ -188,16 +197,20 @@ export function ChatMessage({ message }: ChatMessageProps) {
         chartElement={
           <ChatPieChartMessage
             title="Expenses for"
-            titleBoldPart={summary?.month}
-            chartData={top_categories}
-            amount={summary?.total_spent?.toString()}
-            chartConfig={top_categories?.reduce((acc, category, index) => {
-              acc[category?.category] = {
-                label: category?.category,
-                color: `var(--chart-${index + 1})`,
-              };
-              return acc;
-            }, {} as PieChartConfig)}
+            titleBoldPart={summary?.month || ""}
+            chartData={categories || []}
+            amount={summary?.total_spent?.toString() || "0"}
+            chartConfig={
+              categories?.reduce((acc, category, index) => {
+                if (category?.category) {
+                  acc[category.category] = {
+                    label: category.category,
+                    color: `var(--chart-${index + 1})`,
+                  };
+                }
+                return acc;
+              }, {} as PieChartConfig) || {}
+            }
             dataKey="amount"
             nameKey="category"
             valueSign="$"
@@ -211,27 +224,25 @@ export function ChatMessage({ message }: ChatMessageProps) {
     type === IntentType.SPENDING_ANALYTICS &&
     intent?.intent === IntentType.SPENDING_ANALYTICS
   ) {
+    if (!isNonEmptyObject(intent?.output)) return null;
+
     const spending_analysis = intent?.output?.spending_analysis;
     return (
-      <div className="flex flex-col gap-4">
-        {text && <ChatTextMessage text={text} role={role} />}
-        <div className="flex flex-col gap-2">
-          {spending_analysis?.categories?.map((category, index) => (
-            <ChatMoneyInfoMessage
-              key={index}
-              title={category?.name}
-              amount={`${Number(category?.amount || 0).toFixed(2)}`}
-              trend={category?.trend}
-            />
-          ))}
-        </div>
+      <div className="flex flex-col gap-2">
+        {spending_analysis?.categories?.map((category, index) => (
+          <ChatMoneyInfoMessage
+            key={index}
+            title={category?.name || ""}
+            amount={`${Number(category?.amount || 0).toFixed(2)}`}
+            trend={category?.trend}
+          />
+        ))}
       </div>
     );
   }
 
-  if (type === ChatMessageType.HIDDEN) {
+  if (intent?.intent === IntentType.NONE || type === ChatMessageType.HIDDEN)
     return null;
-  }
 
   return (
     <p className="text-2xl">

@@ -26,7 +26,7 @@ export type InvestConfirmData = Partial<
 };
 
 interface ChatInvestDialogProps {
-  data: InvestmentOutput;
+  data: Partial<InvestmentOutput>;
   open: boolean;
   onConfirm: (data: InvestConfirmData) => void;
   onCancel: () => void;
@@ -61,7 +61,7 @@ export function ChatInvestDialog({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      shares_to_purchase: data.investment_details.shares_to_purchase || 0,
+      shares_to_purchase: data?.investment_details?.shares_to_purchase || 0,
       payment: {
         identifier: paymentOptionsMock[0].identifier,
         paymentMethod: paymentOptionsMock[0].paymentMethod,
@@ -71,7 +71,7 @@ export function ChatInvestDialog({
 
   const shares_to_purchase = watch("shares_to_purchase");
   const totalCost = shares_to_purchase
-    ? Math.round(+shares_to_purchase * +data.market_info.current_price)
+    ? Math.round(+shares_to_purchase * +(data?.market_info?.current_price || 0))
     : 0;
 
   const onSubmit: SubmitHandler<FormValues> = (data) => {
@@ -118,7 +118,7 @@ export function ChatInvestDialog({
                 error={errors.shares_to_purchase?.message}
                 rightElement={
                   <p className="text-2xl font-semibold">
-                    {data.investment_details.stock_symbol}
+                    {data?.investment_details?.stock_symbol || ""}
                   </p>
                 }
                 {...register("shares_to_purchase")}
@@ -126,8 +126,8 @@ export function ChatInvestDialog({
             }
             secondLine={
               <p className="text-sm text-muted-foreground">
-                Purchase price: {data.market_info.current_price}{" "}
-                {data.investment_details.currency}
+                Purchase price: {data?.market_info?.current_price || 0}{" "}
+                {data?.investment_details?.currency || "USD"}
               </p>
             }
           />
@@ -135,7 +135,7 @@ export function ChatInvestDialog({
         <ChatDialogActionCardSection title="Amount">
           <ChatDialogActionCardRowTwoItems
             leftValue={totalCost}
-            rightValue={data.investment_details.current_price}
+            rightValue={data?.investment_details?.current_price || 0}
           />
         </ChatDialogActionCardSection>
       </ChatDialogActionCard>

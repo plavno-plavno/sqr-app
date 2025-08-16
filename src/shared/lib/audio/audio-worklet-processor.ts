@@ -1,11 +1,12 @@
-import { MicVAD } from "@ricky0123/vad-web"
+import { MicVAD } from "@ricky0123/vad-web";
+import { DynamicVoicePauseDetector } from "./dynamic-voice-pause-detector";
 
 interface AudioProcessorOptions {
   sampleRate?: number;
   onAudioData?: (data: string, voicestop: boolean) => void;
   onError?: (error: Error) => void;
   onLevel?: (level: number) => void;
-  onVoiceActivity?: (isActive: boolean) => void;
+  onVoiceEnd?: () => void;
   vadThreshold?: number;
   vadSilenceFrames?: number;
   onStopAudioQueue?: (() => void) | null;
@@ -13,7 +14,7 @@ interface AudioProcessorOptions {
 
 export class AudioWorkletManager {
   private audioContext: AudioContext | null = null;
-  private frames: number = 0;
+  private voicePauseDetector: DynamicVoicePauseDetector | null = null;
   private workletNode: AudioWorkletNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private options: Required<AudioProcessorOptions>;
@@ -29,9 +30,6 @@ export class AudioWorkletManager {
   private readonly BUFFER_SIZE = 1024;
   private mediaStream: MediaStream | null = null;
   // private speechStartTime: number = 0;
-  public speechDuration: number = 0;
-  public isUserFinished: boolean | null = null;
-  private speechTimer: ReturnType<typeof setInterval> | null = null;
   private isMuted: boolean = false;
 
   constructor(options: AudioProcessorOptions = {}) {
@@ -40,19 +38,19 @@ export class AudioWorkletManager {
       onAudioData: () => {},
       onError: () => {},
       onLevel: () => {},
-      onVoiceActivity: () => {},
+      onVoiceEnd: () => {},
       vadThreshold: 0.003,
       vadSilenceFrames: 10,
       onStopAudioQueue: null,
-      ...options
+      ...options,
     };
   }
 
   async initialize(): Promise<void> {
     try {
       this.audioContext = new AudioContext();
-      await this.audioContext.audioWorklet.addModule('/audio-processor.js');
-      
+      await this.audioContext.audioWorklet.addModule("/audio-processor.js");
+
       // Audio constraints with built-in echo cancellation
       const audioConstraints = {
         echoCancellation: true,
@@ -64,12 +62,12 @@ export class AudioWorkletManager {
         volume: 1.0,
         sampleRate: 16000,
         channelCount: 1,
-        latency: 0.1
+        latency: 0.1,
       };
 
       // Get user media with proper constraints
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: audioConstraints
+        audio: audioConstraints,
       });
 
       // Create audio processing chain
@@ -94,42 +92,42 @@ export class AudioWorkletManager {
 
       // Add low-pass filter for noise suppression
       const lowpassFilter = this.audioContext.createBiquadFilter();
-      lowpassFilter.type = 'lowpass';
+      lowpassFilter.type = "lowpass";
       lowpassFilter.frequency.value = 3000;
       lowpassFilter.Q.value = 0.7;
 
       // Add high-pass filter
       const highpassFilter = this.audioContext.createBiquadFilter();
-      highpassFilter.type = 'highpass';
+      highpassFilter.type = "highpass";
       highpassFilter.frequency.value = 200;
       highpassFilter.Q.value = 0.7;
 
       // Initialize VAD with high threshold to prevent self-echo
+      this.voicePauseDetector = new DynamicVoicePauseDetector({
+        onAgentCanSpeak: () => {
+          console.log("=========================SPEECH END");
+          this.isVoiceActive = false;
+          this.options.onVoiceEnd();
+        },
+      });
       this.vad = await MicVAD.new({
         onFrameProcessed: (probabilities) => {
+          this.voicePauseDetector?.addProbabilities(
+            probabilities.isSpeech,
+            probabilities.notSpeech
+          );
+
           if (probabilities.isSpeech > 0.4) {
+            console.log("SPEECH START======================");
             this.isVoiceActive = true;
-            this.isUserFinished = null;
-            this.frames = 0; // reset frames of silence tolerance
-            console.log('SPEECH START======================')
-            // console.log('frames', frame)
-            this.options.onVoiceActivity(true);
+
             if (this.options.onStopAudioQueue) {
               this.options.onStopAudioQueue();
               this.voicestopFlag = true;
             }
-          } else if (probabilities.notSpeech > 0.95) {
-            this.frames++; // add frames of silence tolerance
-            if (this.isVoiceActive && this.frames > 20) {
-              console.log('=========================SPEECH END')
-              this.isVoiceActive = false;
-              this.isUserFinished = true;
-              this.speechTimer = null;
-              this.options.onVoiceActivity(false);
-            }
           }
         },
-        model: 'v5',
+        model: "v5",
         stream: this.mediaStream,
         baseAssetPath: "/",
         onnxWASMBasePath: "/",
@@ -144,8 +142,11 @@ export class AudioWorkletManager {
       });
 
       await this.vad.start();
-      
-      this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
+
+      this.workletNode = new AudioWorkletNode(
+        this.audioContext,
+        "audio-processor"
+      );
 
       // Build processing chain
       this.source
@@ -155,15 +156,18 @@ export class AudioWorkletManager {
         .connect(lowpassFilter)
         .connect(this.gainNode)
         .connect(this.workletNode);
-      
+
       this.workletNode.connect(this.audioContext.destination);
 
       // Add message handler
       this.workletNode.port.onmessage = (event) => {
         const inputData = event.data;
-        const audioData16kHz = this.resampleTo16kHz(inputData, this.audioContext?.sampleRate ?? 16000);
+        const audioData16kHz = this.resampleTo16kHz(
+          inputData,
+          this.audioContext?.sampleRate ?? 16000
+        );
         const base64Data = this.float32ToBase64(audioData16kHz);
-        
+
         // Send data only if user is actively speaking and microphone is not muted
         if (this.isVoiceActive && !this.isMuted) {
           this.options.onAudioData(base64Data, this.voicestopFlag);
@@ -173,7 +177,6 @@ export class AudioWorkletManager {
 
       // Start level monitoring
       this.startLevelMonitoring();
-
     } catch (error) {
       this.options.onError(error as Error);
       throw error;
@@ -205,11 +208,19 @@ export class AudioWorkletManager {
       // Adaptive sensitivity
       if (rms > this.speechThreshold) {
         this.silenceFrames = 0;
-        this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.01);
+        this.gainNode.gain.setTargetAtTime(
+          1.0,
+          this.audioContext.currentTime,
+          0.01
+        );
       } else if (rms < this.silenceThreshold) {
         this.silenceFrames++;
         if (this.silenceFrames > this.SILENCE_FRAMES_THRESHOLD) {
-          this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.1);
+          this.gainNode.gain.setTargetAtTime(
+            1.0,
+            this.audioContext.currentTime,
+            0.1
+          );
         }
       } else {
         this.silenceFrames = 0;
@@ -225,60 +236,62 @@ export class AudioWorkletManager {
   private float32ToBase64(audioData: Float32Array): string {
     try {
       const uint8Array = new Uint8Array(audioData.buffer);
-      let binaryString = '';
-      
+      let binaryString = "";
+
       for (let i = 0; i < uint8Array.length; i++) {
         const byte = uint8Array[i];
         if (byte !== undefined) {
           binaryString += String.fromCharCode(byte);
         }
       }
-      
+
       return btoa(binaryString);
     } catch (error) {
-      console.error('Error converting to base64:', error);
-      return '';
+      console.error("Error converting to base64:", error);
+      return "";
     }
   }
 
-  private resampleTo16kHz(audioData: Float32Array, origSampleRate: number): Float32Array {
+  private resampleTo16kHz(
+    audioData: Float32Array,
+    origSampleRate: number
+  ): Float32Array {
     try {
-      const targetLength = Math.round(audioData.length * (this.options.sampleRate / origSampleRate));
+      const targetLength = Math.round(
+        audioData.length * (this.options.sampleRate / origSampleRate)
+      );
       const resampledData = new Float32Array(targetLength);
-      
+
       const springFactor = (audioData.length - 1) / (targetLength - 1);
       resampledData[0] = audioData[0] ?? 0;
       resampledData[targetLength - 1] = audioData[audioData.length - 1] ?? 0;
-      
+
       for (let i = 1; i < targetLength - 1; i++) {
         const index = i * springFactor;
         const leftIndex = Math.floor(index);
         const rightIndex = Math.ceil(index);
         const fraction = index - leftIndex;
-        
+
         const leftValue = audioData[leftIndex] ?? 0;
         const rightValue = audioData[rightIndex] ?? 0;
         resampledData[i] = leftValue + (rightValue - leftValue) * fraction;
       }
-      
+
       return resampledData;
     } catch (error) {
-      console.error('Error resampling audio:', error);
+      console.error("Error resampling audio:", error);
       return new Float32Array(0);
     }
   }
 
   async start(): Promise<void> {
-    if (this.audioContext?.state === 'suspended') {
+    if (this.audioContext?.state === "suspended") {
       await this.audioContext.resume();
     }
   }
 
   async stop(): Promise<void> {
-    if (this.speechTimer) {
-      clearInterval(this.speechTimer);
-    }
-    this.mediaStream?.getAudioTracks().forEach(track => {
+    this.mediaStream?.getAudioTracks().forEach((track) => {
       track.stop();
     });
     this.vad?.pause();
@@ -298,17 +311,25 @@ export class AudioWorkletManager {
 
   public toggleMute(mute?: boolean): void {
     if (!this.gainNode || !this.audioContext || !this.vad) return;
-    
+
     this.isMuted = mute ?? !this.isMuted;
 
     if (this.isMuted) {
       this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
-      this.gainNode.gain.setTargetAtTime(0, this.audioContext.currentTime, 0.01);
+      this.gainNode.gain.setTargetAtTime(
+        0,
+        this.audioContext.currentTime,
+        0.01
+      );
       this.vad.pause();
     } else {
       this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
-      this.gainNode.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.01);
+      this.gainNode.gain.setTargetAtTime(
+        1.0,
+        this.audioContext.currentTime,
+        0.01
+      );
       this.vad.start();
     }
   }
-} 
+}
