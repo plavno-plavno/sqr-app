@@ -1,5 +1,5 @@
 // Логика работы:
-// Аудио чанки приходят через postMessage в AudioQueueManager и в правильном порядке заносяться в буффер audioData. 
+// Аудио чанки приходят через postMessage в AudioQueueManager и в правильном порядке заносяться в буффер audioData.
 // Получается один большой буфер аудиоданных без склеек. Далее метод process, который бразуер вызвает автоматически,
 // мы постоянно обрабатываем эти данные без остановок и переодически отчищаем буфер.
 class PCMPlayerProcessor extends AudioWorkletProcessor {
@@ -35,7 +35,7 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
         this.addAudioChunk(data);
         break;
       case "stop":
-        this.isStopping = true;
+        this.stopAudio();
         break;
       case "clear":
         this.clearBuffer();
@@ -46,20 +46,25 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
   addAudioChunk(data) {
     const { stream_id, chunk_id, audioBuffer } = data;
 
-    console.log(
-      `[AudioWorklet] Received chunk: stream_id=${stream_id}, chunk_id=${chunk_id}`
-    );
+    // Сбрасываем флаг остановки при новых данных
+    if (this.isStopping) {
+      this.isStopping = false;
+      this.fadeOutGain = 1.0;
+    }
 
     // Обработка завершающего чанка
     if (chunk_id === -1) {
-      console.log(`[AudioWorklet] End of stream ${stream_id}`);
       const streamChunks = this.audioStreams.get(stream_id);
 
-      if (!streamChunks || streamChunks.size === 0) return;
+      if (!streamChunks || streamChunks.size === 0) {
+        return;
+      }
 
+      // Добавляем дополнительный завершающий чанк в конец текущего стрима
       const maxChunkId = Math.max(...streamChunks.keys());
-      const lastChunk = streamChunks.get(maxChunkId);
-      if (lastChunk) lastChunk.isLast = true;
+      const nextChunkId = maxChunkId + 1;
+      const endChunk = { data: new Float32Array(0), isLast: true };
+      streamChunks.set(nextChunkId, endChunk);
 
       // Пытаемся загрузить оставшиеся чанки в буфер
       this.processBufferedChunks();
@@ -68,9 +73,6 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
 
     // Конвертируем ArrayBuffer с Int16 PCM -> Float32
     const pcmData = this.convertPCMToFloat32(audioBuffer);
-    console.log(
-      `[AudioWorklet] Processing ${pcmData.length} samples for chunk ${chunk_id}`
-    );
 
     // Получаем или создаем мапу чанков для этого стрима
     const streamChunks = this.audioStreams.get(stream_id) || new Map();
@@ -80,19 +82,16 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
     // Если это первый стрим, начинаем с него
     if (this.currentStreamId === null) {
       this.currentStreamId = stream_id;
-      this.currentChunkId = 0;
-      console.log(`[AudioWorklet] Starting playback with stream ${stream_id}`);
+      this.currentChunkId = chunk_id;
     }
 
     // Пытаемся обработать накопившиеся чанки
     this.processBufferedChunks();
+  }
 
-    // Сбрасываем флаг остановки при новых данных
-    if (this.isStopping) {
-      console.log(`[AudioWorklet] Resuming playback`);
-      this.isStopping = false;
-      this.fadeOutGain = 1.0;
-    }
+  stopAudio() {
+    if (this.isStopping || this.audioData.length === 0) return;
+    this.isStopping = true;
   }
 
   convertPCMToFloat32(audioBuffer) {
@@ -140,12 +139,8 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
       // Добавляем чанк в буфер воспроизведения
       this.appendToBuffer(chunk.data);
 
-      // Удаляем обработанный чанк из мапы
-      streamChunks.delete(this.currentChunkId);
-
       // Проверяем, был ли это последний чанк стрима
       if (chunk.isLast) {
-        console.log(`[AudioWorklet] Stream ${this.currentStreamId} completed`);
         this.audioStreams.delete(this.currentStreamId);
         this.currentStreamId = this.getNextStreamId();
         this.currentChunkId = 0;
@@ -182,9 +177,9 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
         this.readPosition++;
         hasData = true;
 
-        // Fade out при остановке
+        // Fade out при остановке (300ms)
         if (this.isStopping && this.fadeOutGain > 0) {
-          this.fadeOutGain -= 0.001;
+          this.fadeOutGain -= 0.000151; // 300ms fade out при 22050Hz
           if (this.fadeOutGain < 0) this.fadeOutGain = 0;
         }
         sample *= this.fadeOutGain;
@@ -192,6 +187,11 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
 
       channel[i] = sample;
       levelSum += sample * sample;
+    }
+
+    // Очищаем буфер сразу после завершения fade out (300ms)
+    if (this.isStopping && this.fadeOutGain === 0) {
+      this.clearBuffer();
     }
 
     // Очистка обработанных данных (каждые 5 секунд)

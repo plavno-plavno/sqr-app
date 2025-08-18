@@ -12,7 +12,6 @@ export class AudioQueueManager {
 
   private options: AudioQueueManagerOptions;
   private isWorkletReady: boolean = false;
-  private isStopping: boolean = false;
 
   constructor(options: AudioQueueManagerOptions = {}) {
     this.options = options;
@@ -94,13 +93,6 @@ export class AudioQueueManager {
     if (!(await this.ensureAudioContextRunning())) return;
     if (!this.isWorkletReady || !this.audioWorkletNode) return;
 
-    // Если идет остановка и приходит новый поток, сбрасываем буфер
-    if (this.isStopping) {
-      this.audioWorkletNode.port.postMessage({ type: "clear" });
-      this.isStopping = false;
-      return;
-    }
-
     const message = {
       type: "addChunk",
       data: {
@@ -124,20 +116,8 @@ export class AudioQueueManager {
   }
 
   public stop() {
-    this.isStopping = true;
-
-    if (this.audioWorkletNode) {
-      // Отправляем команду остановки для плавного fade out
+    if (this.audioWorkletNode)
       this.audioWorkletNode.port.postMessage({ type: "stop" });
-
-      // Через время fade out очищаем буфер
-      setTimeout(() => {
-        if (this.audioWorkletNode) {
-          this.audioWorkletNode.port.postMessage({ type: "clear" });
-        }
-        this.options.onLevel?.(0);
-      }, 700); // 0.7s fade out
-    }
   }
 
   public async destroy() {

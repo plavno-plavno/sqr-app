@@ -36,6 +36,7 @@ import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
 import { useLanguageStore } from "@/features/language";
 import { defaultPrompt } from "@/shared/mock/prompt";
 import { useEffectEvent } from "use-effect-event";
+import { useSettingsStore } from "@/features/settings";
 
 export async function loader({
   params,
@@ -69,6 +70,7 @@ const ChatPage = () => {
   const createChat = useChatStore.use.createChat();
 
   const language = useLanguageStore.use.language();
+  const isAudioEnabled = useSettingsStore.use.isAudioEnabled();
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
 
@@ -82,7 +84,7 @@ const ChatPage = () => {
     initWSConnection,
     sendTextCommand,
     setWsError,
-  } = useWSConnection();
+  } = useWSConnection({ isAudioEnabled });
 
   const {
     audioError,

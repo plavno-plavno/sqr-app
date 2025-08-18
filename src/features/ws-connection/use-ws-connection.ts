@@ -29,7 +29,15 @@ import { useParams } from "react-router-dom";
 import { AudioQueueManager } from "@/shared/lib/audio/audio-queue-manager";
 import { isNonEmptyObject } from "@/shared/lib/js/common";
 
-export const useWSConnection = () => {
+interface ConnetionOptions {
+  isAudioEnabled?: boolean;
+}
+
+const defaultOptions = { isAudioEnabled: false };
+
+export const useWSConnection = ({
+  isAudioEnabled,
+}: ConnetionOptions = defaultOptions) => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
   const audioManager = useAudioStore.use.audioManager();
   const clearAudio = useAudioStore.use.clearAudio();
@@ -209,7 +217,7 @@ export const useWSConnection = () => {
     }
 
     // Audio response from agent
-    if ("audio" in segments) {
+    if (isAudioEnabled && "audio" in segments) {
       const audioResponse = segments as AudioResponse;
       const audioQueue = useAudioStore.getState().audioQueue;
 
