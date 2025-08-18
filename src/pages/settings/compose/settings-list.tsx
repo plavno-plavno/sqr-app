@@ -1,7 +1,12 @@
 import { LanguageSearch } from "@/features/language";
-import { SettingsItem, type SettingsItemType } from "@/features/settings";
+import {
+  SettingsItem,
+  SettingsSwitchItem,
+  type SettingsItemType,
+  useSettingsStore,
+} from "@/features/settings";
 import { cn } from "@/shared/lib/css/tailwind";
-import { LanguagesIcon } from "lucide-react";
+import { LanguagesIcon, VolumeXIcon } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
 interface SettingsListProps {
@@ -15,6 +20,9 @@ export function SettingsList({
   className,
   onItemClick,
 }: SettingsListProps) {
+  const isAudioEnabled = useSettingsStore.use.isAudioEnabled();
+  const setAudioEnabled = useSettingsStore.use.setAudioEnabled();
+
   return (
     <div className={cn("flex flex-col gap-6", className)}>
       {items.map((item) => (
@@ -24,6 +32,7 @@ export function SettingsList({
           onClick={() => onItemClick?.(item)}
         />
       ))}
+
       <LanguageSearch
         trigger={
           <SettingsItem
@@ -34,6 +43,13 @@ export function SettingsList({
             }}
           />
         }
+      />
+
+      <SettingsSwitchItem
+        title="Audio enabled"
+        icon={<VolumeXIcon />}
+        checked={isAudioEnabled}
+        onCheckedChange={setAudioEnabled}
       />
     </div>
   );

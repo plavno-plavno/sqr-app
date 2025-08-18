@@ -26,9 +26,18 @@ import { useAudioStore } from "./audio-store";
 import { useCallback } from "react";
 import type { PathParams, ROUTES } from "@/shared/model/routes";
 import { useParams } from "react-router-dom";
+import { AudioQueueManager } from "@/shared/lib/audio/audio-queue-manager";
 import { isNonEmptyObject } from "@/shared/lib/js/common";
 
-export const useWSConnection = () => {
+interface ConnetionOptions {
+  isAudioEnabled?: boolean;
+}
+
+const defaultOptions = { isAudioEnabled: false };
+
+export const useWSConnection = ({
+  isAudioEnabled,
+}: ConnetionOptions = defaultOptions) => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
   const audioManager = useAudioStore.use.audioManager();
   const clearAudio = useAudioStore.use.clearAudio();
@@ -208,18 +217,12 @@ export const useWSConnection = () => {
     }
 
     // Audio response from agent
-    // if ("audio" in segments) {
-    //   const audioResponse = segments as AudioResponse;
-    //   const currentAudioQueue = useAudioStore.getState().audioQueue;
+    if (isAudioEnabled && "audio" in segments) {
+      const audioResponse = segments as AudioResponse;
+      const audioQueue = useAudioStore.getState().audioQueue;
 
-    //   if (!currentAudioQueue) {
-    //     const newAudioQueue = new AudioQueueManager();
-    //     setAudioQueue(newAudioQueue);
-    //     newAudioQueue.addToQueue(audioResponse);
-    //   } else {
-    //     currentAudioQueue.addToQueue(audioResponse);
-    //   }
-    // }
+      audioQueue?.addToQueue(audioResponse);
+    }
   };
 
   const handleWSMessage = useEffectEvent((response: ServerResponse) => {
@@ -240,6 +243,11 @@ export const useWSConnection = () => {
   const initWSConnection = useCallback((language: string, prompt: string) => {
     const { setConnection, setIsConnected, setWsError, setIsConnecting } =
       useWebSocketStore.getState();
+    const { setAudioQueue } = useAudioStore.getState();
+
+    const audioQueue = new AudioQueueManager();
+    setAudioQueue(audioQueue);
+
     const controller = new AbortController();
     const ws = new WebSocketConnection(language, prompt);
     setConnection(ws);
@@ -250,10 +258,13 @@ export const useWSConnection = () => {
         const url = await getFreeMachine(controller);
 
         if (controller.signal.aborted) return;
-
         await ws.initSocket(url, (response) => {
           handleWSMessage(response);
         });
+
+        if (controller.signal.aborted) return;
+        await audioQueue.initializeAudioContext();
+
         setIsConnected(true);
         setIsConnecting(false);
       } catch (error) {
@@ -261,6 +272,7 @@ export const useWSConnection = () => {
         setWsError((error as Error).message);
         ws.closeConnection();
         setIsConnecting(false);
+        setAudioQueue(null);
         setConnection(null);
       }
     }
@@ -270,6 +282,8 @@ export const useWSConnection = () => {
     return () => {
       controller.abort();
       ws.closeConnection();
+      audioQueue.destroy();
+      setAudioQueue(null);
       setConnection(null);
       setIsConnected(false);
       setIsConnecting(false);
