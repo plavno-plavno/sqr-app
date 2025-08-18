@@ -5,8 +5,13 @@ import { ROUTES } from "@/shared/model/routes";
 import { SidebarProvider, useSidebar } from "@/shared/ui/kit/sidebar";
 import { href, Outlet, useMatch, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
+import "./i18n"; // Initialize i18n
+import { useLanguageSync } from "./i18n";
 
 function AppContent() {
+  // Sync language changes
+  useLanguageSync(); 
+
   const createChat = useChatStore.use.createChat();
   const navigate = useNavigate();
   const { toggleSidebar } = useSidebar();

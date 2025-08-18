@@ -1,5 +1,6 @@
 import { cn } from "@/shared/lib/css/tailwind";
 import { Button } from "@/shared/ui/kit/button";
+import { useTranslation } from "react-i18next";
 
 interface ChatSubscriptionMessageProps {
   title: string;
@@ -16,6 +17,7 @@ export function ChatSubscriptionMessage({
   onDeactivate,
   className,
 }: ChatSubscriptionMessageProps) {
+  const { t } = useTranslation();
   return (
     <div
       className={cn(
@@ -30,7 +32,7 @@ export function ChatSubscriptionMessage({
           <p className="text-sm font-medium text-primary-foreground">{period}</p>
         </div>
         <Button onClick={onDeactivate}>
-          Deactivate
+          {t('chat.deactivate')}
         </Button>
       </div>
     </div>

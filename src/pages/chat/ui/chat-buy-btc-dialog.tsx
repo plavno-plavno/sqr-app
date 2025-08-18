@@ -18,6 +18,8 @@ import { FormInput } from "@/shared/ui/form-input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
+import type i18next from "i18next";
 
 export type BuyBtcConfirmData = Partial<BuyBTCOutput["purchase_details"]> & {
   payment: PaymentOption;
@@ -30,20 +32,20 @@ interface ChatBuyBtcDialogProps {
   onCancel: () => void;
 }
 
-const formSchema = z.object({
+const createFormSchema = (t: typeof i18next.t) => z.object({
   btc_amount: z.coerce
     .number({
-      required_error: "Amount is required",
+      required_error: t('dialog.validation.amountRequired'),
     })
-    .min(0, "Minimum amount is 0 BTC")
-    .max(1, "Maximum amount is 1 BTC"),
+    .min(0, t('dialog.validation.minimumBtc'))
+    .max(1, t('dialog.validation.maximumBtc')),
   payment: z.object({
-    identifier: z.string().min(1, "Payment method is required"),
+    identifier: z.string().min(1, t('dialog.validation.paymentMethodRequired')),
     paymentMethod: z.nativeEnum(PaymentMethod),
   }),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof createFormSchema>>;
 
 export function ChatBuyBtcDialog({
   data,
@@ -51,6 +53,9 @@ export function ChatBuyBtcDialog({
   onConfirm,
   onCancel,
 }: ChatBuyBtcDialogProps) {
+  const { t } = useTranslation();
+  const formSchema = createFormSchema(t);
+  
   const {
     register,
     watch,
@@ -87,8 +92,8 @@ export function ChatBuyBtcDialog({
   return (
     <ChatConfirmDialog
       open={open}
-      title={"Sure, just confirm"}
-      actionButtonText="Confirm"
+      title={t('dialog.sureJustConfirm')}
+      actionButtonText={t('dialog.confirm')}
       onCancel={onCancel}
       contentLayout={({ children, className }) => (
         <form onSubmit={handleSubmit(onSubmit)} className={className}>
@@ -97,7 +102,7 @@ export function ChatBuyBtcDialog({
       )}
     >
       <ChatDialogActionCard>
-        <ChatDialogActionCardSection title="Buy">
+        <ChatDialogActionCardSection title={t('dialog.buy')}>
           <ChatDialogActionCardRowWithIcon
             className={cn(
               errors.btc_amount?.message ? "items-start" : "items-center"
@@ -119,14 +124,14 @@ export function ChatBuyBtcDialog({
             }
           />
         </ChatDialogActionCardSection>
-        <ChatDialogActionCardSection title="Amount">
+        <ChatDialogActionCardSection title={t('dialog.amount')}>
           <ChatDialogActionCardRowTwoItems
             leftValue={totalCost}
             rightValue={data?.purchase_details?.current_price || 0}
           />
         </ChatDialogActionCardSection>
       </ChatDialogActionCard>
-      <ChatDialogPaymentCard title="Pay using">
+      <ChatDialogPaymentCard title={t('dialog.payUsing')}>
         <Controller
           control={control}
           name="payment"

@@ -4,6 +4,8 @@ import {
   type ServerResponse,
   VocalizerType,
 } from "@/shared/model/websocket";
+// eslint-disable-next-line boundaries/element-types
+import i18n from "@/app/i18n";
 
 export class WebSocketConnection {
   #socket: WebSocket | null = null;
@@ -70,7 +72,6 @@ export class WebSocketConnection {
               this.#isServerReady = true;
               // TODO: Remove this after server fix
               this.sendSwitchPromptCommand(PromptType.DEFAULT);
-              this.sendToggleAudio(false);
               resolve();
             } else if (data.segments) {
               // Это ответ с транскрипцией
@@ -184,6 +185,15 @@ export class WebSocketConnection {
     const packet = {
       command: true,
       action: isEnabled ? "enable_audio" : "disable_audio",
+    };
+    this.send(packet);
+  }
+
+  sendHelloMessage() {
+    const packet = {
+      command: true,
+      commandName: "send_text_command",
+      text: i18n.t("chat.helloMessage"),
     };
     this.send(packet);
   }

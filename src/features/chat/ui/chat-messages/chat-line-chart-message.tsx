@@ -11,6 +11,7 @@ import {
 } from "@/shared/ui/kit/chart";
 import { useState } from "react";
 import type { LineChartData } from "../../model/chart";
+import { useTranslation } from "react-i18next";
 
 const xAxisData = [
   { type: "day", label: "1D" },
@@ -56,6 +57,7 @@ export function ChatLineChartMessage({
   xAxisKey,
   yAxisKey,
 }: ChatLineChartMessageProps) {
+  const { t } = useTranslation();
   const [chartType, setChartType] = useState<keyof LineChartData>("month");
   const data = period === PeriodType.SINGLE ? chartData : chartData[chartType];
 
@@ -73,7 +75,7 @@ export function ChatLineChartMessage({
         className
       )}
     >
-      <p className="text-sm font-medium text-primary-foreground">Bitcoin</p>
+      <p className="text-sm font-medium text-primary-foreground">{t('chat.bitcoin')}</p>
       <div className="flex items-center justify-between">
         <div className="flex gap-3">
           <IconWrapper />

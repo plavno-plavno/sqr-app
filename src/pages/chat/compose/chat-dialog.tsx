@@ -8,6 +8,7 @@ import { useFinanceStore } from "@/features/finance";
 import { useInvestmentStore } from "@/features/invest";
 import { getRandomDetails, useTransactionStore } from "@/features/transactions";
 import { useAudio, useWSConnection } from "@/features/ws-connection";
+import { useTranslation } from "react-i18next";
 import {
   IntentType,
   type IntentResponse,
@@ -42,6 +43,7 @@ const getConfirmInfo = (intent: IntentResponse) => {
 };
 
 export const ChatDialog = memo(() => {
+  const { t } = useTranslation();
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
   const subtractFromBalance = useFinanceStore.use.subtractFromBalance();
   const buyCoins = useInvestmentStore.use.buyCoins();
@@ -92,7 +94,7 @@ export const ChatDialog = memo(() => {
       amount: Number(inputData.amount || 0),
       date: new Date().toISOString(),
       details: [
-        { name: "Recipient", value: inputData.recipient || "" },
+        { name: t('chat.recipient'), value: inputData.recipient || "" },
         ...getRandomDetails(),
         {
           name: inputData.payment.paymentMethod,
@@ -110,14 +112,14 @@ export const ChatDialog = memo(() => {
         onConfirm={(inputData) => {
           onConfirm(
             {
-              text: "Order completed. BTC transferred to your wallet.",
+              text: t('chat.orderCompleted'),
               intent: dialogIntent,
             },
             inputData
           );
           subtractFromBalance(inputData.total_cost || 0);
           buyCoins({
-            name: "Bitcoin",
+            name: t('chat.bitcoin'),
             symbol: "BTC",
             amount: inputData.btc_amount || 0,
             rate: dialogIntent?.output?.market_info?.btc_price,
@@ -137,7 +139,12 @@ export const ChatDialog = memo(() => {
         onConfirm={(inputData) => {
           onConfirm(
             {
-              text: `Order completed. Bought ${inputData.shares_to_purchase} of ${investmentDetails?.stock_symbol} for ${inputData.investment_amount} ${investmentDetails?.currency}`,
+              text: t('chat.investmentCompleted', { 
+                shares: inputData.shares_to_purchase, 
+                symbol: investmentDetails?.stock_symbol, 
+                amount: inputData.investment_amount, 
+                currency: investmentDetails?.currency 
+              }),
               intent: dialogIntent,
             },
             inputData
@@ -163,7 +170,7 @@ export const ChatDialog = memo(() => {
         onConfirm={(inputData) => {
           onConfirm(
             {
-              text: "Transfer done. Funds sent.",
+              text: t('chat.transferDone'),
               intent: dialogIntent,
             },
             inputData

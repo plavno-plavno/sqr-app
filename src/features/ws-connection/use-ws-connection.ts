@@ -304,6 +304,8 @@ export const useWSConnection = ({
 
   const sendTextCommand = useCallback(
     (text: string) => {
+      const audioQueue = useAudioStore.getState().audioQueue;
+      audioQueue?.stop();
       sendCommand((connection) => connection.sendTextCommand(text));
     },
     [sendCommand]
@@ -356,6 +358,10 @@ export const useWSConnection = ({
     [sendCommand]
   );
 
+  const sendHelloMessage = useCallback(() => {
+    sendCommand((connection) => connection.sendHelloMessage());
+  }, [sendCommand]);
+
   return {
     isConnected,
     isConnecting,
@@ -368,6 +374,7 @@ export const useWSConnection = ({
     sendSwitchVocalizerCommand,
     sendSwitchPromptCommand,
     sendToggleIntentCommand,
+    sendHelloMessage,
     setWsError,
   };
 };

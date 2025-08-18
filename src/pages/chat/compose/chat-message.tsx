@@ -2,6 +2,7 @@ import { IntentType } from "@/shared/model/intents";
 import { ROUTES, type PathParams } from "@/shared/model/routes";
 import { Link, useParams } from "react-router-dom";
 import { useWSConnection } from "@/features/ws-connection";
+import { useTranslation } from "react-i18next";
 import {
   AttachmentType,
   ChatButtonsList,
@@ -36,6 +37,7 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
+  const { t } = useTranslation();
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
   const { isConnected, sendTextCommand } = useWSConnection();
   const addMessage = useChatStore.use.addMessage();
@@ -43,7 +45,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   const handleContactClick = (contact: Contact) => {
     sendTextCommand(
-      `Please transfer 1$ to ${contact.name}. Phone number is ${contact.phone}.`
+      t('chat.transferRequest', { name: contact.name, phone: contact.phone })
     );
   };
 
@@ -73,7 +75,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return (
       <ChatSuccessMessage text={text}>
         <Button asChild size="default" className="w-fit">
-          <Link to={ROUTES.INVEST}>View investments</Link>
+          <Link to={ROUTES.INVEST}>{t('chat.viewInvestments')}</Link>
         </Button>
       </ChatSuccessMessage>
     );
@@ -104,7 +106,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return (
       <>
         <ChatTextMessage
-          text="Sure, here's a list of possibilities:"
+          text={t('chat.abilitiesIntro')}
           role={ChatMessageRole.AGENT}
         />
         <ChatButtonsList
@@ -170,11 +172,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return (
       <div className="flex flex-col gap-2">
         <ChatMoneyInfoMessage
-          title="Your current balance"
+          title={t('chat.currentBalance')}
           amount={budgetSummary?.available_balance?.toString() || "0"}
         />
         <ChatMoneyInfoMessage
-          title="To stay within budget, you need to spend per day"
+          title={t('chat.dailyBudgetLimit')}
           amount={budgetSummary?.daily_limit?.toString() || "0"}
         />
       </div>
@@ -196,7 +198,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         spendingInsights={intent?.output}
         chartElement={
           <ChatPieChartMessage
-            title="Expenses for"
+            title={t('chat.expensesFor')}
             titleBoldPart={summary?.month || ""}
             chartData={categories || []}
             amount={summary?.total_spent?.toString() || "0"}
@@ -246,7 +248,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <p className="text-2xl">
-      Unknown message type or intent: {type}, {intent?.intent}
+      {t('chat.unknownMessage', { type, intent: intent?.intent })}
     </p>
   );
 }

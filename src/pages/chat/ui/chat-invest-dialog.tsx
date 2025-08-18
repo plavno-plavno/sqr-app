@@ -18,6 +18,8 @@ import { FormInput } from "@/shared/ui/form-input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
+import type i18next from "i18next";
 
 export type InvestConfirmData = Partial<
   InvestmentOutput["investment_details"]
@@ -32,19 +34,19 @@ interface ChatInvestDialogProps {
   onCancel: () => void;
 }
 
-const formSchema = z.object({
+const createFormSchema = (t: typeof i18next.t) => z.object({
   shares_to_purchase: z.coerce
     .number({
-      required_error: "Amount is required",
+      required_error: t('dialog.validation.amountRequired'),
     })
-    .min(0, "Minimum amount is 0"),
+    .min(0, t('dialog.validation.minimumAmount', { amount: 0 })),
   payment: z.object({
-    identifier: z.string().min(1, "Payment method is required"),
+    identifier: z.string().min(1, t('dialog.validation.paymentMethodRequired')),
     paymentMethod: z.nativeEnum(PaymentMethod),
   }),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof createFormSchema>>;
 
 export function ChatInvestDialog({
   data,
@@ -52,6 +54,9 @@ export function ChatInvestDialog({
   onConfirm,
   onCancel,
 }: ChatInvestDialogProps) {
+  const { t } = useTranslation();
+  const formSchema = createFormSchema(t);
+  
   const {
     register,
     watch,
@@ -88,8 +93,8 @@ export function ChatInvestDialog({
   return (
     <ChatConfirmDialog
       open={open}
-      title={"Sure, just confirm"}
-      actionButtonText="Confirm"
+      title={t('dialog.sureJustConfirm')}
+      actionButtonText={t('dialog.confirm')}
       onCancel={onCancel}
       contentLayout={({ children, className }) => (
         <form onSubmit={handleSubmit(onSubmit)} className={className}>
@@ -98,7 +103,7 @@ export function ChatInvestDialog({
       )}
     >
       <ChatDialogActionCard>
-        <ChatDialogActionCardSection title="Buy">
+        <ChatDialogActionCardSection title={t('dialog.buy')}>
           <ChatDialogActionCardRowWithIcon
             className={cn(
               errors.shares_to_purchase?.message
@@ -132,14 +137,14 @@ export function ChatInvestDialog({
             }
           />
         </ChatDialogActionCardSection>
-        <ChatDialogActionCardSection title="Amount">
+        <ChatDialogActionCardSection title={t('dialog.amount')}>
           <ChatDialogActionCardRowTwoItems
             leftValue={totalCost}
             rightValue={data?.investment_details?.current_price || 0}
           />
         </ChatDialogActionCardSection>
       </ChatDialogActionCard>
-      <ChatDialogPaymentCard title="Pay using">
+      <ChatDialogPaymentCard title={t('dialog.payUsing')}>
         <Controller
           control={control}
           name="payment"

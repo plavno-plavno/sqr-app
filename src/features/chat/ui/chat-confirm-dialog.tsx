@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/ui/kit/dialog";
+import { useTranslation } from "react-i18next";
 
 interface ChatConfirmDialogProps {
   open: boolean;
@@ -22,12 +23,13 @@ interface ChatConfirmDialogProps {
 export function ChatConfirmDialog({
   open,
   title,
-  actionButtonText = "Send",
+  actionButtonText,
   onConfirm,
   onCancel,
   children,
   contentLayout: ContentLayout,
 }: ChatConfirmDialogProps) {
+  const { t } = useTranslation();
   const DefaultWrapper = ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
   );
@@ -54,7 +56,7 @@ export function ChatConfirmDialog({
               className="flex-1"
               onClick={onConfirm}
             >
-              {actionButtonText}
+              {actionButtonText || t('chat.send')}
             </Button>
             <Button
               type="button"
@@ -63,7 +65,7 @@ export function ChatConfirmDialog({
               className="flex-1"
               onClick={onCancel}
             >
-              Cancel
+              {t('chat.cancel')}
             </Button>
           </div>
         </Wrapper>

@@ -15,6 +15,8 @@ import { FormInput } from "@/shared/ui/form-input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
+import type i18next from "i18next";
 
 export type TransferWithDetailsConfirmData = {} & {
   payment: PaymentOption;
@@ -26,26 +28,29 @@ interface ChatTransferWithDetailsDialogProps {
   onCancel: () => void;
 }
 
-const formSchema = z.object({
-  details: z.string().min(1, "Details are required"),
+const createFormSchema = (t: typeof i18next.t) => z.object({
+  details: z.string().min(1, t('dialog.validation.detailsRequired')),
   amount: z.coerce
     .number({
-      required_error: "Amount is required",
+      required_error: t('dialog.validation.amountRequired'),
     })
-    .min(1, "Minimum amount is 1"),
+    .min(1, t('dialog.validation.minimumAmount', { amount: 1 })),
   payment: z.object({
-    identifier: z.string().min(1, "Payment method is required"),
+    identifier: z.string().min(1, t('dialog.validation.paymentMethodRequired')),
     paymentMethod: z.nativeEnum(PaymentMethod),
   }),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof createFormSchema>>;
 
 export function ChatTransferWithDetailsDialog({
   open,
   onConfirm,
   onCancel,
 }: ChatTransferWithDetailsDialogProps) {
+  const { t } = useTranslation();
+  const formSchema = createFormSchema(t);
+  
   const {
     register,
     handleSubmit,
@@ -74,8 +79,8 @@ export function ChatTransferWithDetailsDialog({
   return (
     <ChatConfirmDialog
       open={open}
-      title={"Sure, just confirm"}
-      actionButtonText="Confirm"
+      title={t('dialog.sureJustConfirm')}
+      actionButtonText={t('dialog.confirm')}
       onCancel={onCancel}
       contentLayout={({ children, className }) => (
         <form onSubmit={handleSubmit(onSubmit)} className={className}>
@@ -84,7 +89,7 @@ export function ChatTransferWithDetailsDialog({
       )}
     >
       <ChatDialogActionCard>
-        <ChatDialogActionCardSection title="Transfer Details" className="flex flex-col gap-2">
+        <ChatDialogActionCardSection title={t('dialog.transferDetails')} className="flex flex-col gap-2">
           <FormInput
             variant="ghost"
             type="text"
@@ -93,7 +98,7 @@ export function ChatTransferWithDetailsDialog({
             {...register("details")}
           />
         </ChatDialogActionCardSection>
-        <ChatDialogActionCardSection title="Amount">
+        <ChatDialogActionCardSection title={t('dialog.amount')}>
           <ChatDialogActionCardRowTwoItems
             leftValue={
               <FormInput
@@ -113,7 +118,7 @@ export function ChatTransferWithDetailsDialog({
           />
         </ChatDialogActionCardSection>
       </ChatDialogActionCard>
-      <ChatDialogPaymentCard title="Pay using">
+      <ChatDialogPaymentCard title={t('dialog.payUsing')}>
         <Controller
           control={control}
           name="payment"

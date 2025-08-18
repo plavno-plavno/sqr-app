@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import {
   ChatDialogActionCard,
   ChatDialogActionCardRowTwoItems,
@@ -21,6 +22,7 @@ import {
   PaymentSelect,
 } from "@/features/chat";
 import { ChatConfirmDialog } from "@/features/chat";
+import type i18next from "i18next";
 
 export type ScheduledTransferConfirmData = Partial<
   ScheduledTransferOutput["transfer_details"]
@@ -35,29 +37,29 @@ interface ChatScheduledMoneyTransferDialogProps {
   onCancel: () => void;
 }
 
-const formSchema = z.object({
-  recipient: z.string().min(1, "Recipient is required"),
+const createFormSchema = (t: typeof i18next.t) => z.object({
+  recipient: z.string().min(1, t('dialog.validation.recipientRequired')),
   scheduled_day: z.coerce
     .date({
-      required_error: "Date is required",
+      required_error: t('dialog.validation.dateRequired'),
     })
-    .min(new Date(), "Date must be in the future"),
+    .min(new Date(), t('dialog.validation.dateMustBeFuture')),
   scheduled_hour: z
     .string()
-    .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format")
-    .min(1, "Time is required"),
+    .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, t('dialog.validation.invalidTimeFormat'))
+    .min(1, t('dialog.validation.timeRequired')),
   amount: z.coerce
     .number({
-      required_error: "Amount is required",
+      required_error: t('dialog.validation.amountRequired'),
     })
-    .min(1, "Minimum amount is 1"),
+    .min(1, t('dialog.validation.minimumAmount', { amount: 1 })),
   payment: z.object({
-    identifier: z.string().min(1, "Payment method is required"),
+    identifier: z.string().min(1, t('dialog.validation.paymentMethodRequired')),
     paymentMethod: z.nativeEnum(PaymentMethod),
   }),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof createFormSchema>>;
 
 export function ChatScheduledMoneyTransferDialog({
   data,
@@ -65,6 +67,8 @@ export function ChatScheduledMoneyTransferDialog({
   onConfirm,
   onCancel,
 }: ChatScheduledMoneyTransferDialogProps) {
+  const { t } = useTranslation();
+  const formSchema = createFormSchema(t);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const {
@@ -108,8 +112,8 @@ export function ChatScheduledMoneyTransferDialog({
   return (
     <ChatConfirmDialog
       open={open}
-      title={"Sure, just confirm"}
-      actionButtonText="Confirm"
+      title={t('dialog.sureJustConfirm')}
+      actionButtonText={t('dialog.confirm')}
       onCancel={onCancel}
       contentLayout={({ children, className }) => (
         <form onSubmit={handleSubmit(onSubmit)} className={className}>
@@ -118,7 +122,7 @@ export function ChatScheduledMoneyTransferDialog({
       )}
     >
       <ChatDialogActionCard>
-        <ChatDialogActionCardSection title="Recipient">
+        <ChatDialogActionCardSection title={t('chat.recipient')}>
           <ChatDialogActionCardRowWithIcon
             className={cn(
               errors.recipient?.message ? "items-start" : "items-center"
@@ -161,7 +165,7 @@ export function ChatScheduledMoneyTransferDialog({
               />
             }
           />
-          <ChatDialogActionCardSection title="Amount">
+          <ChatDialogActionCardSection title={t('dialog.amount')}>
             <ChatDialogActionCardRowTwoItems
               className={cn(
                 "gap-2",
@@ -186,7 +190,7 @@ export function ChatScheduledMoneyTransferDialog({
           </ChatDialogActionCardSection>
         </ChatDialogActionCardSection>
       </ChatDialogActionCard>
-      <ChatDialogPaymentCard title="Pay using">
+      <ChatDialogPaymentCard title={t('dialog.payUsing')}>
         <Controller
           control={control}
           name="payment"

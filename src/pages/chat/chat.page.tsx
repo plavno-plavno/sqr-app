@@ -83,6 +83,7 @@ const ChatPage = () => {
     wsError,
     initWSConnection,
     sendTextCommand,
+    sendHelloMessage,
     setWsError,
   } = useWSConnection({ isAudioEnabled });
 
@@ -105,6 +106,20 @@ const ChatPage = () => {
     },
   });
 
+  const chatTitle = chats[chatId!]?.title || "";
+  const messages = chats[chatId!]?.messages || [];
+  const errorDialogOpen = !!wsError || !!audioError;
+  const errorMessage = wsError || audioError || "Something went wrong";
+
+  // Send hello message if there is a new chat
+  const helloSentRef = useRef(false);
+  useEffect(() => {
+    if (messages.length === 0 && isConnected && !helloSentRef.current) {
+      sendHelloMessage();
+      helloSentRef.current = true;
+    }
+  }, [messages.length, isConnected, sendHelloMessage]);
+
   // Initialize WebSocket connection
   useEffect(() => {
     return initWSConnection(language.code, defaultPrompt);
@@ -121,14 +136,13 @@ const ChatPage = () => {
   }, [stopRecording]);
 
   const handleMicActivation = useEffectEvent(() => {
-    console.log("startRecording");
     startRecording();
     navigate(location.pathname, { replace: true });
   });
 
-  // Clean effect with minimal dependencies
+  // Enable mic if search param present
   useEffect(() => {
-    if (!isConnected || !micEnabled) return; // Only depend on micEnabled
+    if (!isConnected || !micEnabled) return;
 
     handleMicActivation();
   }, [isConnected, micEnabled]);
@@ -183,11 +197,6 @@ const ChatPage = () => {
     createChat(chatId);
     navigate(`${href(ROUTES.CHAT, { chatId })}`);
   };
-
-  const chatTitle = chats[chatId!]?.title || "";
-  const messages = chats[chatId!]?.messages || [];
-  const errorDialogOpen = !!wsError || !!audioError;
-  const errorMessage = wsError || audioError || "Something went wrong";
 
   return (
     <div

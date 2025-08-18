@@ -4,6 +4,7 @@ import { Button } from "@/shared/ui/kit/button";
 import { ChatMessageRole, useChatStore, type ChatMessage } from "../..";
 import { ChatSubscriptionMessage } from "./chat-subscription-message";
 import { ChatTextMessage } from "./chat-text-message";
+import { useTranslation } from "react-i18next";
 
 interface ChatSpendingInsightsMessageProps {
   chatId: string;
@@ -20,6 +21,7 @@ export function ChatSpendingInsightsMessage({
   chartElement,
   className,
 }: ChatSpendingInsightsMessageProps) {
+  const { t } = useTranslation();
   const setSubscriptionsClicked = useChatStore.use.setSubscriptionsClicked();
   const setShowSubscriptions = useChatStore.use.setShowSubscriptions();
 
@@ -43,7 +45,7 @@ export function ChatSpendingInsightsMessage({
         <>
           <ChatTextMessage
             role={ChatMessageRole.AGENT}
-            text={`I also found you have hidden subscriptions that cost $${subscription_analysis?.total_monthly || 0} a month, want to look into it and disable them?`}
+            text={t('chat.hiddenSubscriptions', { amount: subscription_analysis?.total_monthly || 0 })}
           />
 
           {!subscriptionsClicked && (
@@ -52,14 +54,14 @@ export function ChatSpendingInsightsMessage({
                 className="min-w-27"
                 onClick={() => handleSubscriptionsClick(true)}
               >
-                Yes
+                {t('chat.yes')}
               </Button>
               <Button
                 variant="outline"
                 className="min-w-27"
                 onClick={() => handleSubscriptionsClick(false)}
               >
-                No
+                {t('chat.no')}
               </Button>
             </div>
           )}
