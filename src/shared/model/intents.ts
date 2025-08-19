@@ -189,6 +189,7 @@ export interface TransferMoneyOutput {
     timestamp: string; // ISO format
   }>;
   notifications: Partial<{
+    recipient_phone: string;
     email_sent: boolean;
     sms_sent: boolean;
     recipient_notified: boolean;
