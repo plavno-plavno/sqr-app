@@ -17,7 +17,7 @@ type Store = State & Actions;
 const useSettingsStoreBase = create<Store>()(
   persist(
     immer((set) => ({
-      isAudioEnabled: true,
+      isAudioEnabled: false,
 
       setAudioEnabled: (enabled: boolean) =>
         set((state) => {
