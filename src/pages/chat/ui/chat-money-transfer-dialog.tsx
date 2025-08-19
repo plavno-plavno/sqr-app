@@ -18,8 +18,19 @@ import {
   ChatDialogPaymentCard,
   PaymentSelect,
 } from "@/features/chat";
+import {
+  contactsMock,
+  type Contact,
+} from "@/features/contacts";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/shared/ui/kit/select";
 import { useTranslation } from "react-i18next";
 import type i18next from "i18next";
+import { useState } from "react";
 
 export type MoneyTransferConfirmData = Partial<TransferMoneyOutput["transfer_details"]> & {
   payment: PaymentOption;
@@ -55,11 +66,13 @@ export function ChatMoneyTransferDialog({
 }: ChatMoneyTransferDialogProps) {
   const { t } = useTranslation();
   const formSchema = createFormSchema(t);
+  const [currentPhone, setCurrentPhone] = useState(data?.notifications?.recipient_phone || "");
   
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -81,6 +94,14 @@ export function ChatMoneyTransferDialog({
     onConfirm(formData);
   };
 
+  const handleContactSelect = (contactId: string) => {
+    const contact = contactsMock.find(c => c.id === contactId);
+    if (contact) {
+      setValue("recipient", contact.name);
+      setCurrentPhone(contact.phone);
+    }
+  };
+
   return (
     <ChatConfirmDialog
       open={open}
@@ -100,12 +121,36 @@ export function ChatMoneyTransferDialog({
               errors.recipient?.message ? "items-start" : "items-center"
             )}
             firstLine={
-              <FormInput
-                className="text-2xl font-semibold p-0"
-                variant="ghost"
-                error={errors.recipient?.message}
-                {...register("recipient")}
-              />
+              <div className="flex flex-col gap-1">
+                <FormInput
+                  className="text-2xl font-semibold p-0"
+                  variant="ghost"
+                  error={errors.recipient?.message}
+                  {...register("recipient")}
+                />
+                {(data?.notifications?.recipient_phone || currentPhone) && (
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-foreground/50 font-medium">
+                      {currentPhone}
+                    </p>
+                    <Select onValueChange={handleContactSelect}>
+                      <SelectTrigger size="sm" className="h-7 w-10 px-2 text-sm [&>svg]:hidden">
+                        <span className="text-xs">📞</span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {contactsMock.map((contact) => (
+                          <SelectItem key={contact.id} value={contact.id}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{contact.name}</span>
+                              <span className="text-xs text-muted-foreground">{contact.phone}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             }
           />
         </ChatDialogActionCardSection>
