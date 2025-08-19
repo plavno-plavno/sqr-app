@@ -20,7 +20,6 @@ import {
 } from "@/features/chat";
 import {
   contactsMock,
-  type Contact,
 } from "@/features/contacts";
 import {
   Select,
