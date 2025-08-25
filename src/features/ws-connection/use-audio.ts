@@ -5,11 +5,11 @@ import { useAudioStore } from "./audio-store";
 import { useWebSocketStore } from "./websocket-store";
 
 interface UseAudioProps {
-  onLevel?: (level: number) => void;
+  onVoiceLevel?: (level: number) => void;
 }
 
 export const useAudio = (config?: UseAudioProps) => {
-  const { onLevel } = config || {};
+  const { onVoiceLevel } = config || {};
 
   const connection = useWebSocketStore.use.connection();
 
@@ -64,7 +64,7 @@ export const useAudio = (config?: UseAudioProps) => {
         newAudioManager = new AudioWorkletManager({
           onAudioData,
           onError,
-          onLevel,
+          onVoiceLevel,
           onVoiceEnd,
           onStopAudioQueue: () => {
             useAudioStore.getState().audioQueue?.stop();
@@ -85,14 +85,14 @@ export const useAudio = (config?: UseAudioProps) => {
     }
   }, [
     connection,
-    audioManager,
     isRecording,
-    setAudioManager,
+    audioManager,
+    setIsRecording,
     onAudioData,
     onError,
-    onLevel,
+    onVoiceLevel,
     onVoiceEnd,
-    setIsRecording,
+    setAudioManager,
   ]);
 
   const stopRecording = useCallback(async () => {

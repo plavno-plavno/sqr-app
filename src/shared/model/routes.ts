@@ -9,7 +9,7 @@ export const ROUTES = {
   SETTINGS: "/settings",
   CHAT: "/chat/:chatId",
   DEMO: "/demo",
-  MICROPHONE_TEST: "/microphone-test",
+  APP_TEST: "/app-test",
 } as const;
 
 export type PathParams = {

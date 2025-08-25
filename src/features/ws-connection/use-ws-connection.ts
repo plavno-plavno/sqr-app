@@ -4,6 +4,8 @@ import {
   useChatStore,
 } from "@/features/chat";
 import { requests } from "@/shared/api";
+import { AudioQueueManager } from "@/shared/lib/audio/audio-queue-manager";
+import { isNonEmptyObject } from "@/shared/lib/js/common";
 import { WebSocketConnection } from "@/shared/lib/websocket/websocket-connection";
 import {
   IntentType,
@@ -11,6 +13,7 @@ import {
   type OperationInfo,
   type SpendingAnalyticsOutput,
 } from "@/shared/model/intents";
+import type { PathParams, ROUTES } from "@/shared/model/routes";
 import type {
   AudioResponse,
   PromptType,
@@ -19,15 +22,14 @@ import type {
   VocalizerType,
 } from "@/shared/model/websocket";
 import axios from "axios";
+import { useCallback } from "react";
+import { useParams } from "react-router-dom";
 import { useEffectEvent } from "use-effect-event";
 import { v4 as uuidv4 } from "uuid";
-import { useWebSocketStore } from "./websocket-store";
+import { useLanguageStore } from "../language";
+import { useSettingsStore } from "../settings";
 import { useAudioStore } from "./audio-store";
-import { useCallback } from "react";
-import type { PathParams, ROUTES } from "@/shared/model/routes";
-import { useParams } from "react-router-dom";
-import { AudioQueueManager } from "@/shared/lib/audio/audio-queue-manager";
-import { isNonEmptyObject } from "@/shared/lib/js/common";
+import { useWebSocketStore } from "./websocket-store";
 
 interface ConnetionOptions {
   isAudioEnabled?: boolean;
@@ -213,7 +215,6 @@ export const useWSConnection = ({
         intent: intentResponse,
       };
       addMessage(chatId, newMessage);
-      return;
     }
 
     // Audio response from agent
@@ -240,16 +241,27 @@ export const useWSConnection = ({
     }
   });
 
-  const initWSConnection = useCallback((language: string, prompt: string) => {
+  const initWSConnection = useCallback(() => {
     const { setConnection, setIsConnected, setWsError, setIsConnecting } =
       useWebSocketStore.getState();
     const { setAudioQueue } = useAudioStore.getState();
+    const { language } = useLanguageStore.getState();
+    const { promptType, vocalizerType, intentDetection } =
+      useSettingsStore.getState();
 
-    const audioQueue = new AudioQueueManager();
+    const audioQueue = new AudioQueueManager({
+      onAudioLevel: (level) =>
+        useAudioStore.getState().audioManager?.updateAudioLevel(level),
+    });
     setAudioQueue(audioQueue);
 
     const controller = new AbortController();
-    const ws = new WebSocketConnection(language, prompt);
+    const ws = new WebSocketConnection({
+      language: language.code,
+      promptType,
+      vocalizerType,
+      intentDetection,
+    });
     setConnection(ws);
 
     async function init() {
@@ -362,6 +374,13 @@ export const useWSConnection = ({
     sendCommand((connection) => connection.sendHelloMessage());
   }, [sendCommand]);
 
+  const changeLanguage = useCallback(
+    (language: string) => {
+      sendCommand((connection) => connection.changeLanguage(language));
+    },
+    [sendCommand]
+  );
+
   return {
     isConnected,
     isConnecting,
@@ -375,6 +394,7 @@ export const useWSConnection = ({
     sendSwitchPromptCommand,
     sendToggleIntentCommand,
     sendHelloMessage,
+    changeLanguage,
     setWsError,
   };
 };

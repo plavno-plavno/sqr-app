@@ -1,11 +1,11 @@
 import { MicVAD } from "@ricky0123/vad-web";
-import { DynamicVoicePauseDetector } from "./dynamic-voice-pause-detector";
+import { DynamicVoicePauseDetector1 } from "./dynamic-voice-pause-detector1";
 
 interface AudioProcessorOptions {
   sampleRate?: number;
   onAudioData?: (data: string, voicestop: boolean) => void;
   onError?: (error: Error) => void;
-  onLevel?: (level: number) => void;
+  onVoiceLevel?: (level: number) => void;
   onVoiceEnd?: () => void;
   vadThreshold?: number;
   vadSilenceFrames?: number;
@@ -14,7 +14,7 @@ interface AudioProcessorOptions {
 
 export class AudioWorkletManager {
   private audioContext: AudioContext | null = null;
-  private voicePauseDetector: DynamicVoicePauseDetector | null = null;
+  private voicePauseDetector: DynamicVoicePauseDetector1 | null = null;
   private workletNode: AudioWorkletNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private options: Required<AudioProcessorOptions>;
@@ -31,13 +31,14 @@ export class AudioWorkletManager {
   private mediaStream: MediaStream | null = null;
   // private speechStartTime: number = 0;
   private isMuted: boolean = false;
+  private agentAudioLevel: number = 0;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
       sampleRate: 16000,
       onAudioData: () => {},
       onError: () => {},
-      onLevel: () => {},
+      onVoiceLevel: () => {},
       onVoiceEnd: () => {},
       vadThreshold: 0.003,
       vadSilenceFrames: 10,
@@ -102,8 +103,8 @@ export class AudioWorkletManager {
       highpassFilter.frequency.value = 200;
       highpassFilter.Q.value = 0.7;
 
-      // Initialize VAD with high threshold to prevent self-echo
-      this.voicePauseDetector = new DynamicVoicePauseDetector({
+      // Initialize smart pause detector
+      this.voicePauseDetector = new DynamicVoicePauseDetector1({
         onAgentCanSpeak: () => {
           console.log("=========================SPEECH END");
           this.isVoiceActive = false;
@@ -117,7 +118,10 @@ export class AudioWorkletManager {
             probabilities.notSpeech
           );
 
-          if (probabilities.isSpeech > 0.4) {
+          // Если агент сейчас отвечает, то увеличиваем порог для восприятия голоса
+          const speechProbability = this.agentAudioLevel > 0 ? 0.95 : 0.6;
+
+          if (probabilities.isSpeech > speechProbability) {
             console.log("SPEECH START======================");
             this.isVoiceActive = true;
 
@@ -192,7 +196,7 @@ export class AudioWorkletManager {
 
       // If microphone is muted, skip processing but continue the cycle
       if (this.isMuted) {
-        this.options.onLevel(0);
+        this.options.onVoiceLevel(0);
         requestAnimationFrame(updateLevel);
         return;
       }
@@ -226,7 +230,7 @@ export class AudioWorkletManager {
         this.silenceFrames = 0;
       }
 
-      this.options.onLevel(rms);
+      this.options.onVoiceLevel(rms);
       requestAnimationFrame(updateLevel);
     };
 
@@ -305,8 +309,13 @@ export class AudioWorkletManager {
     this.workletNode = null;
     this.source = null;
     this.vad = null;
+    this.voicePauseDetector = null;
     this.gainNode = null;
     this.analyserNode = null;
+  }
+
+  public updateAudioLevel(level: number): void {
+    this.agentAudioLevel = level;
   }
 
   public toggleMute(mute?: boolean): void {

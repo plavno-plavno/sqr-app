@@ -266,7 +266,6 @@ function SidebarTrigger({
       size="icon"
       className={cn("size-10 bg-sidebar-primary rounded-full", className)}
       onClick={(event) => {
-        console.log("toggleSidebar")
         onClick?.(event)
         toggleSidebar()
       }}

@@ -17,11 +17,15 @@ import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import { cn } from "@/shared/lib/css/tailwind";
 import { type PathParams, ROUTES } from "@/shared/model/routes";
 import { ErrorDialog } from "@/shared/ui/error-dialog";
-import { Header, NewChatHeaderButton } from "@/shared/ui/header";
+import {
+  Header,
+  NewChatHeaderButton,
+  SettingsHeaderButton,
+} from "@/shared/ui/header";
 import { Button } from "@/shared/ui/kit/button";
 import { SidebarTrigger } from "@/shared/ui/kit/sidebar";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   data,
   href,
@@ -33,9 +37,8 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { ChatDialog } from "./compose/chat-dialog";
 import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
-import { useLanguageStore } from "@/features/language";
-import { defaultPrompt } from "@/shared/mock/prompt";
 import { useEffectEvent } from "use-effect-event";
+import { ChatSettingsDialog } from "./compose/chat-settings-dialog";
 import { useSettingsStore } from "@/features/settings";
 
 export async function loader({
@@ -69,7 +72,7 @@ const ChatPage = () => {
   const setLastMessageMeta = useChatStore.use.setLastMessageMeta();
   const createChat = useChatStore.use.createChat();
 
-  const language = useLanguageStore.use.language();
+  const [openSettings, setOpenSettings] = useState<boolean>(false);
   const isAudioEnabled = useSettingsStore.use.isAudioEnabled();
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
@@ -94,7 +97,7 @@ const ChatPage = () => {
     stopRecording,
     setAudioError,
   } = useAudio({
-    onLevel: (level) => {
+    onVoiceLevel: (level) => {
       if (!lottieRef.current) return;
 
       const totalFrames = lottieRef.current?.getDuration(true);
@@ -122,8 +125,8 @@ const ChatPage = () => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    return initWSConnection(language.code, defaultPrompt);
-  }, [language.code, initWSConnection]);
+    return initWSConnection();
+  }, [initWSConnection]);
 
   // Stop recording when component unmounts
   useEffect(() => {
@@ -198,6 +201,10 @@ const ChatPage = () => {
     navigate(`${href(ROUTES.CHAT, { chatId })}`);
   };
 
+  const handleSettingsClick = () => {
+    setOpenSettings(true);
+  };
+
   return (
     <div
       className={cn(
@@ -210,8 +217,17 @@ const ChatPage = () => {
     >
       <Header
         title={chatTitle}
+        titleClassName="w-[calc(100%-150px)] left-13 translate-x-0"
         leftElement={<SidebarTrigger />}
-        rightElement={<NewChatHeaderButton onClick={handleNewChatClick} />}
+        rightElement={
+          <div className="flex gap-2">
+            <SettingsHeaderButton
+              disabled={!isConnected}
+              onClick={handleSettingsClick}
+            />
+            <NewChatHeaderButton onClick={handleNewChatClick} />
+          </div>
+        }
       />
 
       <ChatMessageList>
@@ -259,6 +275,8 @@ const ChatPage = () => {
           setWsError(null);
         }}
       />
+
+      <ChatSettingsDialog open={openSettings} onOpenChange={setOpenSettings} />
     </div>
   );
 };

@@ -9,6 +9,7 @@ const SettingsPage = () => {
       <Header leftElement={<SidebarTrigger />} title="Settings" />
 
       <SettingsList items={settingsMock} className="mt-6" />
+      {/* <WaveCircle/> */}
     </div>
   );
 };

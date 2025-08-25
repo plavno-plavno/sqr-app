@@ -9,10 +9,10 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
-    tsconfigPaths(),
-    tailwindcss(),
-    svgr(),
+    react(), 
+    tsconfigPaths(), 
+    tailwindcss(), 
+    svgr(), 
     basicSsl(),
     viteStaticCopy({
       targets: [

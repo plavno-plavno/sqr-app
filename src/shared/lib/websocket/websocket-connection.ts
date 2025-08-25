@@ -7,33 +7,21 @@ import {
 // eslint-disable-next-line boundaries/element-types
 import i18n from "@/app/i18n";
 
+interface WebSocketConnectionOptions {
+  language: string;
+  vocalizerType: VocalizerType;
+  promptType: PromptType;
+  intentDetection: boolean;
+}
+
 export class WebSocketConnection {
   #socket: WebSocket | null = null;
   #isServerReady: boolean = false;
   #onResponse: ((response: ServerResponse) => void) | null = null;
-  #language: string;
-  #prompt: string;
-  #url: string | null = null;
+  #options: WebSocketConnectionOptions;
 
-  constructor(language: string, prompt: string) {
-    this.#language = language;
-    this.#prompt = prompt;
-  }
-
-  updateLanguage(language: string) {
-    this.#language = language;
-    if (this.#url) {
-      this.reconnect();
-    }
-  }
-
-  private reconnect() {
-    if (this.#socket) {
-      this.#socket.close();
-      this.#socket = null;
-    }
-    this.#isServerReady = false;
-    this.initSocket(this.#url!, this.#onResponse!);
+  constructor(options: WebSocketConnectionOptions) {
+    this.#options = options;
   }
 
   async initSocket(
@@ -41,7 +29,6 @@ export class WebSocketConnection {
     onResponse: (response: ServerResponse) => void
   ): Promise<void> {
     this.#onResponse = onResponse;
-    this.#url = url;
 
     return new Promise((resolve, reject) => {
       try {
@@ -51,7 +38,7 @@ export class WebSocketConnection {
           console.log("WebSocket connected");
           const initData = {
             uid: "35",
-            language: this.#language,
+            language: this.#options.language,
             task: "transcribe",
             model: "large-v3",
             use_vad: true,
@@ -70,8 +57,11 @@ export class WebSocketConnection {
             if (data.message === "SERVER_READY") {
               console.log("Server is ready for audio streaming");
               this.#isServerReady = true;
-              // TODO: Remove this after server fix
-              this.sendSwitchPromptCommand(PromptType.DEFAULT);
+              const { promptType, vocalizerType, intentDetection } =
+                this.#options;
+              this.sendSwitchPromptCommand(promptType);
+              this.sendSwitchVocalizerCommand(vocalizerType);
+              this.sendToggleIntentCommand(intentDetection);
               resolve();
             } else if (data.segments) {
               // Это ответ с транскрипцией
@@ -105,8 +95,6 @@ export class WebSocketConnection {
 
   // eslint-disable-next-line
   private send(packet: any) {
-    console.log("this.#socket?.readyState", this.#socket?.readyState);
-
     if (this.#socket?.readyState !== WebSocket.OPEN)
       throw new Error("Socket is not open");
     if (!this.#isServerReady) throw new Error("Socket not ready");
@@ -117,13 +105,13 @@ export class WebSocketConnection {
   sendAudioData(base64Data: string, voicestop?: boolean) {
     // eslint-disable-next-line
     const packet: any = {
-      speakerLang: this.#language,
+      speakerLang: this.#options.language,
       audio: base64Data,
       isStartStream: true,
       disableSentenceCutter: true,
       returnTranslatedSegments: true,
       sameOutputThreshold: 4,
-      prompt: this.#prompt,
+      prompt: this.#options.promptType,
     };
     if (voicestop === true) packet.voicestop = true;
     this.send(packet);
@@ -138,11 +126,17 @@ export class WebSocketConnection {
   }
 
   sendTextCommand(text: string) {
-    const packet = {
+    // eslint-disable-next-line
+    const packet: any = {
       command: true,
       commandName: "send_text_command",
       text,
     };
+    // if (voiceStop) {
+    //   this.send({
+    //     voicestop: true,
+    //   });
+    // }
     this.send(packet);
   }
 
@@ -196,6 +190,10 @@ export class WebSocketConnection {
       text: i18n.t("chat.helloMessage"),
     };
     this.send(packet);
+  }
+
+  changeLanguage(language: string) {
+    this.#options.language = language;
   }
 
   stopStreaming() {

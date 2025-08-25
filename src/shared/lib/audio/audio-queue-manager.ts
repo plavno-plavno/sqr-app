@@ -1,7 +1,7 @@
 import type { AudioResponse } from "@/shared/model/websocket";
 
 export interface AudioQueueManagerOptions {
-  onLevel?: (level: number) => void;
+  onAudioLevel?: (level: number) => void;
 }
 
 export class AudioQueueManager {
@@ -12,6 +12,8 @@ export class AudioQueueManager {
 
   private options: AudioQueueManagerOptions;
   private isWorkletReady: boolean = false;
+
+  public audioLevel: number = 0;
 
   constructor(options: AudioQueueManagerOptions = {}) {
     this.options = options;
@@ -29,32 +31,32 @@ export class AudioQueueManager {
   }
 
   private async initializeWorklet() {
-    const audioContext = this.audioContext;
-    if (!audioContext) return;
+    if (!this.audioContext) return;
 
     try {
-      await audioContext.audioWorklet.addModule("/pcm-player-processor.js");
+      await this.audioContext.audioWorklet.addModule("/pcm-player-processor.js");
       this.audioWorkletNode = new AudioWorkletNode(
-        audioContext,
+        this.audioContext,
         "pcm-player-processor"
       );
 
       // Создаем узлы для обработки звука используя сохраненную ссылку
-      this.gainNode = audioContext.createGain();
-      this.gainNode.gain.setValueAtTime(1.0, audioContext.currentTime);
+      this.gainNode = this.audioContext.createGain();
+      this.gainNode.gain.setValueAtTime(1.0, this.audioContext.currentTime);
 
-      this.analyserNode = audioContext.createAnalyser();
+      this.analyserNode = this.audioContext.createAnalyser();
       this.analyserNode.fftSize = 256;
 
       // Подключаем граф: worklet -> gain -> analyser -> destination
       this.audioWorkletNode.connect(this.gainNode);
       this.gainNode.connect(this.analyserNode);
-      this.analyserNode.connect(audioContext.destination);
+      this.analyserNode.connect(this.audioContext.destination);
 
       // Слушаем сообщения от воркера (уровень громкости)
       this.audioWorkletNode.port.onmessage = (event) => {
-        if (event.data.type === "level" && this.options.onLevel) {
-          this.options.onLevel(event.data.value);
+        if (event.data.type === "level" && this.options.onAudioLevel) {
+          this.audioLevel = event.data.value;
+          this.options.onAudioLevel(event.data.value);
         }
       };
 
@@ -107,6 +109,9 @@ export class AudioQueueManager {
       return;
     }
 
+    // Если нет данных и это не завершающий чанк, то не обрабатываем это аудио
+    if (!audioData.audio) return;
+
     // Декодируем base64 в главном потоке
     const audioBuffer = this.decodeBase64ToArrayBuffer(audioData.audio);
     message.data.audioBuffer = audioBuffer;
@@ -150,6 +155,7 @@ export class AudioQueueManager {
     }
 
     this.isWorkletReady = false;
-    this.options.onLevel?.(0);
+    this.options.onAudioLevel?.(0);
+    this.audioLevel = 0;
   }
 }
