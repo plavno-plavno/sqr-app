@@ -6,6 +6,7 @@ interface State {
   connection: WebSocketConnection | null;
   isConnecting: boolean;
   isConnected: boolean;
+  isReconnecting: boolean;
   wsError: string | null;
 }
 
@@ -13,6 +14,7 @@ interface Actions {
   setConnection: (connection: WebSocketConnection | null) => void;
   setIsConnecting: (isConnecting: boolean) => void;
   setIsConnected: (isConnected: boolean) => void;
+  setIsReconnecting: (isReconnecting: boolean) => void;
   setWsError: (wsError: string | null) => void;
 }
 
@@ -22,11 +24,13 @@ const useWebSocketStoreBase = create<Store>()((set) => ({
   connection: null,
   isConnecting: false,
   isConnected: false,
+  isReconnecting: false,
   wsError: null,
 
   setConnection: (connection) => set({ connection }),
   setIsConnecting: (isConnecting) => set({ isConnecting }),
   setIsConnected: (isConnected) => set({ isConnected }),
+  setIsReconnecting: (isReconnecting) => set({ isReconnecting }),
   setWsError: (wsError) => set({ wsError }),
 }));
 

@@ -26,7 +26,7 @@ export type TextResponse = Segment[];
 export type AudioResponse = {
   chunk_id: number;
   stream_id: number;
-  audio: string;
+  audio: string | null;
   isLast?: boolean;
 };
 // Only for old version. Can be removed in future

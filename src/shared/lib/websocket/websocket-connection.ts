@@ -6,52 +6,56 @@ import {
 } from "@/shared/model/websocket";
 // eslint-disable-next-line boundaries/element-types
 import i18n from "@/app/i18n";
+import { sleep } from "../js/common";
+
+const MAX_RECONNECT_ATTEMPTS = 100;
+const RECONNECT_INTERVAL = 1000;
+const MAX_RECONNECT_INTERVAL = 15000;
+
+interface WebSocketConnectionOptions {
+  language: string;
+  vocalizerType: VocalizerType;
+  promptType: PromptType;
+  intentDetection: boolean;
+  isAudioEnabled: boolean;
+  onReconnect?: (isReconnecting: boolean) => void;
+}
 
 export class WebSocketConnection {
-  #socket: WebSocket | null = null;
-  #isServerReady: boolean = false;
-  #onResponse: ((response: ServerResponse) => void) | null = null;
-  #language: string;
-  #prompt: string;
-  #url: string | null = null;
+  private socket: WebSocket | null = null;
+  private url: string | null = null;
+  private options: WebSocketConnectionOptions;
+  private onResponse: ((response: ServerResponse) => void) | null = null;
 
-  constructor(language: string, prompt: string) {
-    this.#language = language;
-    this.#prompt = prompt;
-  }
+  private reconnectAttempts: number = 0;
+  public isReconnecting: boolean = false;
 
-  updateLanguage(language: string) {
-    this.#language = language;
-    if (this.#url) {
-      this.reconnect();
-    }
-  }
-
-  private reconnect() {
-    if (this.#socket) {
-      this.#socket.close();
-      this.#socket = null;
-    }
-    this.#isServerReady = false;
-    this.initSocket(this.#url!, this.#onResponse!);
+  constructor(options: WebSocketConnectionOptions) {
+    this.options = options;
   }
 
   async initSocket(
     url: string,
     onResponse: (response: ServerResponse) => void
   ): Promise<void> {
-    this.#onResponse = onResponse;
-    this.#url = url;
+    this.url = url;
+    this.onResponse = onResponse;
 
     return new Promise((resolve, reject) => {
       try {
-        this.#socket = new WebSocket(url);
+        const socket = new WebSocket(url);
 
-        this.#socket.onopen = () => {
+        socket.onopen = () => {
           console.log("WebSocket connected");
+
+          this.socket = socket;
+          this.reconnectAttempts = 0;
+          this.isReconnecting = false;
+          this.options.onReconnect?.(false);
+
           const initData = {
             uid: "35",
-            language: this.#language,
+            language: this.options.language,
             task: "transcribe",
             model: "large-v3",
             use_vad: true,
@@ -59,23 +63,22 @@ export class WebSocketConnection {
             outer_vad_trigger: true,
           };
           console.log("Sending init data:", initData);
-          this.#socket?.send(JSON.stringify(initData));
+          socket.send(JSON.stringify(initData));
         };
 
-        this.#socket.onmessage = (event) => {
+        socket.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
             console.log("Parsed message:", data);
 
             if (data.message === "SERVER_READY") {
               console.log("Server is ready for audio streaming");
-              this.#isServerReady = true;
-              // TODO: Remove this after server fix
-              this.sendSwitchPromptCommand(PromptType.DEFAULT);
+              const { isAudioEnabled } = this.options;
+              this.sendToggleAudioCommand(isAudioEnabled);
               resolve();
             } else if (data.segments) {
               // Это ответ с транскрипцией
-              this.#onResponse?.(data as ServerResponse);
+              this.onResponse?.(data as ServerResponse);
             }
           } catch (error: unknown) {
             console.log("Raw message:", event.data);
@@ -83,18 +86,14 @@ export class WebSocketConnection {
           }
         };
 
-        this.#socket.onerror = (error) => {
+        socket.onerror = (error) => {
           console.error("WebSocket error:", error);
           reject(error);
         };
 
-        this.#socket.onclose = (event) => {
+        socket.onclose = (event) => {
           console.log("WebSocket closed:", event.code, event.reason);
-          // Не сбрасываем isServerReady при закрытии, если это было нормальное закрытие
-          if (event.code !== 1000) {
-            this.#isServerReady = false;
-          }
-          this.#socket = null;
+          this.socket = null;
         };
       } catch (error) {
         console.error("Error creating WebSocket:", error);
@@ -103,30 +102,72 @@ export class WebSocketConnection {
     });
   }
 
+  private async reconnect() {
+    this.isReconnecting = true;
+    this.options.onReconnect?.(true);
+    this.reconnectAttempts = 0;
+
+    while (this.reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      this.reconnectAttempts++;
+
+      try {
+        await this.initSocket(this.url!, this.onResponse!);
+        return; // Успешное подключение
+      } catch (error) {
+        console.log(
+          `Reconnect attempt ${this.reconnectAttempts} failed:`,
+          error
+        );
+
+        if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          this.isReconnecting = false;
+          this.options.onReconnect?.(false);
+          throw new Error(
+            `Failed to reconnect after ${MAX_RECONNECT_ATTEMPTS} attempts`
+          );
+        }
+
+        // Exponential backoff: 1s, 2s, 4s, 8s, max 15s
+        const delay = Math.min(
+          RECONNECT_INTERVAL * Math.pow(2, this.reconnectAttempts - 1),
+          MAX_RECONNECT_INTERVAL
+        );
+
+        console.log(`Waiting ${delay}ms before next reconnect attempt...`);
+        await sleep(delay);
+      }
+    }
+  }
+
   // eslint-disable-next-line
-  private send(packet: any) {
-    console.log("this.#socket?.readyState", this.#socket?.readyState);
+  private async send(packet: any) {
+    if (this.socket?.readyState !== WebSocket.OPEN) {
+      if (this.isReconnecting) return;
+      await this.reconnect();
+    }
 
-    if (this.#socket?.readyState !== WebSocket.OPEN)
-      throw new Error("Socket is not open");
-    if (!this.#isServerReady) throw new Error("Socket not ready");
-
-    this.#socket?.send(JSON.stringify(packet));
+    this.socket?.send(JSON.stringify(packet));
   }
 
   sendAudioData(base64Data: string, voicestop?: boolean) {
     // eslint-disable-next-line
     const packet: any = {
-      speakerLang: this.#language,
+      speakerLang: this.options.language,
       audio: base64Data,
       isStartStream: true,
       disableSentenceCutter: true,
       returnTranslatedSegments: true,
       sameOutputThreshold: 4,
-      prompt: this.#prompt,
+      prompt: this.options.promptType,
     };
     if (voicestop === true) packet.voicestop = true;
-    this.send(packet);
+
+    if (this.socket?.readyState !== WebSocket.OPEN) {
+      if (this.isReconnecting) return;
+      return this.reconnect();
+    }
+
+    this.socket?.send(JSON.stringify(packet));
   }
 
   sendVoiceEndCommand() {
@@ -138,11 +179,17 @@ export class WebSocketConnection {
   }
 
   sendTextCommand(text: string) {
-    const packet = {
+    // eslint-disable-next-line
+    const packet: any = {
       command: true,
       commandName: "send_text_command",
       text,
     };
+    // if (voiceStop) {
+    //   this.send({
+    //     voicestop: true,
+    //   });
+    // }
     this.send(packet);
   }
 
@@ -181,10 +228,10 @@ export class WebSocketConnection {
     this.send(packet);
   }
 
-  sendToggleAudio(isEnabled: boolean) {
+  sendToggleAudioCommand(isEnabled: boolean) {
     const packet = {
       command: true,
-      action: isEnabled ? "enable_audio" : "disable_audio",
+      commandName: isEnabled ? "enable_audio" : "disable_audio",
     };
     this.send(packet);
   }
@@ -198,26 +245,34 @@ export class WebSocketConnection {
     this.send(packet);
   }
 
+  changeLanguage(language: string) {
+    this.options.language = language;
+  }
+
+  isSocketOpen() {
+    if (this.socket?.readyState !== WebSocket.OPEN) {
+      this.reconnect();
+      return false;
+    }
+    return true;
+  }
+
   stopStreaming() {
-    if (this.#socket) {
+    if (this.socket) {
       console.log("Stopping stream");
-      // this.#isReconnecting = true;
-      this.#isServerReady = false;
-      this.#socket.close(1000, "Stream stopped by user");
-      this.#socket = null;
+      // this.isReconnecting = true;
+      this.socket.close(1000, "Stream stopped by user");
+      this.socket = null;
     }
   }
 
   closeConnection() {
-    if (this.#socket) {
-      console.log("Closing connection", this.#socket);
-      this.#socket.close(1000, "Connection closed by user");
-      this.#socket = null;
-      this.#isServerReady = false;
+    if (this.socket) {
+      console.log("Closing connection", this.socket);
+      this.reconnectAttempts = 0;
+      this.isReconnecting = false;
+      this.socket.close(1000, "Connection closed by user");
+      this.socket = null;
     }
-  }
-
-  isReady(): boolean {
-    return this.#isServerReady;
   }
 }

@@ -38,9 +38,9 @@ function AppContent() {
 }
 
 export function App() {
-  const isDemoPage = useMatch(ROUTES.DEMO);
+  const isAppTestPage = useMatch(ROUTES.APP_TEST);
 
-  if (isDemoPage) {
+  if (isAppTestPage) {
     return (
       <main>
         <Outlet />

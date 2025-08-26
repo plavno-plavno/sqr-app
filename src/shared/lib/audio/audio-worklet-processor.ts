@@ -1,20 +1,24 @@
 import { MicVAD } from "@ricky0123/vad-web";
-import { DynamicVoicePauseDetector } from "./dynamic-voice-pause-detector";
+import { DynamicVoicePauseDetector1 } from "./dynamic-voice-pause-detector1";
+import type { SpeechProbabilities } from "@ricky0123/vad-web/dist/models";
 
 interface AudioProcessorOptions {
   sampleRate?: number;
   onAudioData?: (data: string, voicestop: boolean) => void;
   onError?: (error: Error) => void;
-  onLevel?: (level: number) => void;
+  onVoiceLevel?: (level: number) => void;
   onVoiceEnd?: () => void;
-  vadThreshold?: number;
-  vadSilenceFrames?: number;
   onStopAudioQueue?: (() => void) | null;
 }
 
 export class AudioWorkletManager {
+  private readonly SILENCE_FRAMES_THRESHOLD = 10;
+  private readonly BUFFER_SIZE = 1024;
+  private readonly PRE_SPEECH_FRAMES = 2;
+  private readonly MIN_SPEECH_FRAMES = 3;
+
   private audioContext: AudioContext | null = null;
-  private voicePauseDetector: DynamicVoicePauseDetector | null = null;
+  private voicePauseDetector: DynamicVoicePauseDetector1 | null = null;
   private workletNode: AudioWorkletNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private options: Required<AudioProcessorOptions>;
@@ -26,21 +30,19 @@ export class AudioWorkletManager {
   private silenceThreshold: number = 0.015;
   private speechThreshold: number = 0.03;
   private silenceFrames: number = 0;
-  private readonly SILENCE_FRAMES_THRESHOLD = 10;
-  private readonly BUFFER_SIZE = 1024;
   private mediaStream: MediaStream | null = null;
-  // private speechStartTime: number = 0;
   private isMuted: boolean = false;
+  private agentAudioLevel: number = 0;
+  private preSpeechBuffer: Float32Array[] = [];
+  private speechFrameCount: number = 0;
 
   constructor(options: AudioProcessorOptions = {}) {
     this.options = {
       sampleRate: 16000,
       onAudioData: () => {},
       onError: () => {},
-      onLevel: () => {},
+      onVoiceLevel: () => {},
       onVoiceEnd: () => {},
-      vadThreshold: 0.003,
-      vadSilenceFrames: 10,
       onStopAudioQueue: null,
       ...options,
     };
@@ -48,7 +50,9 @@ export class AudioWorkletManager {
 
   async initialize(): Promise<void> {
     try {
-      this.audioContext = new AudioContext();
+      this.audioContext = new AudioContext({
+        sampleRate: this.options.sampleRate,
+      });
       await this.audioContext.audioWorklet.addModule("/audio-processor.js");
 
       // Audio constraints with built-in echo cancellation
@@ -60,7 +64,7 @@ export class AudioWorkletManager {
         googNoiseSuppression: true,
         googAutoGainControl: true,
         volume: 1.0,
-        sampleRate: 16000,
+        sampleRate: this.options.sampleRate,
         channelCount: 1,
         latency: 0.1,
       };
@@ -102,31 +106,13 @@ export class AudioWorkletManager {
       highpassFilter.frequency.value = 200;
       highpassFilter.Q.value = 0.7;
 
-      // Initialize VAD with high threshold to prevent self-echo
-      this.voicePauseDetector = new DynamicVoicePauseDetector({
-        onAgentCanSpeak: () => {
-          console.log("=========================SPEECH END");
-          this.isVoiceActive = false;
-          this.options.onVoiceEnd();
-        },
+      // Initialize smart pause detector
+      this.voicePauseDetector = new DynamicVoicePauseDetector1({
+        onAgentCanSpeak: () => this.onAgentCanSpeak(),
       });
       this.vad = await MicVAD.new({
-        onFrameProcessed: (probabilities) => {
-          this.voicePauseDetector?.addProbabilities(
-            probabilities.isSpeech,
-            probabilities.notSpeech
-          );
-
-          if (probabilities.isSpeech > 0.4) {
-            console.log("SPEECH START======================");
-            this.isVoiceActive = true;
-
-            if (this.options.onStopAudioQueue) {
-              this.options.onStopAudioQueue();
-              this.voicestopFlag = true;
-            }
-          }
-        },
+        onFrameProcessed: (probabilities, frame) =>
+          this.onFrameProcessed(probabilities, frame),
         model: "v5",
         stream: this.mediaStream,
         baseAssetPath: "/",
@@ -134,11 +120,7 @@ export class AudioWorkletManager {
         // Идеальные настройки
         positiveSpeechThreshold: 0.5,
         negativeSpeechThreshold: 0.35,
-        redemptionFrames: 24, // ~2 seconds of silence tolerance
-        preSpeechPadFrames: 3,
-        minSpeechFrames: 9,
         frameSamples: 512,
-        // userSpeakingThreshold: 0.6,
       });
 
       await this.vad.start();
@@ -161,12 +143,7 @@ export class AudioWorkletManager {
 
       // Add message handler
       this.workletNode.port.onmessage = (event) => {
-        const inputData = event.data;
-        const audioData16kHz = this.resampleTo16kHz(
-          inputData,
-          this.audioContext?.sampleRate ?? 16000
-        );
-        const base64Data = this.float32ToBase64(audioData16kHz);
+        const base64Data = this.float32ToBase64(event.data);
 
         // Send data only if user is actively speaking and microphone is not muted
         if (this.isVoiceActive && !this.isMuted) {
@@ -183,6 +160,57 @@ export class AudioWorkletManager {
     }
   }
 
+  private onAgentCanSpeak() {
+    console.log("=========================SPEECH END");
+    this.isVoiceActive = false;
+    this.speechFrameCount = 0;
+    this.options.onVoiceEnd();
+  }
+
+  private onFrameProcessed(
+    probabilities: SpeechProbabilities,
+    frame: Float32Array<ArrayBufferLike>
+  ) {
+    // Добавляем фрейм в буфер pre-speech
+    if (!this.isVoiceActive) {
+      this.preSpeechBuffer.push(frame);
+      if (this.preSpeechBuffer.length > this.PRE_SPEECH_FRAMES)
+        this.preSpeechBuffer.shift(); // Удаляем старый фрейм
+    }
+
+    this.voicePauseDetector?.addProbabilities(
+      probabilities.isSpeech,
+      probabilities.notSpeech
+    );
+
+    // Если агент сейчас отвечает, то увеличиваем порог для восприятия голоса
+    const speechProbability = this.agentAudioLevel > 0 ? 0.95 : 0.6;
+
+    if (probabilities.isSpeech > speechProbability) {
+      this.speechFrameCount++;
+
+      // Начинаем запись только если накопили достаточно речевых фреймов подряд
+      if (this.speechFrameCount < this.MIN_SPEECH_FRAMES) return;
+      console.log("SPEECH START======================");
+
+      this.isVoiceActive = true;
+
+      // Отправляем буферизованные pre-speech фреймы
+      this.preSpeechBuffer.forEach((bufferedFrame) => {
+        const base64Data = this.float32ToBase64(bufferedFrame);
+        this.options.onAudioData(base64Data, false);
+      });
+      this.preSpeechBuffer = [];
+
+      if (this.options.onStopAudioQueue) {
+        this.options.onStopAudioQueue();
+        this.voicestopFlag = true;
+      }
+    } else {
+      this.speechFrameCount = 0;
+    }
+  }
+
   private startLevelMonitoring() {
     if (!this.analyserNode || !this.gainNode || !this.audioContext) return;
 
@@ -192,7 +220,7 @@ export class AudioWorkletManager {
 
       // If microphone is muted, skip processing but continue the cycle
       if (this.isMuted) {
-        this.options.onLevel(0);
+        this.options.onVoiceLevel(0);
         requestAnimationFrame(updateLevel);
         return;
       }
@@ -226,7 +254,7 @@ export class AudioWorkletManager {
         this.silenceFrames = 0;
       }
 
-      this.options.onLevel(rms);
+      this.options.onVoiceLevel(rms);
       requestAnimationFrame(updateLevel);
     };
 
@@ -252,6 +280,7 @@ export class AudioWorkletManager {
     }
   }
 
+  // @ts-expect-error - Method preserved for future use
   private resampleTo16kHz(
     audioData: Float32Array,
     origSampleRate: number
@@ -300,13 +329,21 @@ export class AudioWorkletManager {
     this.gainNode?.disconnect();
     this.analyserNode?.disconnect();
     await this.audioContext?.close();
+    this.isVoiceActive = false;
+    this.speechFrameCount = 0;
+    this.preSpeechBuffer = [];
     this.mediaStream = null;
     this.audioContext = null;
     this.workletNode = null;
     this.source = null;
     this.vad = null;
+    this.voicePauseDetector = null;
     this.gainNode = null;
     this.analyserNode = null;
+  }
+
+  public updateAudioLevel(level: number): void {
+    this.agentAudioLevel = level;
   }
 
   public toggleMute(mute?: boolean): void {

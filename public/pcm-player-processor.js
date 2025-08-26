@@ -2,6 +2,15 @@
 // Аудио чанки приходят через postMessage в AudioQueueManager и в правильном порядке заносяться в буффер audioData.
 // Получается один большой буфер аудиоданных без склеек. Далее метод process, который бразуер вызвает автоматически,
 // мы постоянно обрабатываем эти данные без остановок и переодически отчищаем буфер.
+
+// Utility function to check if a number is empty (null, undefined, NaN)
+function isEmptyNumber(value) {
+  if (value === null || value === undefined) return true;
+  if (value === "" || value === " ") return true;
+  if (typeof value === "number" && isNaN(value)) return true;
+  return false;
+}
+
 class PCMPlayerProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
@@ -46,19 +55,11 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
   addAudioChunk(data) {
     const { stream_id, chunk_id, audioBuffer } = data;
 
-    // Сбрасываем флаг остановки при новых данных
-    if (this.isStopping) {
-      this.isStopping = false;
-      this.fadeOutGain = 1.0;
-    }
-
     // Обработка завершающего чанка
     if (chunk_id === -1) {
       const streamChunks = this.audioStreams.get(stream_id);
 
-      if (!streamChunks || streamChunks.size === 0) {
-        return;
-      }
+      if (!streamChunks || streamChunks.size === 0) return;
 
       // Добавляем дополнительный завершающий чанк в конец текущего стрима
       const maxChunkId = Math.max(...streamChunks.keys());
@@ -80,7 +81,7 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
     this.audioStreams.set(stream_id, streamChunks);
 
     // Если это первый стрим, начинаем с него
-    if (this.currentStreamId === null) {
+    if (isEmptyNumber(this.currentStreamId)) {
       this.currentStreamId = stream_id;
       this.currentChunkId = chunk_id;
     }
@@ -95,6 +96,10 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
   }
 
   convertPCMToFloat32(audioBuffer) {
+    if (!audioBuffer || audioBuffer.byteLength === 0) {
+      return new Float32Array(0);
+    }
+
     // Конвертируем Int16 PCM -> Float32
     const int16Array = new Int16Array(audioBuffer);
     const float32Array = new Float32Array(int16Array.length);
@@ -128,13 +133,13 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
   // Обрабатываем все доступные чанки и добавляем их в буфер воспроизведения
   processBufferedChunks() {
     while (true) {
-      if (!this.currentStreamId) break;
+      if (isEmptyNumber(this.currentStreamId)) break;
 
       const streamChunks = this.audioStreams.get(this.currentStreamId);
       if (!streamChunks) break;
 
       const chunk = streamChunks.get(this.currentChunkId);
-      if (!chunk) break;
+      if (isEmptyNumber(chunk)) break;
 
       // Добавляем чанк в буфер воспроизведения
       this.appendToBuffer(chunk.data);
@@ -177,9 +182,9 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
         this.readPosition++;
         hasData = true;
 
-        // Fade out при остановке (300ms)
+        // Fade out при остановке (500ms)
         if (this.isStopping && this.fadeOutGain > 0) {
-          this.fadeOutGain -= 0.000151; // 300ms fade out при 22050Hz
+          this.fadeOutGain -= 0.0000906; // 500ms fade out при 22050Hz
           if (this.fadeOutGain < 0) this.fadeOutGain = 0;
         }
         sample *= this.fadeOutGain;
@@ -212,7 +217,7 @@ class PCMPlayerProcessor extends AudioWorkletProcessor {
       const rms = Math.sqrt(levelSum / channel.length);
       this.port.postMessage({
         type: "level",
-        value: hasData ? rms : 0,
+        value: hasData && !this.isStopping ? rms : 0,
       });
       this.levelCounter = 0;
     }

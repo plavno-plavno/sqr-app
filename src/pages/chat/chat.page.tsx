@@ -17,7 +17,10 @@ import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import { cn } from "@/shared/lib/css/tailwind";
 import { type PathParams, ROUTES } from "@/shared/model/routes";
 import { ErrorDialog } from "@/shared/ui/error-dialog";
-import { Header, NewChatHeaderButton } from "@/shared/ui/header";
+import {
+  Header,
+  NewChatHeaderButton,
+} from "@/shared/ui/header";
 import { Button } from "@/shared/ui/kit/button";
 import { SidebarTrigger } from "@/shared/ui/kit/sidebar";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
@@ -33,10 +36,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { ChatDialog } from "./compose/chat-dialog";
 import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
-import { useLanguageStore } from "@/features/language";
-import { defaultPrompt } from "@/shared/mock/prompt";
 import { useEffectEvent } from "use-effect-event";
-import { useSettingsStore } from "@/features/settings";
 
 export async function loader({
   params,
@@ -69,9 +69,6 @@ const ChatPage = () => {
   const setLastMessageMeta = useChatStore.use.setLastMessageMeta();
   const createChat = useChatStore.use.createChat();
 
-  const language = useLanguageStore.use.language();
-  const isAudioEnabled = useSettingsStore.use.isAudioEnabled();
-
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
 
   const micEnabled = searchParams.get("mic") === "true";
@@ -80,12 +77,13 @@ const ChatPage = () => {
   const {
     isConnected,
     isConnecting,
+    isReconnecting,
     wsError,
     initWSConnection,
     sendTextCommand,
     sendHelloMessage,
     setWsError,
-  } = useWSConnection({ isAudioEnabled });
+  } = useWSConnection();
 
   const {
     audioError,
@@ -94,7 +92,7 @@ const ChatPage = () => {
     stopRecording,
     setAudioError,
   } = useAudio({
-    onLevel: (level) => {
+    onVoiceLevel: (level) => {
       if (!lottieRef.current) return;
 
       const totalFrames = lottieRef.current?.getDuration(true);
@@ -108,8 +106,15 @@ const ChatPage = () => {
 
   const chatTitle = chats[chatId!]?.title || "";
   const messages = chats[chatId!]?.messages || [];
-  const errorDialogOpen = !!wsError || !!audioError;
-  const errorMessage = wsError || audioError || "Something went wrong";
+  const errorDialogOpen = !!wsError || !!audioError || isReconnecting;
+  const errorDialogTitle = isReconnecting
+    ? "Socket disconnected"
+    : "Error occurred, please try again";
+  const buttonText = isReconnecting ? "Close and realod" : "OK";
+  const commonErrorMessage = wsError || audioError || "Something went wrong";
+  const errorMessage = isReconnecting
+    ? "Trying to reconnect..."
+    : commonErrorMessage;
 
   // Send hello message if there is a new chat
   const helloSentRef = useRef(false);
@@ -122,8 +127,8 @@ const ChatPage = () => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    return initWSConnection(language.code, defaultPrompt);
-  }, [language.code, initWSConnection]);
+    return initWSConnection();
+  }, [initWSConnection]);
 
   // Stop recording when component unmounts
   useEffect(() => {
@@ -252,9 +257,12 @@ const ChatPage = () => {
 
       <ErrorDialog
         open={errorDialogOpen}
-        title="Error occurred, please try again"
+        title={errorDialogTitle}
         description={errorMessage}
+        buttonText={buttonText}
         onOpenChange={() => {
+          if (isReconnecting) return window.location.reload();
+
           setAudioError(null);
           setWsError(null);
         }}

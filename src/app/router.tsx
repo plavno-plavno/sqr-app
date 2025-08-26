@@ -37,13 +37,8 @@ export const router = createBrowserRouter([
         lazy: () => import("@/pages/chat/chat.page"),
       },
       {
-        path: ROUTES.DEMO,
-        lazy: () => import("@/pages/demo/demo.page"),
-      },
-      {
-        path: ROUTES.MICROPHONE_TEST,
-        lazy: () =>
-          import("@/pages/test-noize-cancelation/noize-cancelation.page"),
+        path: ROUTES.APP_TEST,
+        lazy: () => import("@/pages/app-test/app-test.page"),
       },
       {
         path: "*",

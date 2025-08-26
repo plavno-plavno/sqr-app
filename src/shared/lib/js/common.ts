@@ -18,3 +18,6 @@ export const isNonEmptyObject = (obj: unknown) =>
   typeof obj === "object" &&
   !Array.isArray(obj) &&
   Object.keys(obj).length > 0;
+
+export const sleep = (ms: number) =>
+  new Promise((resolve) => setTimeout(() => resolve(true), ms));
