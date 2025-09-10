@@ -39,7 +39,6 @@ import { ChatDialog } from "./compose/chat-dialog";
 import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
 import { useEffectEvent } from "use-effect-event";
 import { ChatSettingsDialog } from "./compose/chat-settings-dialog";
-import { useSettingsStore } from "@/features/settings";
 
 export async function loader({
   params,
@@ -73,7 +72,6 @@ const ChatPage = () => {
   const createChat = useChatStore.use.createChat();
 
   const [openSettings, setOpenSettings] = useState<boolean>(false);
-  const isAudioEnabled = useSettingsStore.use.isAudioEnabled();
 
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
 
@@ -83,12 +81,13 @@ const ChatPage = () => {
   const {
     isConnected,
     isConnecting,
+    isReconnecting,
     wsError,
     initWSConnection,
     sendTextCommand,
     sendHelloMessage,
     setWsError,
-  } = useWSConnection({ isAudioEnabled });
+  } = useWSConnection();
 
   const {
     audioError,
@@ -111,8 +110,15 @@ const ChatPage = () => {
 
   const chatTitle = chats[chatId!]?.title || "";
   const messages = chats[chatId!]?.messages || [];
-  const errorDialogOpen = !!wsError || !!audioError;
-  const errorMessage = wsError || audioError || "Something went wrong";
+  const errorDialogOpen = !!wsError || !!audioError || isReconnecting;
+  const errorDialogTitle = isReconnecting
+    ? "Socket disconnected"
+    : "Error occurred, please try again";
+  const buttonText = isReconnecting ? "Close and realod" : "OK";
+  const commonErrorMessage = wsError || audioError || "Something went wrong";
+  const errorMessage = isReconnecting
+    ? "Trying to reconnect..."
+    : commonErrorMessage;
 
   // Send hello message if there is a new chat
   const helloSentRef = useRef(false);
@@ -268,9 +274,12 @@ const ChatPage = () => {
 
       <ErrorDialog
         open={errorDialogOpen}
-        title="Error occurred, please try again"
+        title={errorDialogTitle}
         description={errorMessage}
+        buttonText={buttonText}
         onOpenChange={() => {
+          if (isReconnecting) return window.location.reload();
+
           setAudioError(null);
           setWsError(null);
         }}

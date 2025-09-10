@@ -31,18 +31,8 @@ import { useSettingsStore } from "../settings";
 import { useAudioStore } from "./audio-store";
 import { useWebSocketStore } from "./websocket-store";
 
-interface ConnetionOptions {
-  isAudioEnabled?: boolean;
-}
-
-const defaultOptions = { isAudioEnabled: false };
-
-export const useWSConnection = ({
-  isAudioEnabled,
-}: ConnetionOptions = defaultOptions) => {
+export const useWSConnection = () => {
   const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
-  const audioManager = useAudioStore.use.audioManager();
-  const clearAudio = useAudioStore.use.clearAudio();
 
   const addMessage = useChatStore.use.addMessage();
   const updateMessage = useChatStore.use.updateMessage();
@@ -54,6 +44,7 @@ export const useWSConnection = ({
   const connection = useWebSocketStore.use.connection();
   const isConnected = useWebSocketStore.use.isConnected();
   const isConnecting = useWebSocketStore.use.isConnecting();
+  const isReconnecting = useWebSocketStore.use.isReconnecting();
   const wsError = useWebSocketStore.use.wsError();
   const setWsError = useWebSocketStore.use.setWsError();
 
@@ -106,10 +97,13 @@ export const useWSConnection = ({
     if (
       !lastMessage ||
       lastMessage?.role === ChatMessageRole.AGENT ||
-      lastMessage?.role === ChatMessageRole.USER_TEXT
+      lastMessage?.role === ChatMessageRole.USER_TEXT ||
+      +lastMessageMeta.start === -1
     ) {
       const newMessage = { ...message, id: uuidv4() };
       addMessage(chatId, newMessage);
+      setLastMessageMeta(chatId, { start, end });
+      return;
     }
 
     if (
@@ -117,9 +111,8 @@ export const useWSConnection = ({
       !lastMessage.isTextCorrected
     ) {
       updateMessage(chatId, { ...lastMessage, text });
+      setLastMessageMeta(chatId, { start, end });
     }
-
-    setLastMessageMeta(chatId, { start, end });
   };
 
   const handleAgentResponse = async (
@@ -182,6 +175,7 @@ export const useWSConnection = ({
     // Intent response from agent
     if ("intent" in segments && "output" in segments) {
       const intentResponse = segments as IntentResponse;
+      const { audioManager, clearAudio } = useAudioStore.getState();
 
       if (
         intentResponse.intent === IntentType.BUY_BTC ||
@@ -218,7 +212,7 @@ export const useWSConnection = ({
     }
 
     // Audio response from agent
-    if (isAudioEnabled && "audio" in segments) {
+    if ("audio" in segments) {
       const audioResponse = segments as AudioResponse;
       const audioQueue = useAudioStore.getState().audioQueue;
 
@@ -242,11 +236,17 @@ export const useWSConnection = ({
   });
 
   const initWSConnection = useCallback(() => {
-    const { setConnection, setIsConnected, setWsError, setIsConnecting } =
-      useWebSocketStore.getState();
-    const { setAudioQueue } = useAudioStore.getState();
+    const {
+      setConnection,
+      setIsConnected,
+      setWsError,
+      setIsConnecting,
+      setIsReconnecting,
+    } = useWebSocketStore.getState();
+    const { setAudioQueue, audioManager, clearAudio } =
+      useAudioStore.getState();
     const { language } = useLanguageStore.getState();
-    const { promptType, vocalizerType, intentDetection } =
+    const { promptType, vocalizerType, intentDetection, isAudioEnabled } =
       useSettingsStore.getState();
 
     const audioQueue = new AudioQueueManager({
@@ -261,6 +261,14 @@ export const useWSConnection = ({
       promptType,
       vocalizerType,
       intentDetection,
+      isAudioEnabled,
+      onReconnect: (isReconnecting) => {
+        setIsReconnecting(isReconnecting);
+        if (isReconnecting) {
+          audioManager?.stop();
+          clearAudio();
+        }
+      },
     });
     setConnection(ws);
 
@@ -370,6 +378,15 @@ export const useWSConnection = ({
     [sendCommand]
   );
 
+  const sendToggleAudioCommand = useCallback(
+    (isAudioEnabled: boolean) => {
+      sendCommand((connection) =>
+        connection.sendToggleAudioCommand(isAudioEnabled)
+      );
+    },
+    [sendCommand]
+  );
+
   const sendHelloMessage = useCallback(() => {
     sendCommand((connection) => connection.sendHelloMessage());
   }, [sendCommand]);
@@ -384,6 +401,7 @@ export const useWSConnection = ({
   return {
     isConnected,
     isConnecting,
+    isReconnecting,
     wsError,
     initWSConnection,
     sendTextCommand,
@@ -393,6 +411,7 @@ export const useWSConnection = ({
     sendSwitchVocalizerCommand,
     sendSwitchPromptCommand,
     sendToggleIntentCommand,
+    sendToggleAudioCommand,
     sendHelloMessage,
     changeLanguage,
     setWsError,

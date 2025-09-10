@@ -9,6 +9,7 @@ import { CloudOff } from "lucide-react";
 interface ChatConfirmDialogProps {
   title: string;
   description: string;
+  buttonText: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -16,6 +17,7 @@ interface ChatConfirmDialogProps {
 export function ErrorDialog({
   title,
   description,
+  buttonText,
   open,
   onOpenChange,
 }: ChatConfirmDialogProps) {
@@ -33,7 +35,7 @@ export function ErrorDialog({
           <p className="text-lg text-primary-foreground">{description}</p>
         </div>
         <Button className="min-w-35 mt-5" onClick={() => onOpenChange(false)}>
-          OK
+          {buttonText}
         </Button>
       </DialogContent>
     </Dialog>

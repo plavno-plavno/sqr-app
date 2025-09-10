@@ -36,6 +36,7 @@ export function ChatSettingsDialog({
     sendSwitchVocalizerCommand,
     sendSwitchPromptCommand,
     sendToggleIntentCommand,
+    sendToggleAudioCommand,
     changeLanguage,
   } = useWSConnection();
 
@@ -52,6 +53,11 @@ export function ChatSettingsDialog({
   const handleChangeIntent = (value: boolean) => {
     setIntentDetection(value);
     sendToggleIntentCommand(value);
+  };
+
+  const handleChangeAudio = (value: boolean) => {
+    setAudioEnabled(value);
+    sendToggleAudioCommand(value);
   };
 
   return (
@@ -133,7 +139,7 @@ export function ChatSettingsDialog({
           <Switch
             size="lg"
             checked={isAudioEnabled}
-            onCheckedChange={setAudioEnabled}
+            onCheckedChange={handleChangeAudio}
           />
         </div>
       </div>

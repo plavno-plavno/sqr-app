@@ -56,6 +56,7 @@ export const useAudio = (config?: UseAudioProps) => {
   const startRecording = useCallback(async () => {
     try {
       if (!connection) throw new Error("Socket is not connected");
+      if (!connection.isSocketOpen()) return;
       if (isRecording) return;
 
       let newAudioManager;
