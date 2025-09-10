@@ -1,6 +1,6 @@
 import { MicVAD } from "@ricky0123/vad-web";
-import type { SpeechProbabilities } from "@ricky0123/vad-web/dist/models";
 import { DynamicVoicePauseDetector1 } from "./dynamic-voice-pause-detector1";
+import type { SpeechProbabilities } from "@ricky0123/vad-web/dist/models";
 
 interface AudioProcessorOptions {
   sampleRate?: number;
@@ -14,16 +14,8 @@ interface AudioProcessorOptions {
 export class AudioWorkletManager {
   private readonly SILENCE_FRAMES_THRESHOLD = 10;
   private readonly BUFFER_SIZE = 1024;
-
-  // VAD frame size in V5 - 512 samples. sampleRate = 16000
-  // 1 frame = 0.032 ms
-  private readonly PRE_SPEECH_FRAMES = 15; // 0.48ms
-  private readonly MIN_SPEECH_FRAMES = 3; // 0.096ms
-  private readonly SPEECH_PROBABILITY = 0.2;
-  private readonly AGENT_ACTIVE_SPEECH_PROBABILITY = 0.7;
-  private readonly SILENCE_PROBABILITY = 0.5;
-  private readonly MIN_PAUSE_MS = 2500;
-  private readonly MAX_PAUSE_MS = 3500;
+  private readonly PRE_SPEECH_FRAMES = 2;
+  private readonly MIN_SPEECH_FRAMES = 3;
 
   private audioContext: AudioContext | null = null;
   private voicePauseDetector: DynamicVoicePauseDetector1 | null = null;
@@ -116,18 +108,19 @@ export class AudioWorkletManager {
 
       // Initialize smart pause detector
       this.voicePauseDetector = new DynamicVoicePauseDetector1({
-        confidenceThreshold: this.SILENCE_PROBABILITY,
-        minPauseMs: this.MIN_PAUSE_MS,
-        maxPauseMs: this.MAX_PAUSE_MS,
         onAgentCanSpeak: () => this.onAgentCanSpeak(),
       });
       this.vad = await MicVAD.new({
         onFrameProcessed: (probabilities, frame) =>
           this.onFrameProcessed(probabilities, frame),
         model: "v5",
-        getStream: async () => this.mediaStream!,
-        baseAssetPath: "/vad/",
-        onnxWASMBasePath: "/vad/",
+        stream: this.mediaStream,
+        baseAssetPath: "/",
+        onnxWASMBasePath: "/",
+        // Идеальные настройки
+        positiveSpeechThreshold: 0.5,
+        negativeSpeechThreshold: 0.35,
+        frameSamples: 512,
       });
 
       await this.vad.start();
@@ -191,10 +184,7 @@ export class AudioWorkletManager {
     );
 
     // Если агент сейчас отвечает, то увеличиваем порог для восприятия голоса
-    const speechProbability =
-      this.agentAudioLevel > 0
-        ? this.AGENT_ACTIVE_SPEECH_PROBABILITY
-        : this.SPEECH_PROBABILITY;
+    const speechProbability = this.agentAudioLevel > 0 ? 0.95 : 0.6;
 
     if (probabilities.isSpeech > speechProbability) {
       this.speechFrameCount++;

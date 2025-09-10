@@ -17,25 +17,17 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: 'node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js',
-          dest: './vad'
+          src: "node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js",
+          dest: "",
         },
         {
-          src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_v5.onnx',
-          dest: './vad'
+          src: "node_modules/@ricky0123/vad-web/dist/silero_vad_v5.onnx",
+          dest: "",
         },
         {
-          src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_legacy.onnx',
-          dest: './vad'
+          src: "node_modules/.pnpm/onnxruntime-web@1.14.0/node_modules/onnxruntime-web/dist/ort-wasm-simd.wasm",
+          dest: "",
         },
-        {
-          src: 'node_modules/.pnpm/onnxruntime-web@1.22.0/node_modules/onnxruntime-web/dist/*.wasm',
-          dest: './vad'
-        },
-        {
-          src: 'node_modules/.pnpm/onnxruntime-web@1.22.0/node_modules/onnxruntime-web/dist/*.mjs',
-          dest: './vad'
-        }
       ],
     }),
   ],
