@@ -1,4 +1,6 @@
 import { MicVAD } from "@ricky0123/vad-web";
+import type { SpeechProbabilities } from "@ricky0123/vad-web/dist/models";
+import { DynamicVoicePauseDetector1 } from "./dynamic-voice-pause-detector1";
 
 interface AudioProcessorOptions {
   sampleRate?: number;
@@ -13,7 +15,18 @@ export class AudioWorkletManager {
   private readonly SILENCE_FRAMES_THRESHOLD = 10;
   private readonly BUFFER_SIZE = 1024;
 
+  // VAD frame size in V5 - 512 samples. sampleRate = 16000
+  // 1 frame = 0.032 ms
+  private readonly PRE_SPEECH_FRAMES = 15; // 0.48ms
+  private readonly MIN_SPEECH_FRAMES = 3; // 0.096ms
+  private readonly SPEECH_PROBABILITY = 0.2;
+  private readonly AGENT_ACTIVE_SPEECH_PROBABILITY = 0.7;
+  private readonly SILENCE_PROBABILITY = 0.5;
+  private readonly MIN_PAUSE_MS = 2500;
+  private readonly MAX_PAUSE_MS = 3500;
+
   private audioContext: AudioContext | null = null;
+  private voicePauseDetector: DynamicVoicePauseDetector1 | null = null;
   private workletNode: AudioWorkletNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private options: Required<AudioProcessorOptions>;
@@ -28,9 +41,10 @@ export class AudioWorkletManager {
   private mediaStream: MediaStream | null = null;
   private isMuted: boolean = false;
   private agentAudioLevel: number = 0;
+  private preSpeechBuffer: Float32Array[] = [];
+  private speechFrameCount: number = 0;
 
   constructor(options: AudioProcessorOptions = {}) {
-    console.log(this.agentAudioLevel);
     this.options = {
       sampleRate: 16000,
       onAudioData: () => {},
@@ -101,11 +115,15 @@ export class AudioWorkletManager {
       highpassFilter.Q.value = 0.7;
 
       // Initialize smart pause detector
+      this.voicePauseDetector = new DynamicVoicePauseDetector1({
+        confidenceThreshold: this.SILENCE_PROBABILITY,
+        minPauseMs: this.MIN_PAUSE_MS,
+        maxPauseMs: this.MAX_PAUSE_MS,
+        onAgentCanSpeak: () => this.onAgentCanSpeak(),
+      });
       this.vad = await MicVAD.new({
-        onSpeechStart: () => {
-          this.options.onStopAudioQueue?.();
-          this.voicestopFlag = true;
-        },
+        onFrameProcessed: (probabilities, frame) =>
+          this.onFrameProcessed(probabilities, frame),
         model: "v5",
         getStream: async () => this.mediaStream!,
         baseAssetPath: "/vad/",
@@ -135,7 +153,7 @@ export class AudioWorkletManager {
         const base64Data = this.float32ToBase64(event.data);
 
         // Send data only if user is actively speaking and microphone is not muted
-        if (!this.isMuted) {
+        if (this.isVoiceActive && !this.isMuted) {
           this.options.onAudioData(base64Data, this.voicestopFlag);
           if (this.voicestopFlag) this.voicestopFlag = false;
         }
@@ -146,6 +164,60 @@ export class AudioWorkletManager {
     } catch (error) {
       this.options.onError(error as Error);
       throw error;
+    }
+  }
+
+  private onAgentCanSpeak() {
+    console.log("=========================SPEECH END");
+    this.isVoiceActive = false;
+    this.speechFrameCount = 0;
+    this.options.onVoiceEnd();
+  }
+
+  private onFrameProcessed(
+    probabilities: SpeechProbabilities,
+    frame: Float32Array<ArrayBufferLike>
+  ) {
+    // Добавляем фрейм в буфер pre-speech
+    if (!this.isVoiceActive) {
+      this.preSpeechBuffer.push(frame);
+      if (this.preSpeechBuffer.length > this.PRE_SPEECH_FRAMES)
+        this.preSpeechBuffer.shift(); // Удаляем старый фрейм
+    }
+
+    this.voicePauseDetector?.addProbabilities(
+      probabilities.isSpeech,
+      probabilities.notSpeech
+    );
+
+    // Если агент сейчас отвечает, то увеличиваем порог для восприятия голоса
+    const speechProbability =
+      this.agentAudioLevel > 0
+        ? this.AGENT_ACTIVE_SPEECH_PROBABILITY
+        : this.SPEECH_PROBABILITY;
+
+    if (probabilities.isSpeech > speechProbability) {
+      this.speechFrameCount++;
+
+      // Начинаем запись только если накопили достаточно речевых фреймов подряд
+      if (this.speechFrameCount < this.MIN_SPEECH_FRAMES) return;
+      console.log("SPEECH START======================");
+
+      this.isVoiceActive = true;
+
+      // Отправляем буферизованные pre-speech фреймы
+      this.preSpeechBuffer.forEach((bufferedFrame) => {
+        const base64Data = this.float32ToBase64(bufferedFrame);
+        this.options.onAudioData(base64Data, false);
+      });
+      this.preSpeechBuffer = [];
+
+      if (this.options.onStopAudioQueue) {
+        this.options.onStopAudioQueue();
+        this.voicestopFlag = true;
+      }
+    } else {
+      this.speechFrameCount = 0;
     }
   }
 
@@ -268,11 +340,14 @@ export class AudioWorkletManager {
     this.analyserNode?.disconnect();
     await this.audioContext?.close();
     this.isVoiceActive = false;
+    this.speechFrameCount = 0;
+    this.preSpeechBuffer = [];
     this.mediaStream = null;
     this.audioContext = null;
     this.workletNode = null;
     this.source = null;
     this.vad = null;
+    this.voicePauseDetector = null;
     this.gainNode = null;
     this.analyserNode = null;
   }

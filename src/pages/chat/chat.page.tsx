@@ -117,11 +117,9 @@ const ChatPage = () => {
     : commonErrorMessage;
 
   // Send hello message if there is a new chat
-  const helloSentRef = useRef(false);
   useEffect(() => {
-    if (messages.length === 0 && isConnected && !helloSentRef.current) {
+    if (messages.length === 0 && isConnected) {
       sendHelloMessage();
-      helloSentRef.current = true;
     }
   }, [messages.length, isConnected, sendHelloMessage]);
 

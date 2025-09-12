@@ -27,6 +27,8 @@ export type AudioResponse = {
   chunk_id: number;
   stream_id: number;
   audio: string | null;
+  format: "raw" | "mp3";
+  sampleRate?: number;
   isLast?: boolean;
 };
 // Only for old version. Can be removed in future

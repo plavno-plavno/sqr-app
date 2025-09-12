@@ -50,8 +50,8 @@ export const useAudio = (config?: UseAudioProps) => {
   );
 
   const onVoiceEnd = useCallback(() => {
-    send((connection) => connection.sendVoiceEndCommand());
-  }, [send]);
+    console.log("VOICE END");
+  }, []);
 
   const startRecording = useCallback(async () => {
     try {

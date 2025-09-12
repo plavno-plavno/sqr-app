@@ -69,7 +69,6 @@ export class WebSocketConnection {
         socket.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log("Parsed message:", data);
 
             if (data.message === "SERVER_READY") {
               console.log("Server is ready for audio streaming");
