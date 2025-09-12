@@ -56,7 +56,6 @@ const useInvestmentStoreBase = create<Store>()(
 
       buyCoins: (coinData: Partial<Investment>) =>
         set((state) => {
-          console.log(coinData);
           // Check if investment with this symbol already exists
           const existingInvestment = state.investments.find(
             (inv) => inv.symbol === coinData?.symbol

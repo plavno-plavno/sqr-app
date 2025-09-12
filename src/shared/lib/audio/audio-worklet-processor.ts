@@ -11,7 +11,7 @@ interface AudioProcessorOptions {
 
 export class AudioWorkletManager {
   private readonly SILENCE_FRAMES_THRESHOLD = 10;
-  private readonly BUFFER_SIZE = 1024;
+  private readonly BUFFER_SIZE = 512;
 
   private audioContext: AudioContext | null = null;
   private workletNode: AudioWorkletNode | null = null;
@@ -293,7 +293,6 @@ export class AudioWorkletManager {
         this.audioContext.currentTime,
         0.01
       );
-      this.vad.pause();
     } else {
       this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
       this.gainNode.gain.setTargetAtTime(
@@ -301,7 +300,6 @@ export class AudioWorkletManager {
         this.audioContext.currentTime,
         0.01
       );
-      this.vad.start();
     }
   }
 }

@@ -12,6 +12,10 @@ export enum IntentType {
   NONE = "none",
 }
 
+export function isValidIntentType(value: string): value is IntentType {
+  return Object.values(IntentType).includes(value as IntentType);
+}
+
 // Base interfaces for common structures
 interface Warning {
   type: string;

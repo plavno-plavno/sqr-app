@@ -7,8 +7,7 @@ import {
 import { useFinanceStore } from "@/features/finance";
 import { useInvestmentStore } from "@/features/invest";
 import { getRandomDetails, useTransactionStore } from "@/features/transactions";
-import { useAudio, useWSConnection } from "@/features/ws-connection";
-import { useTranslation } from "react-i18next";
+import { useAudio } from "@/features/ws-connection";
 import {
   IntentType,
   type IntentResponse,
@@ -17,6 +16,7 @@ import {
 } from "@/shared/model/intents";
 import type { PathParams, ROUTES } from "@/shared/model/routes";
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { ChatBuyBtcDialog } from "../ui/chat-buy-btc-dialog";
@@ -53,8 +53,6 @@ export const ChatDialog = memo(() => {
   const addMessage = useChatStore.use.addMessage();
 
   const { dialogIntent, open } = dialog;
-
-  const { sendConfirmationCommand } = useWSConnection();
   const { toggleMute } = useAudio();
 
   const onConfirm = (
@@ -76,9 +74,9 @@ export const ChatDialog = memo(() => {
         ...inputData,
       },
     };
+    console.log(confirmInfo);
 
     addMessage(chatId!, newMessage);
-    sendConfirmationCommand(confirmInfo);
     setDialog(false, null);
     toggleMute(false);
   };
@@ -112,7 +110,12 @@ export const ChatDialog = memo(() => {
         onConfirm={(inputData) => {
           onConfirm(
             {
-              text: t('chat.orderCompleted'),
+              text: t('chat.orderCompleted', {
+                amount: inputData.btc_amount,
+                price: dialogIntent?.output?.market_info?.btc_price,
+                total: inputData.total_cost,
+                currency: dialogIntent?.output?.purchase_details?.currency || 'USD'
+              }),
               intent: dialogIntent,
             },
             inputData
@@ -170,7 +173,11 @@ export const ChatDialog = memo(() => {
         onConfirm={(inputData) => {
           onConfirm(
             {
-              text: t('chat.transferDone'),
+              text: t('chat.transferDone', {
+                amount: inputData.amount,
+                recipient: inputData.recipient,
+                currency: dialogIntent?.output?.transfer_details?.currency || 'USD'
+              }),
               intent: dialogIntent,
             },
             inputData

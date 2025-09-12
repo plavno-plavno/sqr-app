@@ -9,6 +9,7 @@ import { isNonEmptyObject } from "@/shared/lib/js/common";
 import { WebSocketConnection } from "@/shared/lib/websocket/websocket-connection";
 import {
   IntentType,
+  isValidIntentType,
   type IntentResponse,
   type OperationInfo,
   type SpendingAnalyticsOutput,
@@ -160,6 +161,7 @@ export const useWSConnection = () => {
       "text" in segments &&
       segments.text.length > 0
     ) {
+      if (!isValidIntentType(segments.intent)) return;
       // TODO: Remove this after server fix
       if (segments.text.startsWith("Switched to")) return;
 
@@ -174,6 +176,8 @@ export const useWSConnection = () => {
 
     // Intent response from agent
     if ("intent" in segments && "output" in segments) {
+      if (!isValidIntentType(segments.intent)) return;
+
       const intentResponse = segments as IntentResponse;
       const { audioManager, clearAudio } = useAudioStore.getState();
 

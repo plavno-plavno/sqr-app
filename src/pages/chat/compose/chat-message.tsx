@@ -1,8 +1,4 @@
-import { IntentType } from "@/shared/model/intents";
-import { ROUTES, type PathParams } from "@/shared/model/routes";
-import { Link, useParams } from "react-router-dom";
-import { useWSConnection } from "@/features/ws-connection";
-import { useTranslation } from "react-i18next";
+import { abilitiesMock } from "@/features/actions";
 import {
   AttachmentType,
   ChatButtonsList,
@@ -28,9 +24,14 @@ import {
   ContactsSearch,
   type Contact,
 } from "@/features/contacts";
-import { abilitiesMock } from "@/features/actions";
-import { Button } from "@/shared/ui/kit/button";
+import { useWSConnection } from "@/features/ws-connection";
 import { isNonEmptyObject } from "@/shared/lib/js/common";
+import { IntentType } from "@/shared/model/intents";
+import { ROUTES, type PathParams } from "@/shared/model/routes";
+import { Button } from "@/shared/ui/kit/button";
+import { useTranslation } from "react-i18next";
+import { Link, useParams } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
 
 interface ChatMessageProps {
   message: ChatMessage;
@@ -44,9 +45,17 @@ export function ChatMessage({ message }: ChatMessageProps) {
   const { text, type, role, body, intent } = message;
 
   const handleContactClick = (contact: Contact) => {
-    sendTextCommand(
-      t('chat.transferRequest', { name: contact.name, phone: contact.phone })
-    );
+    const text = t("chat.transferRequest", {
+      name: contact.name,
+      phone: contact.phone,
+    });
+    addMessage(chatId!, {
+      id: uuidv4(),
+      role: ChatMessageRole.USER_TEXT,
+      type: ChatMessageType.TEXT,
+      text,
+    });
+    sendTextCommand(text);
   };
 
   if (body?.type === AttachmentType.IMAGE && body.image) {
@@ -75,7 +84,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return (
       <ChatSuccessMessage text={text}>
         <Button asChild size="default" className="w-fit">
-          <Link to={ROUTES.INVEST}>{t('chat.viewInvestments')}</Link>
+          <Link to={ROUTES.INVEST}>{t("chat.viewInvestments")}</Link>
         </Button>
       </ChatSuccessMessage>
     );
@@ -106,7 +115,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return (
       <>
         <ChatTextMessage
-          text={t('chat.abilitiesIntro')}
+          text={t("chat.abilitiesIntro")}
           role={ChatMessageRole.AGENT}
         />
         <ChatButtonsList
@@ -172,11 +181,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return (
       <div className="flex flex-col gap-2">
         <ChatMoneyInfoMessage
-          title={t('chat.currentBalance')}
+          title={t("chat.currentBalance")}
           amount={budgetSummary?.available_balance?.toString() || "0"}
         />
         <ChatMoneyInfoMessage
-          title={t('chat.dailyBudgetLimit')}
+          title={t("chat.dailyBudgetLimit")}
           amount={budgetSummary?.daily_limit?.toString() || "0"}
         />
       </div>
@@ -198,7 +207,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         spendingInsights={intent?.output}
         chartElement={
           <ChatPieChartMessage
-            title={t('chat.expensesFor')}
+            title={t("chat.expensesFor")}
             titleBoldPart={summary?.month || ""}
             chartData={categories || []}
             amount={summary?.total_spent?.toString() || "0"}
@@ -248,7 +257,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <p className="text-2xl">
-      {t('chat.unknownMessage', { type, intent: intent?.intent })}
+      {t("chat.unknownMessage", { type, intent: intent?.intent })}
     </p>
   );
 }
