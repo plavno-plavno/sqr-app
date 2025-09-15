@@ -9,6 +9,7 @@ import { isNonEmptyObject } from "@/shared/lib/js/common";
 import { WebSocketConnection } from "@/shared/lib/websocket/websocket-connection";
 import {
   IntentType,
+  isValidIntentType,
   type IntentResponse,
   type OperationInfo,
   type SpendingAnalyticsOutput,
@@ -160,6 +161,7 @@ export const useWSConnection = () => {
       "text" in segments &&
       segments.text.length > 0
     ) {
+      if (!isValidIntentType(segments.intent)) return;
       // TODO: Remove this after server fix
       if (segments.text.startsWith("Switched to")) return;
 
@@ -174,6 +176,8 @@ export const useWSConnection = () => {
 
     // Intent response from agent
     if ("intent" in segments && "output" in segments) {
+      if (!isValidIntentType(segments.intent)) return;
+
       const intentResponse = segments as IntentResponse;
       const { audioManager, clearAudio } = useAudioStore.getState();
 
@@ -246,8 +250,13 @@ export const useWSConnection = () => {
     const { setAudioQueue, audioManager, clearAudio } =
       useAudioStore.getState();
     const { language } = useLanguageStore.getState();
-    const { promptType, vocalizerType, intentDetection, isAudioEnabled } =
-      useSettingsStore.getState();
+    const {
+      promptType,
+      vocalizerType,
+      intentDetection,
+      isAudioEnabled,
+      sameOutputTreshhold,
+    } = useSettingsStore.getState();
 
     const audioQueue = new AudioQueueManager({
       onAudioLevel: (level) =>
@@ -259,6 +268,7 @@ export const useWSConnection = () => {
     const ws = new WebSocketConnection({
       language: language.code,
       promptType,
+      sameOutputTreshhold,
       vocalizerType,
       intentDetection,
       isAudioEnabled,
@@ -398,6 +408,13 @@ export const useWSConnection = () => {
     [sendCommand]
   );
 
+  const changeSameOutputTreshhold = useCallback(
+    (treshhold: number) => {
+      sendCommand((connection) => connection.changeSameOutputTreshhold(treshhold));
+    },
+    [sendCommand]
+  );
+
   return {
     isConnected,
     isConnecting,
@@ -414,6 +431,7 @@ export const useWSConnection = () => {
     sendToggleAudioCommand,
     sendHelloMessage,
     changeLanguage,
+    changeSameOutputTreshhold,
     setWsError,
   };
 };

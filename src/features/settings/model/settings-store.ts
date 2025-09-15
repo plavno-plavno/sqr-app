@@ -8,6 +8,7 @@ interface State {
   isAudioEnabled: boolean;
   vocalizerType: VocalizerType;
   promptType: PromptType;
+  sameOutputTreshhold: number;
   intentDetection: boolean;
 }
 
@@ -16,6 +17,7 @@ interface Actions {
   toggleAudio: () => void;
   setVocalizerType: (type: VocalizerType) => void;
   setPromptType: (type: PromptType) => void;
+  setSameOutputTreshhold: (treshhold: number) => void;
   setIntentDetection: (enabled: boolean) => void;
   toggleIntentDetection: () => void;
 }
@@ -26,8 +28,9 @@ const useSettingsStoreBase = create<Store>()(
   persist(
     immer((set) => ({
       isAudioEnabled: true,
-      vocalizerType: VocalizerType.HUME,
-      promptType: PromptType.MEDIC,
+      vocalizerType: VocalizerType.ELEVENLABS,
+      promptType: PromptType.ARCHELIC,
+      sameOutputTreshhold: 2,
       intentDetection: false,
 
       setAudioEnabled: (enabled: boolean) =>
@@ -48,6 +51,11 @@ const useSettingsStoreBase = create<Store>()(
       setPromptType: (type: PromptType) =>
         set((state) => {
           state.promptType = type;
+        }),
+
+      setSameOutputTreshhold: (treshhold: number) =>
+        set((state) => {
+          state.sameOutputTreshhold = treshhold;
         }),
 
       setIntentDetection: (enabled: boolean) =>

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { AudioWorkletManager } from "@/shared/lib/audio/audio-worklet-processor";
 import { AudioQueueManager } from "@/shared/lib/audio/audio-queue-manager";
 import type { AudioResponse } from "@/shared/model/websocket";
 import voice from "@/shared/assets/animations/voice.json";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
+import { AudioWorkletManager } from "@/shared/lib/audio/audio-worklet-processor_with_vad";
 
 const AppTestPage = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -75,6 +75,7 @@ const AppTestPage = () => {
           audio: audioData,
           chunk_id: 0,
           stream_id: currentStreamId,
+          format: "raw"
         };
         await audioQueueRef.current.addToQueue(audioResponse);
 
@@ -83,6 +84,7 @@ const AppTestPage = () => {
           audio: null,
           chunk_id: -1,
           stream_id: currentStreamId,
+          format: "raw"
         };
         await audioQueueRef.current.addToQueue(terminationChunk);
       } else {
@@ -94,6 +96,7 @@ const AppTestPage = () => {
             audio: chunk,
             chunk_id: chunkId++,
             stream_id: currentStreamId,
+            format: "raw"
           };
           await audioQueueRef.current.addToQueue(audioResponse);
         }
@@ -103,6 +106,7 @@ const AppTestPage = () => {
           audio: null,
           chunk_id: -1,
           stream_id: currentStreamId,
+          format: "raw"
         };
         await audioQueueRef.current.addToQueue(terminationChunk);
       }

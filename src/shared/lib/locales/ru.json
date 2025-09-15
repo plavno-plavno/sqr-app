@@ -1,15 +1,15 @@
 {
   "chat": {
-    "transferRequest": "Пожалуйста, переведите 1$ на {{name}}. Номер телефона {{phone}}.",
+    "transferRequest": "Пожалуйста, переведи деньги {{name}}. Номер телефона {{phone}}.",
     "abilitiesIntro": "Конечно, вот список возможностей:",
     "currentBalance": "Ваш текущий баланс",
     "dailyBudgetLimit": "Чтобы не выходить за рамки бюджета, вам нужно тратить в день",
     "expensesFor": "Расходы за",
     "recipient": "Получатель",
-    "orderCompleted": "Заказ выполнен. BTC переведен в ваш кошелек.",
+    "orderCompleted": "Заказ выполнен. {{amount}} BTC куплено по {{price}} {{currency}} за штуку (итого: {{total}} {{currency}}) и переведено в ваш кошелек.",
     "bitcoin": "Биткоин",
     "investmentCompleted": "Заказ выполнен. Куплено {{shares}} акций {{symbol}} на {{amount}} {{currency}}",
-    "transferDone": "Перевод выполнен. Средства отправлены.",
+    "transferDone": "Перевод выполнен. {{amount}} {{currency}} отправлено на {{recipient}}.",
     "hiddenSubscriptions": "Я также нашел скрытые подписки стоимостью ${{amount}} в месяц, хотите разобраться и отключить их?",
     "allPeriod": "Все",
     "imageAlt": "Изображение",

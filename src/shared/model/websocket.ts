@@ -6,6 +6,8 @@ interface Segment {
   end: string;
 }
 
+export const SameOutputTreshholdValues = [1, 2, 3, 4, 5];
+
 export enum VocalizerType {
   HUME = "hume",
   MINIMAX = "minimax",
@@ -13,13 +15,13 @@ export enum VocalizerType {
 }
 
 export enum PromptType {
+  ARCHELIC = "archelic",
   DEFAULT = "default",
-  CASUAL = "casual",
-  MEDIC = "medic",
-  TALENT = "talent",
-  BANKING = "banking",
-  FORMAL = "formal",
+  FINANCE = "finance",
   MCDONALDS = "mcdonalds",
+  MEDIC = "medic",
+  SEFAR = "sefar",
+  TALENT = "talent",
 }
 
 export type TextResponse = Segment[];
@@ -27,6 +29,8 @@ export type AudioResponse = {
   chunk_id: number;
   stream_id: number;
   audio: string | null;
+  format: "raw" | "mp3";
+  sampleRate?: number;
   isLast?: boolean;
 };
 // Only for old version. Can be removed in future
@@ -38,9 +42,6 @@ export type ResponseType = "agent" | "transcription";
 
 export type ServerResponse = {
   uid: string;
-  segments:
-    | TextResponse
-    | AudioResponse
-    | IntentResponse;
+  segments: TextResponse | AudioResponse | IntentResponse;
   type: ResponseType;
 };

@@ -1,7 +1,11 @@
 import { LanguageSearch, useLanguageStore } from "@/features/language";
 import { useSettingsStore } from "@/features/settings";
 import { useWSConnection } from "@/features/ws-connection";
-import { PromptType, VocalizerType } from "@/shared/model/websocket";
+import {
+  PromptType,
+  SameOutputTreshholdValues,
+  VocalizerType,
+} from "@/shared/model/websocket";
 import { AdaptiveDrawer } from "@/shared/ui/adaptive-drawer";
 import { Button } from "@/shared/ui/kit/button";
 import { Checkbox } from "@/shared/ui/kit/checkbox";
@@ -30,6 +34,8 @@ export function ChatSettingsDialog({
   const setVocalizerType = useSettingsStore.use.setVocalizerType();
   const promptType = useSettingsStore.use.promptType();
   const setPromptType = useSettingsStore.use.setPromptType();
+  const sameOutputTreshhold = useSettingsStore.use.sameOutputTreshhold();
+  const setSameOutputTreshhold = useSettingsStore.use.setSameOutputTreshhold();
   const intentDetection = useSettingsStore.use.intentDetection();
   const setIntentDetection = useSettingsStore.use.setIntentDetection();
   const {
@@ -38,6 +44,7 @@ export function ChatSettingsDialog({
     sendToggleIntentCommand,
     sendToggleAudioCommand,
     changeLanguage,
+    changeSameOutputTreshhold,
   } = useWSConnection();
 
   const handleChangeVocalizer = (value: VocalizerType) => {
@@ -48,6 +55,11 @@ export function ChatSettingsDialog({
   const handleChangePrompt = (value: PromptType) => {
     setPromptType(value);
     sendSwitchPromptCommand(value);
+  };
+
+  const handleChangeSameOutputTreshhold = (value: number) => {
+    setSameOutputTreshhold(value);
+    changeSameOutputTreshhold(value);
   };
 
   const handleChangeIntent = (value: boolean) => {
@@ -97,6 +109,27 @@ export function ChatSettingsDialog({
               {Object.values(PromptType).map((type) => (
                 <SelectItem key={type} value={type}>
                   {type.charAt(0).toUpperCase() + type.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-muted-foreground font-medium">
+            Same Output Treshhold
+          </label>
+          <Select
+            value={sameOutputTreshhold.toString()}
+            onValueChange={(value) => handleChangeSameOutputTreshhold(+value)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select Same Output Treshhold" />
+            </SelectTrigger>
+            <SelectContent>
+              {SameOutputTreshholdValues.map((treshhold) => (
+                <SelectItem key={treshhold} value={treshhold.toString()}>
+                  {treshhold}
                 </SelectItem>
               ))}
             </SelectContent>

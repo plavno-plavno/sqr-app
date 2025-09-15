@@ -16,6 +16,7 @@ interface WebSocketConnectionOptions {
   language: string;
   vocalizerType: VocalizerType;
   promptType: PromptType;
+  sameOutputTreshhold: number;
   intentDetection: boolean;
   isAudioEnabled: boolean;
   onReconnect?: (isReconnecting: boolean) => void;
@@ -69,7 +70,6 @@ export class WebSocketConnection {
         socket.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log("Parsed message:", data);
 
             if (data.message === "SERVER_READY") {
               console.log("Server is ready for audio streaming");
@@ -165,7 +165,7 @@ export class WebSocketConnection {
       isStartStream: true,
       disableSentenceCutter: true,
       returnTranslatedSegments: true,
-      sameOutputThreshold: 4,
+      sameOutputThreshold: this.options.sameOutputTreshhold,
       prompt: this.options.promptType,
     };
     if (voicestop === true) packet.voicestop = true;
@@ -255,6 +255,10 @@ export class WebSocketConnection {
 
   changeLanguage(language: string) {
     this.options.language = language;
+  }
+
+  changeSameOutputTreshhold(treshhold: number) {
+    this.options.sameOutputTreshhold = treshhold;
   }
 
   isSocketOpen() {

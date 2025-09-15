@@ -34,10 +34,10 @@ export class AudioQueueManager {
     if (!this.audioContext) return;
 
     try {
-      await this.audioContext.audioWorklet.addModule("/pcm-player-processor.js");
+      await this.audioContext.audioWorklet.addModule("/player-processor.js");
       this.audioWorkletNode = new AudioWorkletNode(
         this.audioContext,
-        "pcm-player-processor"
+        "player-processor"
       );
 
       // Создаем узлы для обработки звука используя сохраненную ссылку
@@ -90,6 +90,23 @@ export class AudioQueueManager {
     return bytes.buffer;
   }
 
+  private async convertMP3ToBuffer(audioBuffer: ArrayBuffer) {
+    try {
+      const decodedAudio = await this.audioContext!.decodeAudioData(
+        audioBuffer.slice(0)
+      );
+      // Конвертируем AudioBuffer в Float32Array для передачи в worklet
+      const channelData = decodedAudio.getChannelData(0);
+      const float32Buffer = new ArrayBuffer(channelData.length * 4);
+      new Float32Array(float32Buffer).set(channelData);
+
+      return { float32Buffer, sampleRate: decodedAudio.sampleRate };
+    } catch (error) {
+      console.error("Failed to decode MP3 audio:", error);
+      return null;
+    }
+  }
+
   public async addToQueue(audioData: AudioResponse) {
     // Убеждаемся что контекст активен
     if (!(await this.ensureAudioContextRunning())) return;
@@ -101,6 +118,8 @@ export class AudioQueueManager {
         stream_id: audioData.stream_id,
         chunk_id: audioData.chunk_id,
         audioBuffer: null as null | ArrayBuffer,
+        format: audioData.format || "raw",
+        sampleRate: audioData.format === "mp3" ? 44100 : audioData.sampleRate,
       },
     };
 
@@ -112,12 +131,19 @@ export class AudioQueueManager {
     // Если нет данных и это не завершающий чанк, то не обрабатываем это аудио
     if (!audioData.audio) return;
 
-    // Декодируем base64 в главном потоке
     const audioBuffer = this.decodeBase64ToArrayBuffer(audioData.audio);
-    message.data.audioBuffer = audioBuffer;
+
+    if (audioData.format === "mp3") {
+      const data = await this.convertMP3ToBuffer(audioBuffer);
+      if (!data?.float32Buffer || !data?.sampleRate) return;
+      message.data.audioBuffer = data?.float32Buffer;
+      message.data.sampleRate = data?.sampleRate;
+    } else {
+      message.data.audioBuffer = audioBuffer;
+    }
 
     // Отправляем данные в AudioWorklet (используем transferable для эффективности)
-    this.audioWorkletNode.port.postMessage(message, [audioBuffer]);
+    this.audioWorkletNode.port.postMessage(message, [message.data.audioBuffer]);
   }
 
   public stop() {

@@ -12,6 +12,10 @@ export enum IntentType {
   NONE = "none",
 }
 
+export function isValidIntentType(value: string): value is IntentType {
+  return Object.values(IntentType).includes(value as IntentType);
+}
+
 // Base interfaces for common structures
 interface Warning {
   type: string;
@@ -189,6 +193,7 @@ export interface TransferMoneyOutput {
     timestamp: string; // ISO format
   }>;
   notifications: Partial<{
+    recipient_phone: string;
     email_sent: boolean;
     sms_sent: boolean;
     recipient_notified: boolean;
