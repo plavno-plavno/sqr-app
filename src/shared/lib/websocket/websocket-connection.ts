@@ -156,7 +156,7 @@ export class WebSocketConnection {
       isStartStream: true,
       disableSentenceCutter: true,
       returnTranslatedSegments: true,
-      sameOutputThreshold: 4,
+      sameOutputThreshold: 3,
       prompt: this.options.promptType,
     };
     if (voicestop === true) packet.voicestop = true;
