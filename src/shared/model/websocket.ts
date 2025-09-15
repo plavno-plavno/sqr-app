@@ -18,6 +18,7 @@ export enum PromptType {
   ARCHELIC = "archelic",
   DEFAULT = "default",
   FINANCE = "finance",
+  LOGISTICS = "logistics",
   MCDONALDS = "mcdonalds",
   MEDIC = "medic",
   SEFAR = "sefar",
