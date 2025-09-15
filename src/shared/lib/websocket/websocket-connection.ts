@@ -159,6 +159,7 @@ export class WebSocketConnection {
       sameOutputThreshold: 3,
       prompt: this.options.promptType,
     };
+
     if (voicestop === true) packet.voicestop = true;
 
     if (this.socket?.readyState !== WebSocket.OPEN) {
