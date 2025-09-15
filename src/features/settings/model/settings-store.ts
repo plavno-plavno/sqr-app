@@ -27,7 +27,7 @@ const useSettingsStoreBase = create<Store>()(
     immer((set) => ({
       isAudioEnabled: false,
       vocalizerType: VocalizerType.ELEVENLABS,
-      promptType: PromptType.DEFAULT,
+      promptType: PromptType.FINANCE,
       intentDetection: true,
 
       setAudioEnabled: (enabled: boolean) =>

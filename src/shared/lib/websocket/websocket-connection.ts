@@ -72,7 +72,10 @@ export class WebSocketConnection {
 
             if (data.message === "SERVER_READY") {
               console.log("Server is ready for audio streaming");
-              const { isAudioEnabled } = this.options;
+              const { promptType, vocalizerType, isAudioEnabled } =
+                this.options;
+              this.sendSwitchPromptCommand(promptType);
+              this.sendSwitchVocalizerCommand(vocalizerType);
               this.sendToggleAudioCommand(isAudioEnabled);
               resolve();
             } else if (data.segments) {
@@ -156,7 +159,7 @@ export class WebSocketConnection {
       isStartStream: true,
       disableSentenceCutter: true,
       returnTranslatedSegments: true,
-      sameOutputThreshold: 3,
+      sameOutputThreshold: 2,
       prompt: this.options.promptType,
     };
 
