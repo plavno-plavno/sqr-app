@@ -140,9 +140,9 @@ export class AudioWorkletManager {
       // Build processing chain
       this.source
         .connect(this.analyserNode)
-        .connect(noiseGate)
-        .connect(highpassFilter)
-        .connect(lowpassFilter)
+ //       .connect(noiseGate)
+ //       .connect(highpassFilter)
+ //       .connect(lowpassFilter)
         .connect(this.gainNode)
         .connect(this.workletNode);
 
