@@ -16,9 +16,13 @@ export const router = createBrowserRouter([
         path: ROUTES.SETTINGS,
         lazy: () => import("@/pages/settings/settings.page"),
       },
+      // {
+      //   path: ROUTES.CHAT,
+      //   lazy: () => import("@/pages/chat/chat.page"),
+      // },
       {
-        path: ROUTES.CHAT,
-        lazy: () => import("@/pages/chat/chat.page"),
+        path: ROUTES.AGENT,
+        lazy: () => import("@/pages/agents/agent.page.tsx"),
       },
       {
         path: ROUTES.APP_TEST,

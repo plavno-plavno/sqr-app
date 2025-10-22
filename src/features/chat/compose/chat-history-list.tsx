@@ -1,6 +1,6 @@
-import { href, Link } from "react-router-dom";
-import { useChatStore } from "../model/chat-store";
-import { ROUTES } from "@/shared/model/routes";
+import {href, Link, useParams} from "react-router-dom";
+import { useChatStore } from "@/features/chat";
+import {type PathParams, ROUTES} from "@/shared/model/routes";
 
 export function ChatHistoryCard({ text }: { text: string }) {
   return (
@@ -12,12 +12,13 @@ export function ChatHistoryCard({ text }: { text: string }) {
 
 export function ChatHistoryList({ onCardClick }: { onCardClick: () => void }) {
   const chats = useChatStore.use.chats();
+  const {agentName} = useParams<PathParams[typeof ROUTES.AGENT]>();
 
   return (
     <div className="flex flex-col gap-2">
       {Object.values(chats).map((chat) => (
         <Link
-          to={href(ROUTES.CHAT, { chatId: chat.id })}
+          to={href(ROUTES.AGENT, { agentName: agentName || 'default', chatId: chat.id })}
           key={chat.id}
           onClick={onCardClick}
         >

@@ -15,8 +15,8 @@ export enum VocalizerType {
 }
 
 export enum PromptType {
-  ARCHELIC = "archelic",
   DEFAULT = "default",
+  ARCHELIC = "archelic",
   FINANCE = "finance",
   LOGISTICS = "logistics",
   MCDONALDS = "mcdonalds",

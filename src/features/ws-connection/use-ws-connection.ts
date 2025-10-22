@@ -33,7 +33,7 @@ import { useAudioStore } from "./audio-store";
 import { useWebSocketStore } from "./websocket-store";
 
 export const useWSConnection = () => {
-  const { chatId } = useParams<PathParams[typeof ROUTES.CHAT]>();
+  const { chatId, agentName } = useParams<PathParams[typeof ROUTES.AGENT]>();
 
   const addMessage = useChatStore.use.addMessage();
   const updateMessage = useChatStore.use.updateMessage();
@@ -251,7 +251,6 @@ export const useWSConnection = () => {
       useAudioStore.getState();
     const { language } = useLanguageStore.getState();
     const {
-      promptType,
       vocalizerType,
       intentDetection,
       isAudioEnabled,
@@ -267,7 +266,8 @@ export const useWSConnection = () => {
     const controller = new AbortController();
     const ws = new WebSocketConnection({
       language: language.code,
-      promptType,
+      // TODO: need to clarify Dmitry is we can say to user that this kind of agent is not exist
+      promptType: agentName as PromptType,
       sameOutputTreshhold,
       vocalizerType,
       intentDetection,

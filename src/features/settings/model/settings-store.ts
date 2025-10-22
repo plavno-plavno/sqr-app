@@ -1,5 +1,5 @@
 import { createSelectors } from "@/shared/lib/js/zustand";
-import { PromptType, VocalizerType } from "@/shared/model/websocket";
+import { VocalizerType } from "@/shared/model/websocket";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
@@ -7,7 +7,6 @@ import { immer } from "zustand/middleware/immer";
 interface State {
   isAudioEnabled: boolean;
   vocalizerType: VocalizerType;
-  promptType: PromptType;
   sameOutputTreshhold: number;
   intentDetection: boolean;
 }
@@ -16,7 +15,7 @@ interface Actions {
   setAudioEnabled: (enabled: boolean) => void;
   toggleAudio: () => void;
   setVocalizerType: (type: VocalizerType) => void;
-  setPromptType: (type: PromptType) => void;
+  // setPromptType: (type: PromptType) => void;
   setSameOutputTreshhold: (treshhold: number) => void;
   setIntentDetection: (enabled: boolean) => void;
   toggleIntentDetection: () => void;
@@ -29,7 +28,6 @@ const useSettingsStoreBase = create<Store>()(
     immer((set) => ({
       isAudioEnabled: true,
       vocalizerType: VocalizerType.ELEVENLABS,
-      promptType: PromptType.DEFAULT,
       sameOutputTreshhold: 2,
       intentDetection: false,
 
@@ -48,10 +46,10 @@ const useSettingsStoreBase = create<Store>()(
           state.vocalizerType = type;
         }),
 
-      setPromptType: (type: PromptType) =>
-        set((state) => {
-          state.promptType = type;
-        }),
+      // setPromptType: (type: PromptType) =>
+      //   set((state) => {
+      //     state.promptType = type;
+      //   }),
 
       setSameOutputTreshhold: (treshhold: number) =>
         set((state) => {

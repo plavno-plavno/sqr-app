@@ -7,13 +7,18 @@ export const ROUTES = {
   INVEST: "/invest",
   ANALYTICS: "/analytics",
   SETTINGS: "/settings",
-  CHAT: "/chat/:chatId",
+  // CHAT: "/chat/:chatId",
+  AGENT: "/agent/:agentName/:chatId",
   DEMO: "/demo",
   APP_TEST: "/app-test",
 } as const;
 
 export type PathParams = {
-  [ROUTES.CHAT]: {
+  // [ROUTES.CHAT]: {
+  //   chatId: string;
+  // };
+  [ROUTES.AGENT]: {
+    agentName: string;
     chatId: string;
   };
 };

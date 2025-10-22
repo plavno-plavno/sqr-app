@@ -14,31 +14,31 @@ import {
 } from "@/features/ws-connection";
 import voice from "@/shared/assets/animations/voice.json";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
-import { cn } from "@/shared/lib/css/tailwind";
-import { type PathParams, ROUTES } from "@/shared/model/routes";
-import { ErrorDialog } from "@/shared/ui/error-dialog";
+import {cn} from "@/shared/lib/css/tailwind";
+import {type PathParams, ROUTES} from "@/shared/model/routes";
+import {ErrorDialog} from "@/shared/ui/error-dialog";
 import {
   Header,
   NewChatHeaderButton,
   SettingsHeaderButton,
 } from "@/shared/ui/header";
-import { Button } from "@/shared/ui/kit/button";
-import { SidebarTrigger } from "@/shared/ui/kit/sidebar";
-import Lottie, { type LottieRefCurrentProps } from "lottie-react";
-import { useEffect, useRef, useState } from "react";
+import {Button} from "@/shared/ui/kit/button";
+import {SidebarTrigger} from "@/shared/ui/kit/sidebar";
+import Lottie, {type LottieRefCurrentProps} from "lottie-react";
+import {useEffect, useRef, useState} from "react";
 import {
   data,
   href,
-  useLocation,
+  // useLocation,
   useNavigate,
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { v4 as uuidv4 } from "uuid";
-import { ChatDialog } from "./compose/chat-dialog";
-import { ChatMessage as ChatMessageComponent } from "./compose/chat-message";
-import { useEffectEvent } from "use-effect-event";
-import { ChatSettingsDialog } from "./compose/chat-settings-dialog";
+import {v4 as uuidv4} from "uuid";
+import {ChatDialog} from "./compose/chat-dialog";
+import {ChatMessage as ChatMessageComponent} from "./compose/chat-message";
+// import { useEffectEvent } from "use-effect-event";
+import {ChatSettingsDialog} from "./compose/chat-settings-dialog";
 
 export async function loader({
   params,
@@ -60,9 +60,9 @@ export async function loader({
   return { chatId };
 }
 
-const ChatPage = () => {
-  const { chatId } = useParams<PathParams[typeof ROUTES.AGENT]>();
-  const location = useLocation();
+const AgentPage = () => {
+  const {agentName, chatId} = useParams<PathParams[typeof ROUTES.AGENT]>();
+  // const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -70,11 +70,11 @@ const ChatPage = () => {
   const addMessage = useChatStore.use.addMessage();
   const setLastMessageMeta = useChatStore.use.setLastMessageMeta();
   const createChat = useChatStore.use.createChat();
-
+  //
   const [openSettings, setOpenSettings] = useState<boolean>(false);
-
+  //
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
-
+  //
   const micEnabled = searchParams.get("mic") === "true";
   const searchParamsMessage = searchParams.get("prompt");
 
@@ -108,7 +108,7 @@ const ChatPage = () => {
     },
   });
 
-  const chatTitle = chats[chatId!]?.title || "";
+  // const chatTitle = chats[chatId!]?.title || "";
   const messages = chats[chatId!]?.messages || [];
   const errorDialogOpen = !!wsError || !!audioError || isReconnecting;
   const errorDialogTitle = isReconnecting
@@ -129,7 +129,7 @@ const ChatPage = () => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    return initWSConnection();
+    //   return initWSConnection();
   }, [initWSConnection]);
 
   // Stop recording when component unmounts
@@ -142,24 +142,24 @@ const ChatPage = () => {
     };
   }, [stopRecording]);
 
-  const handleMicActivation = useEffectEvent(() => {
-    startRecording();
-    navigate(location.pathname, { replace: true });
-  });
+  // const handleMicActivation = useEffectEvent(() => {
+  //   startRecording();
+  //   navigate(location.pathname, { replace: true });
+  // });
 
   // Enable mic if search param present
   useEffect(() => {
-    if (!isConnected || !micEnabled) return;
-
-    handleMicActivation();
+    //   if (!isConnected || !micEnabled) return;
+    //
+    //   handleMicActivation();
   }, [isConnected, micEnabled]);
-
+  //
   // Send message if user input message in home page
   useEffect(() => {
     if (!isConnected || !searchParamsMessage) return;
 
     sendTextCommand(searchParamsMessage);
-    // navigate(location.pathname, { replace: true });
+    //   // navigate(location.pathname, { replace: true });
   }, [
     isConnected,
     searchParamsMessage,
@@ -172,7 +172,7 @@ const ChatPage = () => {
   useEffect(() => {
     return () => {
       if (!chatId) return;
-      setLastMessageMeta(chatId, { start: "-1", end: "-1" });
+      setLastMessageMeta(chatId, {start: "-1", end: "-1"});
     };
   }, [chatId, setLastMessageMeta]);
 
@@ -202,7 +202,7 @@ const ChatPage = () => {
     await stopRecording();
     const chatId = uuidv4();
     createChat(chatId);
-    navigate(`${href(ROUTES.AGENT, { chatId })}`);
+    navigate(`${href(ROUTES.AGENT, {chatId})}`);
   };
 
   const handleSettingsClick = () => {
@@ -214,29 +214,29 @@ const ChatPage = () => {
       className={cn(
         "h-full grid grid-rows-[min-content_min-content_auto] mx-5",
         !isRecording &&
-          messages.length === 0 &&
-          "grid-rows-[min-content_1fr_auto]",
+        messages.length === 0 &&
+        "grid-rows-[min-content_1fr_auto]",
         messages.length > 0 && "grid-rows-[auto_1fr_auto]"
       )}
     >
       <Header
-        title={chatTitle}
+        title={agentName}
         titleClassName="w-[calc(100%-150px)] left-13 translate-x-0"
-        leftElement={<SidebarTrigger />}
+        leftElement={<SidebarTrigger/>}
         rightElement={
           <div className="flex gap-2">
             <SettingsHeaderButton
               disabled={!isConnected}
               onClick={handleSettingsClick}
             />
-            <NewChatHeaderButton onClick={handleNewChatClick} />
+            <NewChatHeaderButton onClick={handleNewChatClick}/>
           </div>
         }
       />
 
       <ChatMessageList>
         {messages?.map((message) => (
-          <ChatMessageComponent key={message.id} message={message} />
+          <ChatMessageComponent key={message.id} message={message}/>
         ))}
       </ChatMessageList>
 
@@ -247,14 +247,14 @@ const ChatPage = () => {
               animationData={voice}
               lottieRef={lottieRef}
               autoplay={false}
-              style={{ width: "100%" }}
+              style={{width: "100%"}}
             />
           </div>
           <Button
             className="rounded-full w-14 h-14 bg-primary "
             onClick={stopRecording}
           >
-            <CrossIcon />
+            <CrossIcon/>
           </Button>
         </div>
       ) : (
@@ -268,7 +268,7 @@ const ChatPage = () => {
         </div>
       )}
 
-      <ChatDialog />
+      <ChatDialog/>
 
       <ErrorDialog
         open={errorDialogOpen}
@@ -283,9 +283,9 @@ const ChatPage = () => {
         }}
       />
 
-      <ChatSettingsDialog open={openSettings} onOpenChange={setOpenSettings} />
+      <ChatSettingsDialog open={openSettings} onOpenChange={setOpenSettings}/>
     </div>
   );
 };
 
-export const Component = ChatPage;
+export const Component = AgentPage;
