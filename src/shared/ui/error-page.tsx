@@ -1,5 +1,4 @@
 import { Button } from "@/shared/ui/kit/button";
-import { ROUTES } from "@/shared/model/routes";
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -34,7 +33,7 @@ export const ErrorPage: React.FC<ErrorPageProps> = ({
         <div className="text-muted-foreground mb-8">{description}</div>
       )}
       <div className="flex flex-col gap-2 w-full">
-        <Link to={ROUTES.HOME} className="block">
+        <Link to={'/agent'} className="block">
           <Button className="w-full">{homeText}</Button>
         </Link>
         {showBack && (

@@ -49,7 +49,7 @@ export function App() {
   const chats = useChatStore.use.chats();
 
   useEffect(() => {
-    if(location.pathname.includes('/agent') && !agentName){
+    if(!agentName){
       if(!Object.keys(chats).length) {
         const chatId = uuidv4();
         createChat(chatId);
