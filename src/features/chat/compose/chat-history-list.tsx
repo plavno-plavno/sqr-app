@@ -18,7 +18,7 @@ export function ChatHistoryList({ onCardClick }: { onCardClick: () => void }) {
     <div className="flex flex-col gap-2">
       {Object.values(chats).map((chat) => (
         <Link
-          to={href(ROUTES.AGENT, { agentName: agentName || 'default', chatId: chat.id })}
+          to={`${href(ROUTES.AGENT, { agentName: agentName || 'default' })}?chatId=${chat.id}`}
           key={chat.id}
           onClick={onCardClick}
         >

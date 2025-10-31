@@ -74,7 +74,7 @@ The application features sophisticated voice interaction:
 ### FSD Architecture Enforcement
 The project uses `eslint-plugin-boundaries` to enforce Feature-Sliced Design import rules:
 - `shared` layer cannot import from `features`, `pages`, or `app`
-- `features` layer cannot import from `pages` or `app`  
+- `features` layer cannot import from `pages` or `app`
 - `pages` layer cannot import from `app`
 - Features must be imported through `index.(ts|tsx)` files
 - Pages must be imported through `*.page.tsx` files

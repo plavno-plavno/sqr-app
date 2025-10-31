@@ -8,7 +8,7 @@ export const ROUTES = {
   ANALYTICS: "/analytics",
   SETTINGS: "/settings",
   // CHAT: "/chat/:chatId",
-  AGENT: "/agent/:agentName/:chatId",
+  AGENT: "/agent/:agentName",
   DEMO: "/demo",
   APP_TEST: "/app-test",
 } as const;
@@ -19,7 +19,6 @@ export type PathParams = {
   // };
   [ROUTES.AGENT]: {
     agentName: string;
-    chatId: string;
   };
 };
 

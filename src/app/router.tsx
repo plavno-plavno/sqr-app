@@ -13,12 +13,12 @@ export const router = createBrowserRouter([
         lazy: () => import("@/pages/home/home.page"),
       },
       {
-        path: ROUTES.SETTINGS,
-        lazy: () => import("@/pages/settings/settings.page"),
-      },
-      {
         path: ROUTES.AGENT,
         lazy: () => import("@/pages/agents/agent.page.tsx"),
+      },
+      {
+        path: ROUTES.SETTINGS,
+        lazy: () => import("@/pages/settings/settings.page"),
       },
       {
         path: ROUTES.APP_TEST,

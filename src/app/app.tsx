@@ -3,7 +3,7 @@ import { AppSidebar } from "@/features/sidebar";
 import { useAudio } from "@/features/ws-connection";
 import {type PathParams, ROUTES} from "@/shared/model/routes";
 import { SidebarProvider, useSidebar } from "@/shared/ui/kit/sidebar";
-import {href, Outlet, useLocation, useMatch, useNavigate, useParams} from "react-router-dom";
+import {href, Outlet, useMatch, useNavigate, useParams} from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import "./i18n"; // Initialize i18n
 import { useLanguageSync } from "./i18n";
@@ -23,7 +23,7 @@ function AppContent() {
     await stopRecording();
     const chatId = uuidv4();
     createChat(chatId);
-    navigate(`${href(ROUTES.AGENT, { agentName: agentName || 'default', chatId })}`);
+    navigate(`${href(ROUTES.AGENT, { agentName: agentName || 'default' })}`);
   };
 
   return (
@@ -42,8 +42,7 @@ function AppContent() {
 export function App() {
   const isDemoPage = useMatch(ROUTES.DEMO);
   const isAppTestPage = useMatch(ROUTES.APP_TEST);
-  const location = useLocation();
-  const {agentName} = useParams<{agentName: string; chatId: string}>();
+  const {agentName} = useParams<PathParams[typeof ROUTES.AGENT]>();
   const navigate = useNavigate();
   const createChat = useChatStore.use.createChat();
   const chats = useChatStore.use.chats();
@@ -53,14 +52,10 @@ export function App() {
       if(!Object.keys(chats).length) {
         const chatId = uuidv4();
         createChat(chatId);
-
-        navigate(`/agent/default/${chatId}`);
-      }else{
-        const lastChatId = Object.keys(chats).at(-1);
-        navigate(`/agent/default/${lastChatId}`);
       }
+      navigate(`/agent/default`);
     }
-  }, [location]);
+  }, [agentName, chats, createChat, navigate]);
 
   if (isDemoPage || isAppTestPage) {
     return (

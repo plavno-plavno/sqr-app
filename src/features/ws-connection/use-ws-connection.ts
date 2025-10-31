@@ -32,8 +32,8 @@ import { useSettingsStore } from "../settings";
 import { useAudioStore } from "./audio-store";
 import { useWebSocketStore } from "./websocket-store";
 
-export const useWSConnection = () => {
-  const { chatId, agentName } = useParams<PathParams[typeof ROUTES.AGENT]>();
+export const useWSConnection = (chatId?: string | null) => {
+  const { agentName } = useParams<PathParams[typeof ROUTES.AGENT]>();
 
   const addMessage = useChatStore.use.addMessage();
   const updateMessage = useChatStore.use.updateMessage();
@@ -50,7 +50,7 @@ export const useWSConnection = () => {
   const setWsError = useWebSocketStore.use.setWsError();
 
   const getFreeMachine = async (controller: AbortController) => {
-    const req = await requests.getFreeMachine({ signal: controller.signal });
+    const req = await requests.getFreeMachine({ signal: controller.signal }, agentName);
     const freeMachine = req?.data;
 
     if (!freeMachine) throw new Error("No free machine found");
@@ -59,7 +59,7 @@ export const useWSConnection = () => {
   };
 
   const getLastMessageByRole = (roles: ChatMessageRole[]) => {
-    const messages = getMessages(chatId);
+    const messages = getMessages(chatId || undefined);
     for (let i = messages.length - 1; i >= 0; i--) {
       const message = messages[i];
       if (roles.includes(message.role)) return message;
@@ -318,7 +318,7 @@ export const useWSConnection = () => {
       setIsConnected(false);
       setIsConnecting(false);
     };
-  }, []);
+  }, [agentName]);
 
   const sendCommand = useCallback(
     (command: (connection: WebSocketConnection) => void) => {

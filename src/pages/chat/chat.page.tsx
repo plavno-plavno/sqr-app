@@ -15,7 +15,7 @@ import {
 import voice from "@/shared/assets/animations/voice.json";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import { cn } from "@/shared/lib/css/tailwind";
-import { type PathParams, ROUTES } from "@/shared/model/routes";
+import { ROUTES } from "@/shared/model/routes";
 import { ErrorDialog } from "@/shared/ui/error-dialog";
 import {
   Header,
@@ -43,7 +43,7 @@ import { ChatSettingsDialog } from "./compose/chat-settings-dialog";
 export async function loader({
   params,
 }: {
-  params: PathParams[typeof ROUTES.AGENT];
+  params: { chatId: string };
 }) {
   const { chatId } = params;
 
@@ -61,7 +61,7 @@ export async function loader({
 }
 
 const ChatPage = () => {
-  const { chatId } = useParams<PathParams[typeof ROUTES.AGENT]>();
+  const { chatId } = useParams<{ chatId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -87,7 +87,7 @@ const ChatPage = () => {
     sendTextCommand,
     sendHelloMessage,
     setWsError,
-  } = useWSConnection();
+  } = useWSConnection(chatId);
 
   const {
     audioError,

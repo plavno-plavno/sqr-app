@@ -12,10 +12,9 @@ import {
   type OperationInfo,
   type TransferMoneyOutput,
 } from "@/shared/model/intents";
-import type { PathParams, ROUTES } from "@/shared/model/routes";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { ChatBuyBtcDialog } from "../ui/chat-buy-btc-dialog";
 import { ChatInvestDialog } from "../ui/chat-invest-dialog";
@@ -42,7 +41,8 @@ const getConfirmInfo = (intent: IntentResponse) => {
 
 export const ChatDialog = memo(() => {
   const { t } = useTranslation();
-  const { chatId } = useParams<PathParams[typeof ROUTES.AGENT]>();
+  const [searchParams] = useSearchParams();
+  const chatId = searchParams.get('chatId');
   const dialog = useChatStore.use.dialog();
   const setDialog = useChatStore.use.setDialog();
   const addTransaction = useTransactionStore.use.addTransaction();

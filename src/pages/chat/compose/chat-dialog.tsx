@@ -12,7 +12,6 @@ import {
   type OperationInfo,
   type TransferMoneyOutput,
 } from "@/shared/model/intents";
-import type { PathParams, ROUTES } from "@/shared/model/routes";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
@@ -42,7 +41,7 @@ const getConfirmInfo = (intent: IntentResponse) => {
 
 export const ChatDialog = memo(() => {
   const { t } = useTranslation();
-  const { chatId } = useParams<PathParams[typeof ROUTES.AGENT]>();
+  const { chatId } = useParams<{ chatId: string }>();
   const dialog = useChatStore.use.dialog();
   const setDialog = useChatStore.use.setDialog();
   const addTransaction = useTransactionStore.use.addTransaction();

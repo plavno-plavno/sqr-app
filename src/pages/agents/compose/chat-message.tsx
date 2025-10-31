@@ -27,10 +27,10 @@ import {
 import { useWSConnection } from "@/features/ws-connection";
 import { isNonEmptyObject } from "@/shared/lib/js/common";
 import { IntentType } from "@/shared/model/intents";
-import { ROUTES, type PathParams } from "@/shared/model/routes";
+import { ROUTES } from "@/shared/model/routes";
 import { Button } from "@/shared/ui/kit/button";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 
 interface ChatMessageProps {
@@ -39,8 +39,9 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const { t } = useTranslation();
-  const { chatId } = useParams<PathParams[typeof ROUTES.AGENT]>();
-  const { isConnected, sendTextCommand } = useWSConnection();
+  const [searchParams] = useSearchParams();
+  const chatId = searchParams.get('chatId');
+  const { isConnected, sendTextCommand } = useWSConnection(chatId);
   const addMessage = useChatStore.use.addMessage();
   const { text, type, role, body, intent } = message;
 

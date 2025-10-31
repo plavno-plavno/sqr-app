@@ -3,10 +3,8 @@ import type { FreeMachine } from "@/shared/model/machine";
 import type { AxiosPromise, AxiosRequestConfig } from "axios";
 
 export const requests = {
-  getFreeMachine: async (
-    config?: AxiosRequestConfig
-  ): AxiosPromise<FreeMachine> =>
-    apiClient.get("/scaler/find-free-machine/medic", config),
+  getFreeMachine: async (config?: AxiosRequestConfig, agent?: string): AxiosPromise<FreeMachine> =>
+    apiClient.get(`/scaler/find-free-machine/${agent || 'default'}`, config),
 };
 
 export type RequestsEnum = keyof typeof requests;

@@ -43,7 +43,7 @@ export function ChatSettingsDialog({
     sendToggleAudioCommand,
     changeLanguage,
     changeSameOutputTreshhold,
-  } = useWSConnection();
+  } = useWSConnection(undefined);
 
   const handleChangeVocalizer = (value: VocalizerType) => {
     setVocalizerType(value);

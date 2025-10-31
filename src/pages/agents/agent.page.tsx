@@ -28,7 +28,6 @@ import Lottie, {type LottieRefCurrentProps} from "lottie-react";
 import {useEffect, useRef, useState} from "react";
 import {
   data,
-  href,
   // useLocation,
   useNavigate,
   useParams,
@@ -45,31 +44,47 @@ export async function loader({
 }: {
   params: PathParams[typeof ROUTES.AGENT];
 }) {
-  const { chatId } = params;
+  const { agentName } = params;
 
-  if (!chatId) {
-    throw data("Chat ID is required", { status: 400 });
+  if (!agentName) {
+    throw data("Agent name is required", { status: 400 });
   }
 
-  const chats = useChatStore?.getState()?.chats;
-
-  if (chats && !(chatId in chats)) {
-    throw data("Chat not found", { status: 404 });
-  }
-
-  return { chatId };
+  return { agentName };
 }
 
 const AgentPage = () => {
-  const {agentName, chatId} = useParams<PathParams[typeof ROUTES.AGENT]>();
+  const {agentName} = useParams<PathParams[typeof ROUTES.AGENT]>();
   // const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const chats = useChatStore.use.chats();
   const addMessage = useChatStore.use.addMessage();
   const setLastMessageMeta = useChatStore.use.setLastMessageMeta();
   const createChat = useChatStore.use.createChat();
+
+  // Get chatId from query params or use last chat from store
+  const chatIdFromQuery = searchParams.get('chatId');
+
+  useEffect(() => {
+    // If no chatId in query
+    if (!chatIdFromQuery) {
+      const lastChatId = Object.keys(chats).at(-1);
+
+      if (lastChatId) {
+        // Use last chat from store
+        setSearchParams({ chatId: lastChatId }, { replace: true });
+      } else {
+        // Create new chat if store is empty
+        const newChatId = uuidv4();
+        createChat(newChatId);
+        setSearchParams({ chatId: newChatId }, { replace: true });
+      }
+    }
+  }, [chatIdFromQuery, chats, createChat, setSearchParams]);
+
+  const chatId = chatIdFromQuery;
   //
   const [openSettings, setOpenSettings] = useState<boolean>(false);
   //
@@ -87,7 +102,7 @@ const AgentPage = () => {
     sendTextCommand,
     sendHelloMessage,
     setWsError,
-  } = useWSConnection();
+  } = useWSConnection(chatId);
 
   const {
     audioError,
@@ -129,7 +144,7 @@ const AgentPage = () => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    //   return initWSConnection();
+      return initWSConnection();
   }, [initWSConnection]);
 
   // Stop recording when component unmounts
@@ -200,9 +215,9 @@ const AgentPage = () => {
 
   const handleNewChatClick = async () => {
     await stopRecording();
-    const chatId = uuidv4();
-    createChat(chatId);
-    navigate(`${href(ROUTES.AGENT, {chatId})}`);
+    const newChatId = uuidv4();
+    createChat(newChatId);
+    setSearchParams({ chatId: newChatId });
   };
 
   const handleSettingsClick = () => {
