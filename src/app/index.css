@@ -145,7 +145,7 @@
 }
 
 @utility text-* {
-  font-size: --value(--text- *, [length]);
+  font-size: --value(--text-*, [length]);
   line-height: normal;
 }
 

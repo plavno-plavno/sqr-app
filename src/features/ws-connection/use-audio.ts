@@ -16,10 +16,12 @@ export const useAudio = (config?: UseAudioProps) => {
   const isRecording = useAudioStore.use.isRecording();
   const audioManager = useAudioStore.use.audioManager();
   const audioError = useAudioStore.use.audioError();
+  const mediaStream = useAudioStore.use.mediaStream();
 
   const setAudioManager = useAudioStore.use.setAudioManager();
   const setIsRecording = useAudioStore.use.setIsRecording();
   const setAudioError = useAudioStore.use.setAudioError();
+  const setMediaStream = useAudioStore.use.setMediaStream();
   const clearAudio = useAudioStore.use.clearAudio();
 
   const onError = useCallback(
@@ -75,8 +77,16 @@ export const useAudio = (config?: UseAudioProps) => {
 
         await newAudioManager.initialize();
         await newAudioManager.start();
+
+        // Set mediaStream from the new audio manager
+        const stream = newAudioManager.getMediaStream();
+        setMediaStream(stream);
       } else {
         await audioManager.start();
+
+        // Update mediaStream if it changed
+        const stream = audioManager.getMediaStream();
+        setMediaStream(stream);
       }
 
       setIsRecording(true);
@@ -89,6 +99,7 @@ export const useAudio = (config?: UseAudioProps) => {
     isRecording,
     audioManager,
     setIsRecording,
+    setMediaStream,
     onAudioData,
     onError,
     onVoiceLevel,
@@ -111,6 +122,7 @@ export const useAudio = (config?: UseAudioProps) => {
   return {
     isRecording,
     audioError,
+    mediaStream,
     setAudioError,
     startRecording,
     stopRecording,

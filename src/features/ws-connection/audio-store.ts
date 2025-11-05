@@ -6,6 +6,7 @@ import { create } from "zustand";
 interface State {
   audioManager: AudioWorkletManager | null;
   audioQueue: AudioQueueManager | null;
+  mediaStream: MediaStream | null;
 
   isRecording: boolean;
   audioError: string | null;
@@ -14,6 +15,7 @@ interface State {
 interface Actions {
   setAudioManager: (audioManager: AudioWorkletManager | null) => void;
   setAudioQueue: (audioQueue: AudioQueueManager | null) => void;
+  setMediaStream: (mediaStream: MediaStream | null) => void;
   setIsRecording: (isRecording: boolean) => void;
   setAudioError: (audioError: string | null) => void;
   clearAudio: () => void;
@@ -24,6 +26,7 @@ type Store = State & Actions;
 const useAudioStoreBase = create<Store>()((set) => ({
   audioManager: null,
   audioQueue: null,
+  mediaStream: null,
   isRecording: false,
   audioError: null,
 
@@ -31,9 +34,11 @@ const useAudioStoreBase = create<Store>()((set) => ({
   setAudioError: (audioError) => set({ audioError }),
   setAudioManager: (audioManager) => set({ audioManager }),
   setAudioQueue: (audioQueue) => set({ audioQueue }),
+  setMediaStream: (mediaStream) => set({ mediaStream }),
   clearAudio: () =>
     set({
       audioManager: null,
+      mediaStream: null,
       isRecording: false,
       audioError: null,
     }),

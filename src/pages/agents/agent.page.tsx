@@ -12,7 +12,7 @@ import {
   useAudioStore,
   useWSConnection,
 } from "@/features/ws-connection";
-import voice from "@/shared/assets/animations/voice.json";
+import { AudioTimeline } from "@/features/audio-timeline";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import {cn} from "@/shared/lib/css/tailwind";
 import {type PathParams, ROUTES} from "@/shared/model/routes";
@@ -24,8 +24,7 @@ import {
 } from "@/shared/ui/header";
 import {Button} from "@/shared/ui/kit/button";
 import {SidebarTrigger} from "@/shared/ui/kit/sidebar";
-import Lottie, {type LottieRefCurrentProps} from "lottie-react";
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 import {
   data,
   // useLocation,
@@ -88,8 +87,6 @@ const AgentPage = () => {
   //
   const [openSettings, setOpenSettings] = useState<boolean>(false);
   //
-  const lottieRef = useRef<LottieRefCurrentProps | null>(null);
-  //
   const micEnabled = searchParams.get("mic") === "true";
   const searchParamsMessage = searchParams.get("prompt");
 
@@ -107,21 +104,11 @@ const AgentPage = () => {
   const {
     audioError,
     isRecording,
+    mediaStream,
     startRecording,
     stopRecording,
     setAudioError,
-  } = useAudio({
-    onVoiceLevel: (level) => {
-      if (!lottieRef.current) return;
-
-      const totalFrames = lottieRef.current?.getDuration(true);
-
-      if (!totalFrames) return;
-
-      const frame = Math.floor(level * 2 * totalFrames);
-      lottieRef.current.goToAndStop(frame, true);
-    },
-  });
+  } = useAudio();
 
   // const chatTitle = chats[chatId!]?.title || "";
   const messages = chats[chatId!]?.messages || [];
@@ -175,13 +162,7 @@ const AgentPage = () => {
 
     sendTextCommand(searchParamsMessage);
     //   // navigate(location.pathname, { replace: true });
-  }, [
-    isConnected,
-    searchParamsMessage,
-    sendTextCommand,
-    navigate,
-    location.pathname,
-  ]);
+  }, [isConnected, searchParamsMessage, sendTextCommand, navigate, location.pathname]);
 
   // Reset last message meta when chat is closed
   useEffect(() => {
@@ -258,11 +239,9 @@ const AgentPage = () => {
       {isRecording ? (
         <div className="grid grid-rows-[1fr_auto] justify-items-center my-5 -mx-5 gap-7">
           <div className="grid self-center place-items-center w-full">
-            <Lottie
-              animationData={voice}
-              lottieRef={lottieRef}
-              autoplay={false}
-              style={{width: "100%"}}
+            <AudioTimeline
+              mediaStream={mediaStream}
+              showControls={true}
             />
           </div>
           <Button

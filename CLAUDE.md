@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
+**Package Manager**: This project uses `pnpm`. Always use `pnpm` commands, not `npm` or `yarn`.
+
 - **Development server**: `pnpm run dev` (or `pnpm run dev:host` for network access)
 - **Build**: `pnpm run build` (runs TypeScript compilation + Vite build)
 - **Lint**: `pnpm run lint`
@@ -28,6 +30,7 @@ This is a React + TypeScript + Vite application for a financial AI assistant wit
 - **Audio**: Custom audio processing with Web Audio API and worklets
 - **Charts**: Recharts for data visualization
 - **UI Components**: Radix UI primitives with custom styling
+- **Internationalization**: i18next with React integration (English and Russian supported)
 
 ### State Management Pattern
 The app uses Zustand stores with a custom `createSelectors` utility that provides property-based selectors:
@@ -85,15 +88,25 @@ The chat system processes structured intents defined in `src/shared/model/intent
 - Type-safe intent responses with standardized schemas
 - Each intent has structured output format with warnings, summaries, and specific data
 
+### Internationalization (i18n)
+The application uses i18next for multi-language support:
+- Language configuration in `src/app/i18n.ts`
+- Translation files in `src/shared/lib/locales/` (en.json, ru.json)
+- Language state managed via `language-store.ts` with persistence
+- Automatic language sync between store and i18next
+- Fallback to English for unsupported languages
+
 ### Audio Server Protocol
 The application communicates with an audio server via WebSocket with the following protocol:
 
 **Audio Chunk Format:**
 ```typescript
 interface AudioResponse {
-  audio: string | null;     // Base64 encoded Int16 PCM data (64KB chunks)
+  audio: string | null;     // Base64 encoded audio data
   chunk_id: number;         // Chunk sequence number (starts from 0, sequential)
   stream_id: number;        // Audio stream identifier (sequential, no gaps)
+  format: "raw" | "mp3";    // Audio format (raw PCM or MP3)
+  sampleRate?: number;      // Sample rate (optional, default 22050 Hz)
 }
 ```
 
@@ -106,8 +119,10 @@ interface AudioResponse {
 4. **Stream Termination**: Final chunk with `{ audio: null, chunk_id: -1, stream_id: number }`
 
 **Important Audio Characteristics:**
-- **Sample Rate**: 22050 Hz
-- **Format**: Int16 PCM (16-bit signed integers)
+- **Sample Rate**: Default 22050 Hz (configurable via `sampleRate` field)
+- **Supported Formats**:
+  - `raw`: Int16 PCM (16-bit signed integers)
+  - `mp3`: MP3 compressed audio (decoded to PCM for playback)
 - **Chunk Size**: Currently 64KB (planned to be reduced in future)
 - **Delivery Order**: Chunks may arrive out of order due to network, but IDs are always sequential
 - **No Gaps**: `stream_id` and `chunk_id` sequences are continuous without missing numbers
@@ -118,6 +133,17 @@ interface AudioResponse {
 - **Correct Sequencing**: Out-of-order chunks must be reordered by `chunk_id`
 - **Seamless Playback**: No audible gaps between chunks within a stream
 
+### Audio Timeline Feature
+Real-time audio visualization component for monitoring voice input:
+- Canvas-based waveform rendering with scrolling timeline
+- Audio level monitoring with color-coded feedback:
+  - White: too quiet (below threshold)
+  - Green: optimal recording level
+  - Red: too loud (above 70dB)
+- WebRTC constraint controls (auto gain control, echo cancellation, noise suppression)
+- Configurable sensitivity via `DB_MAX_THRESHOLD` in `audioTimelineConfig.ts`
+- Uses Web Audio API with AnalyserNode for real-time frequency analysis
+
 ### Development Notes
 - Path mapping configured with `@/*` pointing to `src/*`
 - SSL enabled for HTTPS development server (required for voice features)
@@ -125,3 +151,4 @@ interface AudioResponse {
 - ESLint with TypeScript, React hooks, and architectural boundary rules
 - No testing framework configured
 - Environment variables via `.env.development` (API base URL: `/api`)
+- Main branch: `main`, current development branch: `agents`

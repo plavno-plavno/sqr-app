@@ -281,6 +281,10 @@ export class AudioWorkletManager {
     this.agentAudioLevel = level;
   }
 
+  public getMediaStream(): MediaStream | null {
+    return this.mediaStream;
+  }
+
   public toggleMute(mute?: boolean): void {
     if (!this.gainNode || !this.audioContext || !this.vad) return;
 
