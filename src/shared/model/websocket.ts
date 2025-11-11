@@ -10,7 +10,7 @@ export const SameOutputTreshholdValues = [1, 2, 3, 4, 5];
 
 export enum VocalizerType {
   HUME = "hume",
-  MINIMAX = "minimax",
+  KANI = "kani",
   ELEVENLABS = "elevenlabs",
 }
 
