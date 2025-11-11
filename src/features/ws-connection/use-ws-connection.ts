@@ -50,7 +50,7 @@ export const useWSConnection = (chatId?: string | null) => {
   const setWsError = useWebSocketStore.use.setWsError();
 
   const getFreeMachine = async (controller: AbortController) => {
-    const req = await requests.getFreeMachine({ signal: controller.signal }, agentName);
+    const req = await requests.getFreeMachine({ signal: controller.signal });
     const freeMachine = req?.data;
 
     if (!freeMachine) throw new Error("No free machine found");
