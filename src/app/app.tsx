@@ -53,7 +53,7 @@ export function App() {
         const chatId = uuidv4();
         createChat(chatId);
       }
-      navigate(`/agent/default`);
+      navigate(`/agent/medic`);
     }
   }, [agentName, chats, createChat, navigate]);
 
