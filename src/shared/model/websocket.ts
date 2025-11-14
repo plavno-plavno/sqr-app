@@ -16,13 +16,14 @@ export enum VocalizerType {
 
 export enum PromptType {
   DEFAULT = "default",
-  ARCHELIC = "archelic",
+  SECURITY = "security",
   FINANCE = "finance",
   LOGISTICS = "logistics",
   MCDONALDS = "mcdonalds",
   MEDIC = "medic",
   SEFAR = "sefar",
   TALENT = "talent",
+  LAYWER = "laywer",
 }
 
 export type TextResponse = Segment[];

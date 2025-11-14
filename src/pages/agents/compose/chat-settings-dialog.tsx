@@ -18,18 +18,22 @@ import {
 } from "@/shared/ui/kit/select";
 import { Switch } from "@/shared/ui/kit/switch";
 import { LanguagesIcon } from "lucide-react";
-import {useParams} from "react-router-dom";
-import {type PathParams, ROUTES} from "@/shared/model/routes.ts";
+import {type Dispatch, type SetStateAction} from "react";
 
 // Dialog for chat settings using AdaptiveDrawer
 export function ChatSettingsDialog({
   open,
   onOpenChange,
+  agentName,
+  currentAgent,
+  setCurrentAgent,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  agentName: PromptType;
+  currentAgent: PromptType;
+  setCurrentAgent: Dispatch<SetStateAction<PromptType | undefined>>
 }) {
-  const {agentName} = useParams<PathParams[typeof ROUTES.AGENT]>();
   const language = useLanguageStore.use.language();
   const isAudioEnabled = useSettingsStore.use.isAudioEnabled();
   const setAudioEnabled = useSettingsStore.use.setAudioEnabled();
@@ -54,6 +58,7 @@ export function ChatSettingsDialog({
   };
 
   const handleChangePrompt = (value: PromptType) => {
+    setCurrentAgent(value);
     sendSwitchPromptCommand(value);
   };
 
@@ -101,7 +106,7 @@ export function ChatSettingsDialog({
           <label className="text-muted-foreground font-medium">
             Prompt Type
           </label>
-          <Select value={agentName} onValueChange={handleChangePrompt}>
+          <Select value={currentAgent ? currentAgent : agentName} onValueChange={handleChangePrompt}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select Prompt" />
             </SelectTrigger>

@@ -23,7 +23,7 @@ function AppContent() {
     await stopRecording();
     const chatId = uuidv4();
     createChat(chatId);
-    navigate(`${href(ROUTES.AGENT, { agentName: agentName || 'default' })}`);
+    navigate(`${href(ROUTES.AGENT, { agentName: agentName || 'medic' })}`);
   };
 
   return (

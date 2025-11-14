@@ -37,6 +37,7 @@ import {ChatDialog} from "./compose/chat-dialog";
 import {ChatMessage as ChatMessageComponent} from "./compose/chat-message";
 // import { useEffectEvent } from "use-effect-event";
 import {ChatSettingsDialog} from "./compose/chat-settings-dialog";
+import {PromptType} from "@/shared/model/websocket.ts";
 
 export async function loader({
   params,
@@ -54,6 +55,7 @@ export async function loader({
 
 const AgentPage = () => {
   const {agentName} = useParams<PathParams[typeof ROUTES.AGENT]>();
+  const [currentAgent, setCurrentAgent] = useState<PromptType>();
   // const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -216,7 +218,7 @@ const AgentPage = () => {
       )}
     >
       <Header
-        title={agentName}
+        title={currentAgent ? currentAgent : agentName}
         titleClassName="w-[calc(100%-150px)] left-13 translate-x-0"
         leftElement={<SidebarTrigger/>}
         rightElement={
@@ -277,7 +279,13 @@ const AgentPage = () => {
         }}
       />
 
-      <ChatSettingsDialog open={openSettings} onOpenChange={setOpenSettings}/>
+      <ChatSettingsDialog
+        open={openSettings}
+        onOpenChange={setOpenSettings}
+        currentAgent={currentAgent as PromptType}
+        setCurrentAgent={setCurrentAgent}
+        agentName={agentName as PromptType}
+      />
     </div>
   );
 };
