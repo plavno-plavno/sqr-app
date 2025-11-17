@@ -81,6 +81,12 @@ export const useAudio = (config?: UseAudioProps) => {
         // Set mediaStream from the new audio manager
         const stream = newAudioManager.getMediaStream();
         setMediaStream(stream);
+
+        // Link AudioWorkletManager with AudioQueueManager for microphone sensitivity control
+        const audioQueue = useAudioStore.getState().audioQueue;
+        if (audioQueue) {
+          audioQueue.setAudioWorkletManager(newAudioManager);
+        }
       } else {
         await audioManager.start();
 

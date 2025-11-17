@@ -28,6 +28,9 @@ export class AudioWorkletManager {
   private mediaStream: MediaStream | null = null;
   private isMuted: boolean = false;
   private agentAudioLevel: number = 0;
+  private baseSensitivity: number = 1.0;
+  private reductionFactor: number = 0.05;
+  private isAgentSpeaking: boolean = false;
 
   constructor(options: AudioProcessorOptions = {}) {
     console.log(this.agentAudioLevel);
@@ -52,11 +55,11 @@ export class AudioWorkletManager {
       // Audio constraints with built-in echo cancellation
       const audioConstraints = {
         echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
+        noiseSuppression: false,
+        autoGainControl: false,
         googEchoCancellation: true,
-        googNoiseSuppression: true,
-        googAutoGainControl: true,
+        googNoiseSuppression: false,
+        googAutoGainControl: false,
         volume: 1.0,
         sampleRate: this.options.sampleRate,
         channelCount: 1,
@@ -305,5 +308,61 @@ export class AudioWorkletManager {
         0.01
       );
     }
+  }
+
+  /**
+   * Reduce microphone sensitivity by 10% when agent audio is playing
+   */
+  public reduceSensitivity(): void {
+    if (!this.gainNode || !this.audioContext || this.isMuted || this.isAgentSpeaking) {
+      if (!this.gainNode || !this.audioContext) {
+        console.log('[Microphone Sensitivity] Cannot reduce: gainNode or audioContext not available');
+      } else if (this.isMuted) {
+        console.log('[Microphone Sensitivity] Cannot reduce: microphone is muted');
+      } else if (this.isAgentSpeaking) {
+        console.log('[Microphone Sensitivity] Already reduced');
+      }
+      return;
+    }
+
+    this.isAgentSpeaking = true;
+    const reducedSensitivity = this.baseSensitivity * this.reductionFactor; // 10% reduction
+
+    console.log(`[Microphone Sensitivity] 🔻 REDUCING sensitivity by 10%: ${this.baseSensitivity} -> ${reducedSensitivity}`);
+
+    this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
+    this.gainNode.gain.setTargetAtTime(
+      reducedSensitivity,
+      this.audioContext.currentTime,
+      0.05 // Smooth transition over 50ms
+    );
+  }
+
+  /**
+   * Restore microphone sensitivity to normal when agent audio stops
+   */
+  public restoreSensitivity(): void {
+    if (!this.gainNode || !this.audioContext || this.isMuted || !this.isAgentSpeaking) {
+      if (!this.gainNode || !this.audioContext) {
+        console.log('[Microphone Sensitivity] Cannot restore: gainNode or audioContext not available');
+      } else if (this.isMuted) {
+        console.log('[Microphone Sensitivity] Cannot restore: microphone is muted');
+      } else if (!this.isAgentSpeaking) {
+        console.log('[Microphone Sensitivity] Already at normal level');
+      }
+      return;
+    }
+
+    const previousSensitivity = this.baseSensitivity;
+    this.isAgentSpeaking = false;
+
+    console.log(`[Microphone Sensitivity] 🔺 RESTORING sensitivity to normal: ${previousSensitivity} -> ${this.baseSensitivity}`);
+
+    this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
+    this.gainNode.gain.setTargetAtTime(
+      this.baseSensitivity,
+      this.audioContext.currentTime,
+      0.05 // Smooth transition over 50ms
+    );
   }
 }

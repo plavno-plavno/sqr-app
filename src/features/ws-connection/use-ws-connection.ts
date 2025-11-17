@@ -116,9 +116,7 @@ export const useWSConnection = (chatId?: string | null) => {
     }
   };
 
-  const handleAgentResponse = async (
-    segments: AudioResponse | IntentResponse
-  ) => {
+  const handleAgentResponse = async (segments: AudioResponse | IntentResponse) => {
     if (!chatId) return;
 
     // Last user message
@@ -129,7 +127,7 @@ export const useWSConnection = (chatId?: string | null) => {
       ]);
       if (!lastUserMessage || lastUserMessage.isTextCorrected) return;
 
-      updateMessage(chatId, {
+      updateMessage(chatId as string, {
         ...lastUserMessage,
         text: segments.data.current_user_text as string,
         isTextCorrected: true,
@@ -138,29 +136,19 @@ export const useWSConnection = (chatId?: string | null) => {
     }
 
     // Temporary fix for spending analytics text
-    if (
-      "intent" in segments &&
-      "output" in segments &&
-      segments.intent === IntentType.SPENDING_ANALYTICS &&
-      (segments.output as SpendingAnalyticsOutput)?.spending_analysis
-        ?.categories?.length === 0
-    ) {
+    if ("intent" in segments && "output" in segments && segments.intent === IntentType.SPENDING_ANALYTICS && (segments.output as SpendingAnalyticsOutput)?.spending_analysis?.categories?.length === 0) {
       const newMessage = {
         id: uuidv4(),
         type: ChatMessageType.TEXT,
         role: ChatMessageRole.AGENT,
         text: segments.text,
       };
-      addMessage(chatId, newMessage);
+      addMessage(chatId as string, newMessage);
       return;
     }
 
     // Text response from agent
-    if (
-      "intent" in segments &&
-      "text" in segments &&
-      segments.text.length > 0
-    ) {
+    if ("intent" in segments && "text" in segments && segments.text.length > 0) {
       if (!isValidIntentType(segments.intent)) return;
       // TODO: Remove this after server fix
       if (segments.text.startsWith("Switched to")) return;
@@ -220,6 +208,8 @@ export const useWSConnection = (chatId?: string | null) => {
       const audioResponse = segments as AudioResponse;
       const audioQueue = useAudioStore.getState().audioQueue;
 
+      // console.log('audioResponse', audioResponse)
+
       audioQueue?.addToQueue(audioResponse);
     }
   };
@@ -260,6 +250,7 @@ export const useWSConnection = (chatId?: string | null) => {
     const audioQueue = new AudioQueueManager({
       onAudioLevel: (level) =>
         useAudioStore.getState().audioManager?.updateAudioLevel(level),
+      audioWorkletManager: audioManager,
     });
     setAudioQueue(audioQueue);
 

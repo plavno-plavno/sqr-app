@@ -26,6 +26,10 @@ class PlayerProcessor extends AudioWorkletProcessor {
     this.currentStreamId = null;
     this.currentChunkId = 0;
 
+    // Отслеживание завершения воспроизведения
+    this.lastCompletedStreamId = null;
+    this.hasCompletionBeenSent = false;
+
     // Fade out при остановке
     this.isStopping = false;
     this.fadeOutGain = 1.0;
@@ -173,6 +177,10 @@ class PlayerProcessor extends AudioWorkletProcessor {
 
       // Проверяем, был ли это последний чанк стрима
       if (chunk.isLast) {
+        // Сохраняем ID завершенного потока для отправки события
+        this.lastCompletedStreamId = this.currentStreamId;
+        this.hasCompletionBeenSent = false;
+
         this.audioStreams.delete(this.currentStreamId);
         this.currentStreamId = this.getNextStreamId();
         this.currentChunkId = 0;
@@ -188,6 +196,8 @@ class PlayerProcessor extends AudioWorkletProcessor {
     this.audioStreams.clear();
     this.currentStreamId = null;
     this.currentChunkId = 0;
+    this.lastCompletedStreamId = null;
+    this.hasCompletionBeenSent = false;
     this.isStopping = false;
     this.fadeOutGain = 1.0;
   }
@@ -224,6 +234,21 @@ class PlayerProcessor extends AudioWorkletProcessor {
     // Очищаем буфер сразу после завершения fade out (300ms)
     if (this.isStopping && this.fadeOutGain === 0) {
       this.clearBuffer();
+    }
+
+    // Отправляем событие завершения воспроизведения
+    if (
+      this.readPosition >= this.audioData.length &&
+      this.audioStreams.size === 0 &&
+      this.lastCompletedStreamId !== null &&
+      !this.hasCompletionBeenSent &&
+      !this.isStopping
+    ) {
+      this.port.postMessage({
+        type: "playbackComplete",
+        stream_id: this.lastCompletedStreamId,
+      });
+      this.hasCompletionBeenSent = true;
     }
 
     // Очистка обработанных данных (каждые 5 секунд)
