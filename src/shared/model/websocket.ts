@@ -26,6 +26,7 @@ export enum PromptType {
   LAYWER = "laywer",
   HOTEL = "hotel",
   SALES_PRACTICE = "sales_practice",
+  TECH_SUPPORT = "tech_support",
 }
 
 export type TextResponse = Segment[];
