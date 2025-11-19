@@ -114,6 +114,7 @@ const useChatStoreBase = create<Store>()(
         }),
       setLastMessageMeta: (chatId: string, meta: MessageMeta) =>
         set((state) => {
+          if (!state.chats[chatId]) return;
           state.chats[chatId].lastMessageMeta = meta;
         }),
       getLastMessageMeta: (chatId: string) =>
@@ -136,6 +137,7 @@ const useChatStoreBase = create<Store>()(
         }),
       updateMessage: (chatId: string, message: ChatMessage) =>
         set((state) => {
+          if (!state.chats[chatId]) return;
           const messageIndex = state.chats[chatId].messages.findIndex(
             (m) => m.id === message.id
           );

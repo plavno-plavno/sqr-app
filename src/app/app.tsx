@@ -55,7 +55,7 @@ export function App() {
       }
       navigate(`/agent/medic`);
     }
-  }, [agentName, chats, createChat, navigate]);
+  }, []);
 
   if (isDemoPage || isAppTestPage) {
     return (

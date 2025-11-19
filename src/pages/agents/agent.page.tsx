@@ -12,7 +12,10 @@ import {
   useAudioStore,
   useWSConnection,
 } from "@/features/ws-connection";
+import { useSettingsStore } from "@/features/settings";
+import { useLanguageStore, availableLanguages } from "@/features/language";
 import { AudioTimeline } from "@/features/audio-timeline";
+import { VocalizerType } from "@/shared/model/websocket";
 import CrossIcon from "@/shared/assets/icons/cross-icon.svg?react";
 import {cn} from "@/shared/lib/css/tailwind";
 import {type PathParams, ROUTES} from "@/shared/model/routes";
@@ -55,7 +58,6 @@ export async function loader({
 
 const AgentPage = () => {
   const {agentName} = useParams<PathParams[typeof ROUTES.AGENT]>();
-  const [currentAgent, setCurrentAgent] = useState<PromptType>();
   // const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -65,8 +67,16 @@ const AgentPage = () => {
   const setLastMessageMeta = useChatStore.use.setLastMessageMeta();
   const createChat = useChatStore.use.createChat();
 
+  const vocalizerType = useSettingsStore.use.vocalizerType();
+  const setVocalizerType = useSettingsStore.use.setVocalizerType();
+
+  const language = useLanguageStore.use.language();
+  const setLanguage = useLanguageStore.use.setLanguage();
+
   // Get chatId from query params or use last chat from store
   const chatIdFromQuery = searchParams.get('chatId');
+  const vocalizerTypeFromQuery = searchParams.get('vocalizerType') as VocalizerType | null;
+  const languageFromQuery = searchParams.get('language');
 
   useEffect(() => {
     // If no chatId in query
@@ -82,8 +92,62 @@ const AgentPage = () => {
         createChat(newChatId);
         setSearchParams({ chatId: newChatId }, { replace: true });
       }
+    } else if (chatIdFromQuery && !chats[chatIdFromQuery]) {
+      // If chatId exists in URL but not in store (e.g., shared link)
+      // Create a new chat and redirect (ignore the shared chatId)
+      const newChatId = uuidv4();
+      createChat(newChatId);
+      setSearchParams({ chatId: newChatId }, { replace: true });
     }
-  }, [chatIdFromQuery, chats, createChat, setSearchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatIdFromQuery]);
+
+  // Sync vocalizerType from URL to Store (URL has priority)
+  useEffect(() => {
+    if (vocalizerTypeFromQuery &&
+        Object.values(VocalizerType).includes(vocalizerTypeFromQuery)) {
+      if (vocalizerType !== vocalizerTypeFromQuery) {
+        setVocalizerType(vocalizerTypeFromQuery);
+      }
+    }
+  }, [vocalizerTypeFromQuery, vocalizerType, setVocalizerType]);
+
+  // Auto-populate URL with vocalizerType if missing
+  useEffect(() => {
+    const vocalizerTypeParam = searchParams.get('vocalizerType');
+    if (!vocalizerTypeParam && chatIdFromQuery) {
+      const currentParams = Object.fromEntries(searchParams.entries());
+      setSearchParams({
+        ...currentParams,
+        vocalizerType: vocalizerType
+      }, { replace: true });
+    }
+  }, [chatIdFromQuery, searchParams, setSearchParams, vocalizerType]);
+
+  // Sync language from URL to Store (URL has priority)
+  useEffect(() => {
+    if (languageFromQuery &&
+        availableLanguages.some(lang => lang.code === languageFromQuery)) {
+      const languageOption = availableLanguages.find(
+        lang => lang.code === languageFromQuery
+      );
+      if (language.code !== languageFromQuery && languageOption) {
+        setLanguage(languageOption);
+      }
+    }
+  }, [languageFromQuery, language, setLanguage]);
+
+  // Auto-populate URL with language if missing
+  useEffect(() => {
+    const languageParam = searchParams.get('language');
+    if (!languageParam && chatIdFromQuery) {
+      const currentParams = Object.fromEntries(searchParams.entries());
+      setSearchParams({
+        ...currentParams,
+        language: language.code
+      }, { replace: true });
+    }
+  }, [chatIdFromQuery, searchParams, setSearchParams, language]);
 
   const chatId = chatIdFromQuery;
   //
@@ -170,6 +234,9 @@ const AgentPage = () => {
   useEffect(() => {
     return () => {
       if (!chatId) return;
+      // Get fresh state at cleanup time to check if chat exists
+      const currentChats = useChatStore.getState().chats;
+      if (!currentChats[chatId]) return;
       setLastMessageMeta(chatId, {start: "-1", end: "-1"});
     };
   }, [chatId, setLastMessageMeta]);
@@ -218,7 +285,7 @@ const AgentPage = () => {
       )}
     >
       <Header
-        title={currentAgent ? currentAgent : agentName}
+        title={agentName}
         titleClassName="w-[calc(100%-150px)] left-13 translate-x-0"
         leftElement={<SidebarTrigger/>}
         rightElement={
@@ -282,9 +349,10 @@ const AgentPage = () => {
       <ChatSettingsDialog
         open={openSettings}
         onOpenChange={setOpenSettings}
-        currentAgent={currentAgent as PromptType}
-        setCurrentAgent={setCurrentAgent}
+        currentAgent={agentName as PromptType}
         agentName={agentName as PromptType}
+        searchParams={searchParams}
+        setSearchParams={setSearchParams}
       />
     </div>
   );

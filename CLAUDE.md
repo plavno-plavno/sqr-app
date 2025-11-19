@@ -18,7 +18,9 @@ This is a React + TypeScript + Vite application for a financial AI assistant wit
 ### Core Structure
 - `src/app/` - Application initialization, routing, and global configuration
 - `src/pages/` - Route components (home, agents, chat, settings, app-test, not-found)
+  - Each page is exported through `*.page.tsx` files (enforced by ESLint boundaries)
 - `src/features/` - Business logic features (chat, finance, transactions, ws-connection, audio-timeline, etc.)
+  - Each feature exports through `index.(ts|tsx)` files (enforced by ESLint boundaries)
 - `src/shared/` - Reusable utilities, UI components, and shared models
 
 ### Key Technologies

@@ -257,7 +257,6 @@ export const useWSConnection = (chatId?: string | null) => {
     const controller = new AbortController();
     const ws = new WebSocketConnection({
       language: language.code,
-      // TODO: need to clarify Dmitry is we can say to user that this kind of agent is not exist
       promptType: agentName as PromptType,
       sameOutputTreshhold,
       vocalizerType,
@@ -309,7 +308,7 @@ export const useWSConnection = (chatId?: string | null) => {
       setIsConnected(false);
       setIsConnecting(false);
     };
-  }, [agentName]);
+  }, []);
 
   const sendCommand = useCallback(
     (command: (connection: WebSocketConnection) => void) => {

@@ -1,3 +1,4 @@
+import { useChatStore } from "@/features/chat";
 import { LanguageSearch, useLanguageStore } from "@/features/language";
 import { useSettingsStore } from "@/features/settings";
 import { useWSConnection } from "@/features/ws-connection";
@@ -18,7 +19,8 @@ import {
 } from "@/shared/ui/kit/select";
 import { Switch } from "@/shared/ui/kit/switch";
 import { LanguagesIcon } from "lucide-react";
-import {type Dispatch, type SetStateAction} from "react";
+import { useNavigate, type NavigateOptions } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
 
 // Dialog for chat settings using AdaptiveDrawer
 export function ChatSettingsDialog({
@@ -26,14 +28,19 @@ export function ChatSettingsDialog({
   onOpenChange,
   agentName,
   currentAgent,
-  setCurrentAgent,
+  searchParams,
+  setSearchParams,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   agentName: PromptType;
   currentAgent: PromptType;
-  setCurrentAgent: Dispatch<SetStateAction<PromptType | undefined>>
+  searchParams: URLSearchParams;
+  setSearchParams: (params: Record<string, string>, options?: NavigateOptions) => void;
 }) {
+  const navigate = useNavigate();
+  const createChat = useChatStore.use.createChat();
+
   const language = useLanguageStore.use.language();
   const isAudioEnabled = useSettingsStore.use.isAudioEnabled();
   const setAudioEnabled = useSettingsStore.use.setAudioEnabled();
@@ -45,21 +52,33 @@ export function ChatSettingsDialog({
   const setIntentDetection = useSettingsStore.use.setIntentDetection();
   const {
     sendSwitchVocalizerCommand,
-    sendSwitchPromptCommand,
     sendToggleIntentCommand,
     sendToggleAudioCommand,
     changeLanguage,
     changeSameOutputTreshhold,
+    sendSwitchPromptCommand,
   } = useWSConnection(undefined);
 
   const handleChangeVocalizer = (value: VocalizerType) => {
     setVocalizerType(value);
     sendSwitchVocalizerCommand(value);
+
+    // Update URL to include vocalizerType
+    const currentParams = Object.fromEntries(searchParams.entries());
+    setSearchParams({ ...currentParams, vocalizerType: value });
   };
 
   const handleChangePrompt = (value: PromptType) => {
-    setCurrentAgent(value);
+    // Create new chat for the new agent
+    const newChatId = uuidv4();
+    createChat(newChatId);
+
+    // Navigate to new URL with new agent
+    navigate(`/agent/${value}?chatId=${newChatId}`);
     sendSwitchPromptCommand(value);
+
+    // Close the dialog
+    onOpenChange(false);
   };
 
   const handleChangeSameOutputTreshhold = (value: number) => {
@@ -157,7 +176,13 @@ export function ChatSettingsDialog({
             Language - <b className="text-foreground">{language.name}</b>
           </label>
           <LanguageSearch
-            onLanguageSelect={(language) => changeLanguage(language.code)}
+            onLanguageSelect={(language) => {
+              changeLanguage(language.code);
+
+              // Update URL to include language
+              const currentParams = Object.fromEntries(searchParams.entries());
+              setSearchParams({ ...currentParams, language: language.code });
+            }}
             trigger={
               <Button variant="outline">
                 <LanguagesIcon />
